@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Daily Tasks Manager"
+description = "A personal daily task manager for organizing work across four companies and self-development, with dated tasks, completion tracking, notes, and links to working sheets and files."
+version = "1.0.0"
+id = "artifacts/daily-tasks-manager"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24245
+
+[services.development]
+run = "pnpm --filter @workspace/daily-tasks-manager run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/daily-tasks-manager", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/daily-tasks-manager/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24245"
+BASE_PATH = "/"

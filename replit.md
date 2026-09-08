@@ -1,6 +1,6 @@
-# [Project name]
+# Daily Tasks Manager
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Arabic-first daily workspace for organizing work across four companies and personal development, with persistent task links and completion tracking.
 
 ## Run & Operate
 
@@ -22,23 +22,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/daily-tasks-manager/` — React + Vite daily workspace UI
+- `artifacts/api-server/src/routes/tasks.ts` — task and summary API routes
+- `lib/api-spec/openapi.yaml` — source-of-truth API contract
+- `lib/db/src/schema/tasks.ts` — PostgreSQL task schema
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Calendar days are stored as PostgreSQL `date` values so task dates do not shift with timezone conversions.
+- Links are stored as structured JSON on each task so a task can point to multiple working sheets or files.
+- The UI is Arabic-first and RTL while keeping the five work categories as the user's original labels.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Browse tasks by day and category
+- Add, edit, complete, and delete tasks
+- Attach named external links to working sheets and files
+- See total, completed, remaining, and per-category progress
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The user manages daily work across INV, BR, Qaff, Wootz, and Self.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Re-run API code generation after changing `lib/api-spec/openapi.yaml`.
+- Use the managed artifact workflows rather than starting Vite or Express manually.
 
 ## Pointers
 

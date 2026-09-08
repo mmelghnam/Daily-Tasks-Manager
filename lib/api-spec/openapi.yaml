@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: tasks
+    description: Daily task operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,104 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List daily tasks
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Task not found
+  /tasks/summary:
+    get:
+      operationId: getTaskSummary
+      tags: [tasks]
+      summary: Get daily task summary
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Summary for a day
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +133,104 @@ components:
           type: string
       required:
         - status
-
+    TaskCategory:
+      type: string
+      enum: [INV, BR, Qaff, Wootz, Self]
+    TaskLink:
+      type: object
+      properties:
+        label:
+          type: string
+        url:
+          type: string
+          format: uri
+      required: [label, url]
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        taskDate:
+          type: string
+          format: date
+        category:
+          $ref: "#/components/schemas/TaskCategory"
+        title:
+          type: string
+        notes:
+          type: ["string", "null"]
+        completed:
+          type: boolean
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskLink"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - taskDate
+        - category
+        - title
+        - notes
+        - completed
+        - links
+        - createdAt
+        - updatedAt
+    TaskInput:
+      type: object
+      properties:
+        taskDate:
+          type: string
+          format: date
+        category:
+          $ref: "#/components/schemas/TaskCategory"
+        title:
+          type: string
+          minLength: 1
+        notes:
+          type: string
+        completed:
+          type: boolean
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskLink"
+      required: [taskDate, category, title]
+    TaskUpdate:
+      type: object
+      properties:
+        taskDate:
+          type: string
+          format: date
+        category:
+          $ref: "#/components/schemas/TaskCategory"
+        title:
+          type: string
+          minLength: 1
+        notes:
+          type: string
+        completed:
+          type: boolean
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskLink"
+    TaskSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        remaining:
+          type: integer
+        byCategory:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [total, completed, remaining, byCategory]
