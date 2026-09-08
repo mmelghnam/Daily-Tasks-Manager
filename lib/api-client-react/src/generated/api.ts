@@ -31,6 +31,7 @@ import type {
   SpaceInput,
   SpaceLink,
   SpaceLinkInput,
+  SpaceUpdate,
   Task,
   TaskInput,
   TaskSummary,
@@ -670,6 +671,78 @@ export const useCreateSpace = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateSpaceMutationOptions(options));
+    }
+
+export const getUpdateSpaceUrl = (id: number,) => {
+
+
+
+
+  return `/api/spaces/${id}`
+}
+
+/**
+ * @summary Update a task space
+ */
+export const updateSpace = async (id: number,
+    spaceUpdate: SpaceUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Space> => {
+
+  return customFetch<Space>(getUpdateSpaceUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(spaceUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateSpaceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSpace>>, TError,{id: number;data: BodyType<SpaceUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSpace>>, TError,{id: number;data: BodyType<SpaceUpdate>}, TContext> => {
+
+const mutationKey = ['updateSpace'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSpace>>, {id: number;data: BodyType<SpaceUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSpace(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSpaceMutationResult = NonNullable<Awaited<ReturnType<typeof updateSpace>>>
+    export type UpdateSpaceMutationBody = BodyType<SpaceUpdate>
+    export type UpdateSpaceMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a task space
+ */
+export const useUpdateSpace = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSpace>>, TError,{id: number;data: BodyType<SpaceUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSpace>>,
+        TError,
+        {id: number;data: BodyType<SpaceUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateSpaceMutationOptions(options));
     }
 
 export const getDeleteSpaceUrl = (id: number,) => {

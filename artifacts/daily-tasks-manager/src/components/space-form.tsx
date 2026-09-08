@@ -1,10 +1,12 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Check, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListSpacesQueryKey,
   useCreateSpace,
+  useUpdateSpace,
 } from '@workspace/api-client-react';
+import type { Space } from '@workspace/api-client-react';
 
 const colorOptions = [
   { value: '#2e8d77', label: 'فيروزي' },
@@ -21,15 +23,19 @@ const colorOptions = [
 interface SpaceFormProps {
   onClose: () => void;
   onCreated: (name: string) => void;
+  space?: Space;
 }
 
-export function SpaceForm({ onClose, onCreated }: SpaceFormProps) {
+export function SpaceForm({ onClose, onCreated, space }: SpaceFormProps) {
   const queryClient = useQueryClient();
   const createSpace = useCreateSpace();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState(colorOptions[0].value);
+  const updateSpace = useUpdateSpace();
+  const [name, setName] = useState(space?.name ?? '');
+  const [description, setDescription] = useState(space?.description ?? '');
+  const [color, setColor] = useState(space?.color ?? colorOptions[0].value);
   const [error, setError] = useState('');
+  const isEditing = Boolean(space);
+  const isPending = createSpace.isPending || updateSpace.isPending;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -48,24 +54,41 @@ export function SpaceForm({ onClose, onCreated }: SpaceFormProps) {
     }
 
     setError('');
+    const data = {
+      name: cleanName,
+      color,
+      description: description.trim() || undefined,
+    };
+    const options = {
+      onSuccess: (savedSpace: Space) => {
+        void queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
+        onCreated(savedSpace.name);
+        onClose();
+      },
+      onError: (requestError: { status?: number }) => {
+        setError(requestError.status === 409 ? 'يوجد مساحة أخرى بنفس الاسم' : `لم نتمكن من ${isEditing ? 'تعديل' : 'إنشاء'} المساحة. حاول مرة أخرى.`);
+      },
+    };
+
+    if (space) {
+      updateSpace.mutate(
+        {
+          id: space.id,
+          data: {
+            ...data,
+            description: description.trim() || null,
+          },
+        },
+        options,
+      );
+      return;
+    }
+
     createSpace.mutate(
       {
-        data: {
-          name: cleanName,
-          color,
-          description: description.trim() || undefined,
-        },
+        data,
       },
-      {
-        onSuccess: (space) => {
-          void queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
-          onCreated(space.name);
-          onClose();
-        },
-        onError: (requestError) => {
-          setError(requestError.status === 409 ? 'هذه المساحة موجودة بالفعل' : 'لم نتمكن من إنشاء المساحة. حاول مرة أخرى.');
-        },
-      },
+      options,
     );
   };
 
@@ -82,9 +105,9 @@ export function SpaceForm({ onClose, onCreated }: SpaceFormProps) {
           <div>
             <div className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.16em] text-muted-foreground">
               <span className="h-2 w-2 rounded-full bg-secondary" />
-              مساحة جديدة
+              {isEditing ? 'تعديل المساحة' : 'مساحة جديدة'}
             </div>
-            <h2 id="space-form-title" className="text-2xl font-extrabold tracking-tight">أين ستضع تركيزك؟</h2>
+            <h2 id="space-form-title" className="text-2xl font-extrabold tracking-tight">{isEditing ? 'حدّث هوية المساحة' : 'أين ستضع تركيزك؟'}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="إغلاق" data-testid="button-close-space-form" className="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground">
             <X size={20} />
@@ -124,9 +147,9 @@ export function SpaceForm({ onClose, onCreated }: SpaceFormProps) {
           {error && <p data-testid="status-space-form-error" className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">{error}</p>}
           <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-start">
             <button type="button" onClick={onClose} data-testid="button-cancel-space" className="h-12 rounded-xl border border-border px-5 text-sm font-bold text-muted-foreground transition hover:bg-muted">إلغاء</button>
-            <button type="submit" disabled={createSpace.isPending} data-testid="button-submit-space" className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60">
-              <Plus size={17} />
-              {createSpace.isPending ? 'جارٍ الإنشاء...' : 'إنشاء المساحة'}
+            <button type="submit" disabled={isPending} data-testid="button-submit-space" className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60">
+              {isEditing ? <Check size={17} /> : <Plus size={17} />}
+              {isPending ? 'جارٍ الحفظ...' : isEditing ? 'حفظ التعديلات' : 'إنشاء المساحة'}
             </button>
           </div>
         </form>

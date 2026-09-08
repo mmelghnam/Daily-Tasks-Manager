@@ -17,6 +17,7 @@ export * from './space';
 export * from './spaceInput';
 export * from './spaceLink';
 export * from './spaceLinkInput';
+export * from './spaceUpdate';
 export * from './task';
 export * from './taskCategory';
 export * from './taskFollowUp';

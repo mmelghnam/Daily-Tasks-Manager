@@ -4,9 +4,12 @@ import {
   CreateSpaceResponse,
   DeleteSpaceParams,
   ListSpacesResponse,
+  UpdateSpaceBody,
+  UpdateSpaceParams,
+  UpdateSpaceResponse,
 } from "@workspace/api-zod";
-import { db, spacesTable } from "@workspace/db";
-import { asc, eq } from "drizzle-orm";
+import { db, spacesTable, tasksTable } from "@workspace/db";
+import { and, asc, eq, ne } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -52,6 +55,64 @@ router.post("/spaces", async (req, res, next) => {
 
     res.status(201).json(CreateSpaceResponse.parse(space));
   } catch (error: unknown) {
+    next(error);
+  }
+});
+
+router.patch("/spaces/:id", async (req, res, next) => {
+  try {
+    const params = UpdateSpaceParams.parse({ id: Number(req.params.id) });
+    const input = UpdateSpaceBody.parse(req.body);
+    const name = input.name.trim();
+    const color = input.color.trim();
+    if (!name || !color) {
+      res.status(400).json({ error: "Space name and color are required" });
+      return;
+    }
+
+    const [current] = await db
+      .select()
+      .from(spacesTable)
+      .where(eq(spacesTable.id, params.id))
+      .limit(1);
+    if (!current) {
+      res.status(404).json({ error: "Space not found" });
+      return;
+    }
+
+    const duplicate = await db
+      .select({ id: spacesTable.id })
+      .from(spacesTable)
+      .where(and(eq(spacesTable.name, name), ne(spacesTable.id, params.id)))
+      .limit(1);
+    if (duplicate.length > 0) {
+      res.status(409).json({ error: "A space with this name already exists" });
+      return;
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      const [space] = await tx
+        .update(spacesTable)
+        .set({
+          name,
+          color,
+          description: input.description?.trim() || null,
+        })
+        .where(eq(spacesTable.id, params.id))
+        .returning();
+
+      if (current.name !== name) {
+        await tx
+          .update(tasksTable)
+          .set({ category: name })
+          .where(eq(tasksTable.category, current.name));
+      }
+
+      return space;
+    });
+
+    res.json(UpdateSpaceResponse.parse(updated));
+  } catch (error) {
     next(error);
   }
 });

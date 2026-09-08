@@ -88,6 +88,14 @@ export interface SpaceInput {
   description?: string;
 }
 
+export interface SpaceUpdate {
+  /** @minLength 1 */
+  name: string;
+  color: string;
+  /** @nullable */
+  description?: string | null;
+}
+
 export interface SpaceLink {
   id: number;
   spaceId: number;

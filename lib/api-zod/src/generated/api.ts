@@ -214,6 +214,31 @@ export const CreateSpaceResponse = zod.object({
 
 
 /**
+ * @summary Update a task space
+ */
+export const UpdateSpaceParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const UpdateSpaceBody = zod.object({
+  "name": zod.string().min(1),
+  "color": zod.string(),
+  "description": zod.string().nullish()
+})
+
+export const UpdateSpaceResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "description": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Delete a task space
  */
 export const DeleteSpaceParams = zod.object({

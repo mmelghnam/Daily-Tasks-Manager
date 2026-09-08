@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Pencil, Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
 import { getListSpacesQueryKey, useDeleteSpace, useGetTaskSummary, useListSpaces, useListTasks } from '@workspace/api-client-react';
-import type { Task } from '@workspace/api-client-react';
+import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
 import { SpaceForm } from '@/components/space-form';
@@ -52,6 +52,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
   const [showSpaceForm, setShowSpaceForm] = useState(false);
+  const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
 
   const spacesQuery = useListSpaces();
@@ -177,7 +178,8 @@ export default function Home() {
               const count = summary?.byCategory?.[category] ?? 0;
                const meta = getSpaceMeta(category, spaces);
                const canDelete = spacesQuery.data?.some((space) => space.name === category);
-               return <div key={category} className="relative"><button type="button" onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex w-full items-center justify-between rounded-2xl border p-3 pl-10 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>{canDelete && <button type="button" onClick={() => removeSpace(category)} disabled={deleteSpace.isPending} aria-label={`حذف مساحة ${category}`} data-testid={`button-delete-space-${category}`} className={`absolute left-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition ${activeCategory === category ? 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground' : 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive'}`}><Trash2 size={14} /></button>}</div>;
+                const editableSpace = spacesQuery.data?.find((space) => space.name === category);
+                return <div key={category} className="relative"><button type="button" onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex w-full items-center justify-between rounded-2xl border p-3 pl-16 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>{editableSpace && <button type="button" onClick={() => setEditingSpace(editableSpace)} aria-label={`تعديل مساحة ${category}`} data-testid={`button-edit-space-${category}`} className={`absolute left-8 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition ${activeCategory === category ? 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}><Pencil size={14} /></button>}{canDelete && <button type="button" onClick={() => removeSpace(category)} disabled={deleteSpace.isPending} aria-label={`حذف مساحة ${category}`} data-testid={`button-delete-space-${category}`} className={`absolute left-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition ${activeCategory === category ? 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground' : 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive'}`}><Trash2 size={14} /></button>}</div>;
             })}
           </div>
         </section>
@@ -200,6 +202,7 @@ export default function Home() {
       </main>
        {showForm && <TaskForm date={selectedDate} initialCategory={formCategory} categoryLocked={Boolean(formCategory)} spaces={spaceNames} onClose={() => setShowForm(false)} />}
        {showSpaceForm && <SpaceForm onClose={() => setShowSpaceForm(false)} onCreated={(name) => { setActiveCategory(name); }} />}
+        {editingSpace && <SpaceForm space={editingSpace} onClose={() => setEditingSpace(null)} onCreated={(name) => { setActiveCategory(name); setEditingSpace(null); void queryClient.invalidateQueries(); }} />}
     </div>
   );
 }

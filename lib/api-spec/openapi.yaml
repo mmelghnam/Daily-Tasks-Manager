@@ -164,6 +164,33 @@ paths:
         "409":
           description: A space with this name already exists
   /spaces/{id}:
+    patch:
+      operationId: updateSpace
+      tags: [spaces]
+      summary: Update a task space
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpaceUpdate"
+      responses:
+        "200":
+          description: Updated space
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Space"
+        "404":
+          description: Space not found
+        "409":
+          description: A space with this name already exists
     delete:
       operationId: deleteSpace
       tags: [spaces]
@@ -465,6 +492,17 @@ components:
         description:
           type: string
       required: [name]
+    SpaceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        color:
+          type: string
+        description:
+          type: ["string", "null"]
+      required: [name, color]
     SpaceLink:
       type: object
       properties:
