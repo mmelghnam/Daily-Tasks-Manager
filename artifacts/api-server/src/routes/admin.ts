@@ -41,6 +41,7 @@ async function requireAdmin(req: Request, res: Response) {
 
 router.get("/admin/access", async (req, res, next) => {
   try {
+    res.set("Cache-Control", "no-store");
     res.json(GetAdminAccessResponse.parse({ isAdmin: await isPrimaryAdmin(req.userId!) }));
   } catch (error) {
     next(error);
