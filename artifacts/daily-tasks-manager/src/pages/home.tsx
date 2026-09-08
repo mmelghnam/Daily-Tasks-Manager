@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2 } from 'lucide-react';
-import { getGetOnboardingStatusQueryKey, getListSpacesQueryKey, UsageType, useDeleteSpace, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateUsageType } from '@workspace/api-client-react';
+import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateUsageType } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
@@ -143,6 +143,68 @@ function AccountControl() {
   );
 }
 
+function QuickTaskInput({ date, category }: { date: string; category: Category }) {
+  const queryClient = useQueryClient();
+  const createTask = useCreateTask();
+  const [title, setTitle] = useState('');
+  const [error, setError] = useState('');
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      setError('اكتب اسم المهمة أولاً');
+      return;
+    }
+
+    setError('');
+    createTask.mutate({
+      data: {
+        taskDate: date,
+        category,
+        title: cleanTitle,
+        priority: 'medium',
+      },
+    }, {
+      onSuccess: () => {
+        setTitle('');
+        void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() });
+      },
+      onError: () => setError('تعذر إضافة المهمة. حاول مرة أخرى.'),
+    });
+  };
+
+  return (
+    <form onSubmit={submit} className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-2.5">
+      <div className="flex items-center gap-2">
+        <input
+          value={title}
+          onChange={(event) => {
+            setTitle(event.target.value);
+            if (error) setError('');
+          }}
+          placeholder="اكتب مهمة سريعة..."
+          aria-label={`إضافة مهمة سريعة في ${category}`}
+          data-testid={`input-quick-task-${category}`}
+          className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm font-semibold text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/10"
+        />
+        <button
+          type="submit"
+          disabled={createTask.isPending}
+          data-testid={`button-quick-task-${category}`}
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-extrabold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60 sm:px-4"
+        >
+          {createTask.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+          <span className="hidden sm:inline">إضافة سريعة</span>
+          <span className="sm:hidden">إضافة</span>
+        </button>
+      </div>
+      {error && <p className="px-1 pt-1.5 text-xs font-bold text-destructive">{error}</p>}
+    </form>
+  );
+}
+
 export default function Home() {
   const queryClient = useQueryClient();
   const deleteSpace = useDeleteSpace();
@@ -237,11 +299,15 @@ export default function Home() {
             <button type="button" onClick={() => setSelectedDate(shiftDate(selectedDate, 1))} aria-label="اليوم التالي" data-testid="button-next-day" className="rounded-xl p-3 text-muted-foreground transition hover:bg-muted hover:text-foreground"><ChevronLeft size={20} /></button>
           </div>
         </section>
-        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card/70 p-2" role="tablist" aria-label="طريقة عرض المهام">
-          <span className="px-2 text-xs font-extrabold text-muted-foreground">عرض المهام</span>
-          {([['day', 'يومي'], ['week', 'أسبوعي'], ['month', 'شهري']] as const).map(([mode, label]) => (
-            <button key={mode} type="button" onClick={() => setViewMode(mode)} role="tab" aria-selected={viewMode === mode} className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${viewMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>{label}</button>
-          ))}
+        <div className="mb-6 rounded-2xl border border-border bg-card/70 p-2" role="tablist" aria-label="طريقة عرض المهام">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="px-2 text-sm font-extrabold text-muted-foreground sm:shrink-0">عرض المهام</span>
+            <div className="grid grid-cols-3 gap-1.5 sm:flex-1">
+              {([['day', 'يومي'], ['week', 'أسبوعي'], ['month', 'شهري']] as const).map(([mode, label]) => (
+                <button key={mode} type="button" onClick={() => setViewMode(mode)} role="tab" aria-selected={viewMode === mode} className={`rounded-xl px-3 py-2.5 text-sm font-extrabold transition ${viewMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>{label}</button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <section className="animate-rise mb-6 grid gap-3 md:grid-cols-[1.35fr_1fr_1fr]">
@@ -303,10 +369,10 @@ export default function Home() {
             <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-2xl bg-muted" /><div className="h-32 animate-pulse rounded-2xl bg-muted" /><div className="h-32 animate-pulse rounded-2xl bg-muted" /></div>
           ) : taskQuery.isError ? (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-destructive/20 bg-destructive/5 px-6 py-16 text-center"><CircleAlert className="mb-4 text-destructive" size={30} /><h2 className="font-extrabold">تعذر تحميل يومك</h2><p className="mt-2 text-sm text-muted-foreground">يبدو أن هناك مشكلة مؤقتة في الاتصال.</p><button type="button" onClick={() => void taskQuery.refetch()} data-testid="button-retry-tasks" className="mt-5 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={15} /> حاول مرة أخرى</button></div>
-          ) : visibleTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/25 bg-card/55 px-6 py-20 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary/25 text-primary"><Sparkles size={29} /></div><h2 className="text-xl font-extrabold">{activeCategory === 'all' ? 'اليوم ما زال مفتوحاً' : `لا توجد مهام في ${activeCategory}`}</h2><p className="mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{activeCategory === 'all' ? 'أضف أول خطوة صغيرة، ودع بقية اليوم يتضح معها.' : 'مساحة هادئة. أضف مهمة عندما يحين وقتها.'}</p><button type="button" onClick={() => openNew(activeCategory === 'all' ? undefined : activeCategory)} data-testid="button-add-first-task" className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5"><Plus size={17} /> أضف مهمة</button></div>
+           ) : visibleTasks.length === 0 ? (
+             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/25 bg-card/55 px-6 py-20 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary/25 text-primary"><Sparkles size={29} /></div><h2 className="text-xl font-extrabold">{activeCategory === 'all' ? 'اليوم ما زال مفتوحاً' : `لا توجد مهام في ${activeCategory}`}</h2><p className="mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{activeCategory === 'all' ? 'أضف أول خطوة صغيرة، ودع بقية اليوم يتضح معها.' : 'أضف مهمة سريعة الآن، أو استخدم «مهمة جديدة» لو محتاج تفاصيل أكثر.'}</p>{activeCategory === 'all' ? <button type="button" onClick={() => openNew()} data-testid="button-add-first-task" className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5"><Plus size={17} /> أضف مهمة</button> : <div className="mt-6 w-full max-w-md"><QuickTaskInput date={selectedDate} category={activeCategory} /><button type="button" onClick={() => openNew(activeCategory)} data-testid="button-add-detailed-task" className="mt-3 text-sm font-bold text-primary underline-offset-4 hover:underline">أضف مهمة بالتفصيل</button></div>}</div>
           ) : activeCategory !== 'all' ? (
-              <div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div>
+              <div className="space-y-3"><QuickTaskInput date={selectedDate} category={activeCategory} /><div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>
           ) : (
             <div className="space-y-8">
                 {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => openNew(category)} data-testid={`button-add-task-${category}`} className="rounded-xl border border-border bg-background p-2 text-muted-foreground shadow-sm transition hover:border-primary/30 hover:text-primary"><Plus size={17} /></button></div><div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>; })}
