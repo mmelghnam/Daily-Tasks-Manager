@@ -38,18 +38,25 @@ export function FocusTimer() {
     const context = audioContextRef.current;
     if (!context) return;
     const start = context.currentTime;
-    [0, 0.32, 0.64].forEach((delay, index) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.value = index === 2 ? 880 : 660;
-      gain.gain.setValueAtTime(0.0001, start + delay);
-      gain.gain.exponentialRampToValueAtTime(0.22, start + delay + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + delay + 0.24);
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(start + delay);
-      oscillator.stop(start + delay + 0.26);
+    [0, 0.9, 1.8].forEach((ringDelay) => {
+      [
+        { frequency: 660, volume: 0.42 },
+        { frequency: 1320, volume: 0.2 },
+        { frequency: 1980, volume: 0.1 },
+      ].forEach(({ frequency, volume }) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, start + ringDelay);
+        oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.985, start + ringDelay + 0.7);
+        gain.gain.setValueAtTime(0.0001, start + ringDelay);
+        gain.gain.exponentialRampToValueAtTime(volume, start + ringDelay + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + ringDelay + 0.78);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(start + ringDelay);
+        oscillator.stop(start + ringDelay + 0.8);
+      });
     });
   };
 

@@ -147,33 +147,31 @@ export function EventsSection() {
 
   return (
     <>
-      <section className="animate-rise mb-6 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm" style={{ animationDelay: '50ms' }}>
-        <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <CalendarClock size={20} className="text-accent" />
-              <h2 className="text-xl font-extrabold">العد التنازلي</h2>
+      <section className="animate-rise mb-6 grid gap-3 rounded-3xl border border-card-border bg-card/70 p-3 shadow-sm lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]" style={{ animationDelay: '50ms' }}>
+          <div className="rounded-2xl border border-border bg-background/45 p-3">
+            <div className="mb-3 flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <CalendarClock size={19} className="text-accent" />
+                  <h2 className="text-lg font-extrabold">العد التنازلي</h2>
+                </div>
+                <p className="mt-1 text-[11px] font-semibold text-muted-foreground">الأحداث المهمة ومواعيدها في مكان واحد</p>
+              </div>
+              <button type="button" onClick={() => setShowForm(true)} data-testid="button-add-event" className="flex h-9 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-extrabold text-secondary-foreground transition hover:-translate-y-0.5 hover:bg-secondary/85"><CalendarPlus size={16} /> حدث جديد</button>
             </div>
-            <p className="mt-1 text-xs font-semibold text-muted-foreground">خلي الأحداث المهمة قدامك، وكل حدث له عداده الخاص</p>
-          </div>
-          <button type="button" onClick={() => setShowForm(true)} data-testid="button-add-event" className="flex h-9 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-extrabold text-secondary-foreground transition hover:-translate-y-0.5 hover:bg-secondary/85"><CalendarPlus size={16} /> حدث جديد</button>
-        </div>
-
-        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
-          <div>
           {eventsQuery.isLoading ? (
             <div className="h-20 animate-pulse rounded-2xl bg-muted" />
           ) : sortedEvents.length === 0 ? (
-            <div className="flex min-h-44 items-center justify-center rounded-2xl border border-dashed border-primary/20 bg-background/60 px-4 py-5 text-center text-sm font-semibold text-muted-foreground">أضف أول حدث مهم عشان يظهر عداده هنا.</div>
+            <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-primary/20 bg-card/60 px-4 py-5 text-center text-sm font-semibold text-muted-foreground">أضف أول حدث مهم عشان يظهر عداده هنا.</div>
           ) : (
-          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
+          <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
             {sortedEvents.map((event) => {
               const status = eventStatus(event, today);
               return (
-                <div key={event.id} className="relative overflow-hidden rounded-2xl border border-border bg-background/75 p-3" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
+                <div key={event.id} className="relative overflow-hidden rounded-xl border border-border bg-card p-3" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
                   {event.imageUrl && (
-                    <div className="mb-2 h-20 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
-                      <img src={event.imageUrl} alt={`صورة ${event.title}`} className="h-full w-full object-contain object-center" />
+                    <div className="mb-2 h-24 overflow-hidden rounded-lg border border-border bg-muted shadow-sm">
+                      <img src={event.imageUrl} alt={`صورة ${event.title}`} className="h-full w-full object-cover object-center" />
                     </div>
                   )}
                   <div className="flex items-start gap-3">
@@ -197,7 +195,6 @@ export function EventsSection() {
           )}
           </div>
           <FocusTimer />
-        </div>
       </section>
       {showForm && <EventForm onClose={() => setShowForm(false)} />}
       {editingEvent && <EventForm event={editingEvent} onClose={() => setEditingEvent(null)} />}
