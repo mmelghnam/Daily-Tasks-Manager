@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react';
-import { CalendarDays, Check, Plus, Trash2, X } from 'lucide-react';
+import { CalendarDays, Check, ChevronDown, Plus, Trash2, X } from 'lucide-react';
 import type { TaskFollowUp } from '@workspace/api-client-react';
 
 interface FollowUpListProps {
@@ -15,6 +15,7 @@ function formatDueDate(dueDate: string) {
 }
 
 export function FollowUpList({ followUps, isPending, onChange }: FollowUpListProps) {
+  const [expanded, setExpanded] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -45,21 +46,27 @@ export function FollowUpList({ followUps, isPending, onChange }: FollowUpListPro
   };
 
   return (
-    <div className="mt-4 border-t border-border/70 pt-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-xs font-extrabold text-muted-foreground">
+    <div className="mt-3 border-t border-border/70 pt-2">
+      <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} data-testid="button-toggle-follow-ups" className="flex w-full items-center justify-between gap-3 rounded-lg px-1 py-1.5 text-right transition hover:bg-muted/60">
+        <span className="flex items-center gap-2 text-xs font-extrabold text-muted-foreground">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          متابعات {followUps.length > 0 && <span className="font-mono-ui text-[10px]">({followUps.length})</span>}
-        </p>
-        {!showForm && (
-          <button type="button" onClick={() => setShowForm(true)} disabled={isPending} data-testid="button-add-follow-up" className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-primary transition hover:bg-primary/10">
-            <Plus size={14} /> إضافة متابعة
-          </button>
-        )}
-      </div>
+          المتابعات
+          <span className="rounded-full bg-muted px-2 py-0.5 font-mono-ui text-[10px]">{followUps.length}</span>
+        </span>
+        <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+      </button>
 
-      {followUps.length > 0 && (
-        <div className="mt-2 space-y-1.5">
+      {expanded && (
+        <div className="animate-rise pt-2">
+          {!showForm && (
+            <div className="mb-2 flex justify-end">
+              <button type="button" onClick={() => setShowForm(true)} disabled={isPending} data-testid="button-add-follow-up" className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-primary transition hover:bg-primary/10">
+                <Plus size={14} /> إضافة متابعة
+              </button>
+            </div>
+          )}
+
+          {followUps.length > 0 && <div className="space-y-1.5">
           {followUps.map((followUp) => (
             <div key={followUp.id} className="flex items-center gap-2 rounded-xl bg-muted/55 px-2.5 py-2">
               <button
@@ -90,11 +97,10 @@ export function FollowUpList({ followUps, isPending, onChange }: FollowUpListPro
               </button>
             </div>
           ))}
-        </div>
-      )}
+          </div>}
 
-      {showForm && (
-        <form onSubmit={addFollowUp} className="mt-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+          {showForm && (
+            <form onSubmit={addFollowUp} className="mt-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
           <div className="flex flex-col gap-2 sm:flex-row">
             <input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus placeholder="مثلاً: أرسل تذكيراً للفريق" aria-label="عنوان المتابعة" data-testid="input-follow-up-title" className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
             <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} aria-label="تاريخ المتابعة" data-testid="input-follow-up-date" className="h-9 rounded-lg border border-input bg-background px-2 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
@@ -104,7 +110,9 @@ export function FollowUpList({ followUps, isPending, onChange }: FollowUpListPro
             <button type="button" onClick={() => { setShowForm(false); setError(''); }} data-testid="button-cancel-follow-up" className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted"><X size={13} /> إلغاء</button>
             <button type="submit" disabled={isPending} data-testid="button-save-follow-up" className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-60"><Plus size={13} /> حفظ المتابعة</button>
           </div>
-        </form>
+            </form>
+          )}
+        </div>
       )}
     </div>
   );
