@@ -1,10 +1,11 @@
 import { type FormEvent, useMemo, useState } from 'react';
-import { CalendarClock, CalendarPlus, Trash2, X } from 'lucide-react';
+import { CalendarClock, CalendarPlus, Check, Pencil, Trash2, X } from 'lucide-react';
 import {
   getListEventsQueryKey,
   useCreateEvent,
   useDeleteEvent,
   useListEvents,
+  useUpdateEvent,
 } from '@workspace/api-client-react';
 import type { Event } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -45,19 +46,22 @@ function formatDate(date: string) {
   return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${dateOnly(date)}T12:00:00`));
 }
 
-function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function EventForm({ event, onClose }: { event?: Event; onClose: () => void }) {
   const queryClient = useQueryClient();
   const createEvent = useCreateEvent();
+  const updateEvent = useUpdateEvent();
   const today = dateKey(new Date());
-  const [title, setTitle] = useState('');
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(shiftDate(new Date(), 1));
-  const [color, setColor] = useState('#d39a2f');
-  const [imageUrl, setImageUrl] = useState('');
+  const [title, setTitle] = useState(event?.title ?? '');
+  const [startDate, setStartDate] = useState(event ? dateOnly(event.startDate) : today);
+  const [endDate, setEndDate] = useState(event ? dateOnly(event.endDate) : shiftDate(new Date(), 1));
+  const [color, setColor] = useState(event?.color ?? '#d39a2f');
+  const [imageUrl, setImageUrl] = useState(event?.imageUrl ?? '');
   const [error, setError] = useState('');
+  const isEditing = Boolean(event);
+  const isPending = createEvent.isPending || updateEvent.isPending;
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submit = (formEvent: FormEvent<HTMLFormElement>) => {
+    formEvent.preventDefault();
     if (!title.trim()) {
       setError('اكتب اسم الحدث أولاً');
       return;
@@ -66,17 +70,19 @@ function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () 
       setError('تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية');
       return;
     }
-    createEvent.mutate(
-      { data: { title: title.trim(), startDate, endDate, color, imageUrl: imageUrl.trim() || undefined } },
-      {
-        onSuccess: () => {
-          void queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
-          onCreated();
-          onClose();
-        },
-        onError: () => setError('لم نتمكن من حفظ الحدث. حاول مرة أخرى.'),
+    const options = {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+        onClose();
       },
-    );
+      onError: () => setError('لم نتمكن من حفظ الحدث. حاول مرة أخرى.'),
+    };
+    const data = { title: title.trim(), startDate, endDate, color, imageUrl: imageUrl.trim() };
+    if (event) {
+      updateEvent.mutate({ id: event.id, data }, options);
+      return;
+    }
+    createEvent.mutate({ data: { ...data, imageUrl: data.imageUrl || undefined } }, options);
   };
 
   return (
@@ -84,8 +90,8 @@ function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () 
       <div className="w-full max-w-md rounded-t-[1.7rem] border border-card-border bg-card p-5 shadow-2xl sm:rounded-[1.7rem] sm:p-7" role="dialog" aria-modal="true" aria-labelledby="event-form-title">
         <div className="flex items-start justify-between">
           <div>
-            <p className="mb-2 text-xs font-bold tracking-[0.16em] text-muted-foreground">COUNTDOWN</p>
-            <h2 id="event-form-title" className="text-2xl font-extrabold">أضف حدثًا قادمًا</h2>
+            <p className="mb-2 text-xs font-bold tracking-[0.16em] text-muted-foreground">{isEditing ? 'EDIT EVENT' : 'COUNTDOWN'}</p>
+            <h2 id="event-form-title" className="text-2xl font-extrabold">{isEditing ? 'تعديل الحدث' : 'أضف حدثًا قادمًا'}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="إغلاق" data-testid="button-close-event-form" className="rounded-full p-2 text-muted-foreground hover:bg-muted"><X size={19} /></button>
         </div>
@@ -115,7 +121,7 @@ function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () 
           {error && <p data-testid="status-event-form-error" className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">{error}</p>}
           <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
             <button type="button" onClick={onClose} data-testid="button-cancel-event" className="h-11 rounded-xl border border-border px-5 text-sm font-bold text-muted-foreground hover:bg-muted">إلغاء</button>
-            <button type="submit" disabled={createEvent.isPending} data-testid="button-submit-event" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-60"><CalendarPlus size={16} /> {createEvent.isPending ? 'جارٍ الحفظ...' : 'حفظ الحدث'}</button>
+            <button type="submit" disabled={isPending} data-testid="button-submit-event" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-60">{isEditing ? <Check size={16} /> : <CalendarPlus size={16} />} {isPending ? 'جارٍ الحفظ...' : isEditing ? 'حفظ التعديلات' : 'حفظ الحدث'}</button>
           </div>
         </form>
       </div>
@@ -128,6 +134,7 @@ export function EventsSection() {
   const deleteEvent = useDeleteEvent();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const today = dateKey(new Date());
   const events = eventsQuery.data ?? [];
 
@@ -167,7 +174,10 @@ export function EventsSection() {
                       <p className="text-sm font-extrabold">{event.title}</p>
                       <p className="mt-1 text-[11px] font-semibold text-muted-foreground">{formatDate(event.startDate)} — {formatDate(event.endDate)}</p>
                     </div>
-                    <button type="button" onClick={() => removeEvent(event.id)} disabled={deleteEvent.isPending} aria-label={`حذف ${event.title}`} data-testid={`button-delete-event-${event.id}`} className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 size={14} /></button>
+                    <div className="flex items-center gap-1">
+                      <button type="button" onClick={() => setEditingEvent(event)} aria-label={`تعديل ${event.title}`} data-testid={`button-edit-event-${event.id}`} className="rounded-lg p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"><Pencil size={14} /></button>
+                      <button type="button" onClick={() => removeEvent(event.id)} disabled={deleteEvent.isPending} aria-label={`حذف ${event.title}`} data-testid={`button-delete-event-${event.id}`} className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 size={14} /></button>
+                    </div>
                   </div>
                   <div className="mt-3 flex items-end gap-2">
                     <span className={`font-mono-ui text-3xl font-extrabold ${status.tone}`}>{status.days}</span>
@@ -179,7 +189,8 @@ export function EventsSection() {
           </div>
         )}
       </section>
-      {showForm && <EventForm onClose={() => setShowForm(false)} onCreated={() => undefined} />}
+      {showForm && <EventForm onClose={() => setShowForm(false)} />}
+      {editingEvent && <EventForm event={editingEvent} onClose={() => setEditingEvent(null)} />}
     </>
   );
 }
