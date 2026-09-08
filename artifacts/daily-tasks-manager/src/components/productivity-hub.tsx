@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Check, GraduationCap, HeartPulse, Plus, Target, Trash2 } from 'lucide-react';
+import { Check, GraduationCap, HeartPulse, ListChecks, Plus, Target, Trash2 } from 'lucide-react';
 import {
   getListGoalsQueryKey, getListHabitsQueryKey, getListStudyItemsQueryKey,
   useCreateGoal, useCreateHabit, useCreateStudyItem, useDeleteGoal, useDeleteHabit,
   useListGoals, useListHabits, useListStudyItems, useUpdateGoal, useUpdateHabit, useUpdateStudyItem,
 } from '@workspace/api-client-react';
-import type { Goal, Habit, StudyItem } from '@workspace/api-client-react';
+import type { Goal, Habit, StudyItem, Task } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 type UsageType = 'student' | 'employee' | 'freelancer' | 'personal' | null | undefined;
@@ -17,7 +17,7 @@ function dateOnly(value: string | Date | null | undefined) {
   return typeof value === 'string' ? value.slice(0, 10) : '';
 }
 
-export function ProductivityHub({ usageType }: { usageType: UsageType }) {
+export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; tasks: Task[] }) {
   const queryClient = useQueryClient();
   const goals = useListGoals();
   const habits = useListHabits();
@@ -33,6 +33,7 @@ export function ProductivityHub({ usageType }: { usageType: UsageType }) {
   const updateStudy = useUpdateStudyItem();
   const deleteGoal = useDeleteGoal();
   const deleteHabit = useDeleteHabit();
+  const focusTasks = tasks.filter((task) => !task.completed).slice(0, 3);
 
   const refresh = (key: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey: key });
   const addGoal = () => {
@@ -82,6 +83,22 @@ export function ProductivityHub({ usageType }: { usageType: UsageType }) {
             </div>;
           })}
           {!habits.data?.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">ثبّت عادة تعطي يومك إيقاعًا.</p>}
+        </div>
+      </ProductivityCard>
+
+      <ProductivityCard title="تركيز اليوم" icon={<ListChecks size={18} />} accent="text-accent">
+        <div className="mb-3 flex items-center justify-between rounded-xl bg-accent/10 px-3 py-2">
+          <span className="text-xs font-bold text-muted-foreground">أهم ما ينتظرك</span>
+          <span className="text-lg font-extrabold text-accent">{focusTasks.length}</span>
+        </div>
+        <div className="space-y-2">
+          {focusTasks.map((task, index) => (
+            <div key={task.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-accent/30 text-xs font-extrabold text-accent">{index + 1}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-bold">{task.title}</span>
+            </div>
+          ))}
+          {!focusTasks.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">أنجز مهامك الحالية وستظهر هنا الأولويات القادمة.</p>}
         </div>
       </ProductivityCard>
 

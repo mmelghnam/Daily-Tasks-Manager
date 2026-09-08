@@ -336,9 +336,9 @@ export default function Home() {
           </div>
         </section>
 
-        <EventsSection />
-         <SpaceLinksSection spaces={spacesQuery.data ?? []} />
-         <ProductivityHub usageType={onboarding.data?.usageType} />
+         <EventsSection />
+          <ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} />
+          <SpaceLinksSection spaces={spacesQuery.data ?? []} />
          <NotificationCenter tasks={tasks} />
 
         <section className="animate-rise rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
