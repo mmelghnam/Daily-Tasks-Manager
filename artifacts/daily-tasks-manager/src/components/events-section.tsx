@@ -168,7 +168,11 @@ export function EventsSection() {
               const status = eventStatus(event, today);
               return (
                 <div key={event.id} className="relative overflow-hidden rounded-2xl border border-border bg-background/75 p-4" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
-                  {event.imageUrl && <img src={event.imageUrl} alt="" className="mb-3 h-24 w-full rounded-xl object-cover" />}
+                  {event.imageUrl && (
+                    <div className="mb-4 aspect-[16/7] min-h-32 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                      <img src={event.imageUrl} alt={`صورة ${event.title}`} className="h-full w-full object-cover object-center" />
+                    </div>
+                  )}
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-extrabold">{event.title}</p>
