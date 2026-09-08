@@ -243,6 +243,113 @@ export const DeleteTaskResponse = zod.void()
 
 
 /**
+ * @summary Copy a task to one or more dates
+ */
+export const CopyTaskParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const copyTaskBodyDatesMax = 31;
+
+
+
+export const CopyTaskBody = zod.object({
+  "dates": zod.array(zod.coerce.date()).min(1).max(copyTaskBodyDatesMax)
+})
+
+
+
+
+export const CopyTaskResponseItem = zod.object({
+  "id": zod.number().int(),
+  "taskDate": zod.coerce.date(),
+  "category": zod.string().min(1),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "recurrence": zod.string().nullable(),
+  "dueDate": zod.coerce.date().nullable(),
+  "subtasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean()
+})),
+  "completed": zod.boolean(),
+  "links": zod.array(zod.object({
+  "label": zod.string(),
+  "url": zod.string().url()
+})),
+  "followUps": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "dueDate": zod.string().nullable()
+})),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const CopyTaskResponse = zod.array(CopyTaskResponseItem)
+
+
+/**
+ * @summary List recent in-app announcements
+ */
+export const ListNotificationsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem)
+
+
+/**
+ * @summary Check whether the current account is the primary admin
+ */
+export const GetAdminAccessResponse = zod.object({
+  "isAdmin": zod.boolean()
+})
+
+
+/**
+ * @summary Get general application statistics
+ */
+export const GetAdminStatsResponse = zod.object({
+  "users": zod.number().int(),
+  "tasks": zod.number().int(),
+  "completedTasks": zod.number().int(),
+  "spaces": zod.number().int(),
+  "goals": zod.number().int(),
+  "habits": zod.number().int(),
+  "activeUsers30d": zod.number().int(),
+  "completionRate": zod.number(),
+  "usageTypes": zod.record(zod.string(), zod.number().int())
+})
+
+
+/**
+ * @summary Send an in-app announcement to all users
+ */
+export const createAdminNotificationBodyTitleMax = 120;
+
+export const createAdminNotificationBodyBodyMax = 1000;
+
+
+
+export const CreateAdminNotificationBody = zod.object({
+  "title": zod.string().min(1).max(createAdminNotificationBodyTitleMax),
+  "body": zod.string().min(1).max(createAdminNotificationBodyBodyMax)
+})
+
+export const CreateAdminNotificationResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get task summary for a selected range
  */
 export const GetTaskSummaryQueryParams = zod.object({

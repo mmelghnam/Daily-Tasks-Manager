@@ -1,8 +1,8 @@
 import { type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2 } from 'lucide-react';
-import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateUsageType } from '@workspace/api-client-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2, ShieldCheck } from 'lucide-react';
+import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateUsageType } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
@@ -70,6 +70,7 @@ function AccountControl() {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const onboarding = useGetOnboardingStatus();
+  const adminAccess = useGetAdminAccess();
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<UsageType | null>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -98,6 +99,7 @@ function AccountControl() {
   return (
     <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background/70 p-1.5">
       <div className="hidden max-w-28 truncate px-1 text-xs font-extrabold text-foreground md:block">{name}</div>
+      {adminAccess.data?.isAdmin && <a href={`${basePath}/admin`} className="flex items-center gap-1.5 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-extrabold text-accent-foreground transition hover:bg-accent/20" data-testid="link-admin"><ShieldCheck size={14} /> الإدارة</a>}
       <Dialog open={typeDialogOpen} onOpenChange={openTypeDialog}>
         <DialogTrigger asChild>
           <button type="button" className="flex items-center gap-1.5 rounded-lg bg-secondary/15 px-2.5 py-1.5 text-xs font-extrabold text-primary transition hover:bg-secondary/30" data-testid="button-change-usage-type">
@@ -339,9 +341,9 @@ export default function Home() {
          <EventsSection />
           <ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} />
           <SpaceLinksSection spaces={spacesQuery.data ?? []} />
-         <NotificationCenter tasks={tasks} />
+          <NotificationCenter tasks={tasks} />
 
-        <section className="animate-rise rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
+        <section className="animate-rise mt-10 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
           <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-extrabold">خريطة اليوم</h2>

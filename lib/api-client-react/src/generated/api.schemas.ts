@@ -134,6 +134,14 @@ export interface TaskUpdate {
   subtasks?: TaskSubtask[];
 }
 
+export interface TaskCopyInput {
+  /**
+     * @minItems 1
+     * @maxItems 31
+     */
+  dates: string[];
+}
+
 export interface Goal {
   id: number;
   title: string;
@@ -284,6 +292,44 @@ export interface TaskSummary {
   completed: number;
   remaining: number;
   byCategory: TaskSummaryByCategory;
+}
+
+export interface BroadcastNotification {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface BroadcastNotificationInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+export interface AdminAccess {
+  isAdmin: boolean;
+}
+
+export type AdminStatsUsageTypes = {[key: string]: number};
+
+export interface AdminStats {
+  users: number;
+  tasks: number;
+  completedTasks: number;
+  spaces: number;
+  goals: number;
+  habits: number;
+  activeUsers30d: number;
+  completionRate: number;
+  usageTypes: AdminStatsUsageTypes;
 }
 
 export interface Space {

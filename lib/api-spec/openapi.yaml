@@ -22,6 +22,10 @@ tags:
     description: New-account setup and starter templates
   - name: productivity
     description: Goals, habits, and study planning
+  - name: notifications
+    description: In-app announcements for users
+  - name: admin
+    description: Protected application administration
 paths:
   /healthz:
     get:
@@ -173,6 +177,93 @@ paths:
           description: Deleted
         "404":
           description: Task not found
+  /tasks/{id}/copy:
+    post:
+      operationId: copyTask
+      tags: [tasks]
+      summary: Copy a task to one or more dates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCopyInput"
+      responses:
+        "201":
+          description: Copied tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List recent in-app announcements
+      responses:
+        "200":
+          description: Recent announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BroadcastNotification"
+  /admin/access:
+    get:
+      operationId: getAdminAccess
+      tags: [admin]
+      summary: Check whether the current account is the primary admin
+      responses:
+        "200":
+          description: Admin access
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccess"
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get general application statistics
+      responses:
+        "200":
+          description: Application statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+        "403":
+          description: Admin access required
+  /admin/notifications:
+    post:
+      operationId: createAdminNotification
+      tags: [admin]
+      summary: Send an in-app announcement to all users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BroadcastNotificationInput"
+      responses:
+        "201":
+          description: Announcement created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastNotification"
+        "403":
+          description: Admin access required
   /tasks/summary:
     get:
       operationId: getTaskSummary
@@ -793,6 +884,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskSubtask"
+    TaskCopyInput:
+      type: object
+      properties:
+        dates:
+          type: array
+          minItems: 1
+          maxItems: 31
+          items:
+            type: string
+            format: date
+      required: [dates]
     Goal:
       type: object
       properties:
@@ -887,6 +989,41 @@ components:
           additionalProperties:
             type: integer
       required: [total, completed, remaining, byCategory]
+    BroadcastNotification:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, body, createdAt]
+    BroadcastNotificationInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        body: { type: string, minLength: 1, maxLength: 1000 }
+      required: [title, body]
+    AdminAccess:
+      type: object
+      properties:
+        isAdmin: { type: boolean }
+      required: [isAdmin]
+    AdminStats:
+      type: object
+      properties:
+        users: { type: integer }
+        tasks: { type: integer }
+        completedTasks: { type: integer }
+        spaces: { type: integer }
+        goals: { type: integer }
+        habits: { type: integer }
+        activeUsers30d: { type: integer }
+        completionRate: { type: number }
+        usageTypes:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [users, tasks, completedTasks, spaces, goals, habits, activeUsers30d, completionRate, usageTypes]
     Space:
       type: object
       properties:

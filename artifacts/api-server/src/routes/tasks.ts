@@ -2,6 +2,9 @@ import { Router, type IRouter } from "express";
 import {
   CreateTaskBody,
   CreateTaskResponse,
+  CopyTaskBody,
+  CopyTaskParams,
+  CopyTaskResponse,
   DeleteTaskParams,
   GetTaskSummaryQueryParams,
   GetTaskSummaryResponse,
@@ -157,6 +160,63 @@ router.patch("/tasks/:id", async (req, res, next) => {
     }
 
     res.json(UpdateTaskResponse.parse(task));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/tasks/:id/copy", async (req, res, next) => {
+  try {
+    const params = CopyTaskParams.parse({ id: Number(req.params.id) });
+    const input = CopyTaskBody.parse(req.body);
+    const [source] = await db
+      .select()
+      .from(tasksTable)
+      .where(and(eq(tasksTable.id, params.id), eq(tasksTable.ownerId, req.userId!)))
+      .limit(1);
+
+    if (!source) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    const dates = [...new Set(input.dates.map((date) => toDateOnly(date)))];
+    const copied = [];
+    for (const taskDate of dates) {
+      const [existing] = await db
+        .select({ id: tasksTable.id })
+        .from(tasksTable)
+        .where(and(
+          eq(tasksTable.ownerId, req.userId!),
+          eq(tasksTable.taskDate, taskDate),
+          eq(tasksTable.category, source.category),
+          eq(tasksTable.title, source.title),
+        ))
+        .limit(1);
+
+      if (existing) continue;
+
+      const [copy] = await db
+        .insert(tasksTable)
+        .values({
+          ownerId: req.userId!,
+          taskDate,
+          category: source.category,
+          title: source.title,
+          notes: source.notes,
+          priority: source.priority,
+          recurrence: source.recurrence,
+          dueDate: source.dueDate,
+          subtasks: source.subtasks.map((subtask) => ({ ...subtask, completed: false })),
+          completed: false,
+          links: source.links,
+          followUps: source.followUps.map((followUp) => ({ ...followUp, completed: false })),
+        })
+        .returning();
+      copied.push(copy);
+    }
+
+    res.status(201).json(CopyTaskResponse.parse(copied));
   } catch (error) {
     next(error);
   }

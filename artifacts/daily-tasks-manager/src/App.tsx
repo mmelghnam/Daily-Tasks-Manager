@@ -9,6 +9,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Home from '@/pages/home';
 import Landing from '@/pages/landing';
+import Admin from '@/pages/admin';
 import { OnboardingGuard } from '@/components/onboarding-guard';
 import {
   Redirect,
@@ -155,6 +156,7 @@ function Router() {
       <Switch>
         <Route path="/" component={HomeRedirect} />
         <Route path="/app" component={AppRoute} />
+        <Route path="/admin" component={Admin} />
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/sign-up/*?" component={SignUpPage} />
         <Route component={NotFound} />

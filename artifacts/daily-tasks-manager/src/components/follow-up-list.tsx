@@ -2,6 +2,28 @@ import { type FormEvent, useState } from 'react';
 import { CalendarDays, Check, ChevronDown, Plus, Trash2, X } from 'lucide-react';
 import type { TaskFollowUp } from '@workspace/api-client-react';
 
+function playFollowUpCompletionSound() {
+  type WindowWithWebkitAudio = Window & { webkitAudioContext?: typeof AudioContext };
+  const AudioContextConstructor = window.AudioContext ?? (window as WindowWithWebkitAudio).webkitAudioContext;
+  if (!AudioContextConstructor) return;
+
+  const context = new AudioContextConstructor();
+  const now = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = 'triangle';
+  oscillator.frequency.setValueAtTime(392, now);
+  oscillator.frequency.exponentialRampToValueAtTime(587.33, now + 0.18);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.1, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.34);
+  oscillator.addEventListener('ended', () => void context.close());
+}
+
 interface FollowUpListProps {
   followUps: TaskFollowUp[];
   isPending: boolean;
@@ -71,7 +93,10 @@ export function FollowUpList({ followUps, isPending, onChange }: FollowUpListPro
             <div key={followUp.id} className="flex items-center gap-2 rounded-xl bg-muted/55 px-2.5 py-2">
               <button
                 type="button"
-                onClick={() => onChange(followUps.map((item) => item.id === followUp.id ? { ...item, completed: !item.completed } : item))}
+                onClick={() => {
+                  if (!followUp.completed) playFollowUpCompletionSound();
+                  onChange(followUps.map((item) => item.id === followUp.id ? { ...item, completed: !item.completed } : item));
+                }}
                 disabled={isPending}
                 aria-label={followUp.completed ? 'إلغاء إنجاز المتابعة' : 'إنجاز المتابعة'}
                 data-testid={`button-toggle-follow-up-${followUp.id}`}

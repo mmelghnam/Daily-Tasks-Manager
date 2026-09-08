@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminAccess';
+export * from './adminStats';
+export * from './adminStatsUsageTypes';
+export * from './broadcastNotification';
+export * from './broadcastNotificationInput';
 export * from './event';
 export * from './eventInput';
 export * from './eventUpdate';
@@ -37,6 +42,7 @@ export * from './studyItemUpdate';
 export * from './studyItemUpdateKind';
 export * from './task';
 export * from './taskCategory';
+export * from './taskCopyInput';
 export * from './taskFollowUp';
 export * from './taskInput';
 export * from './taskInputPriority';

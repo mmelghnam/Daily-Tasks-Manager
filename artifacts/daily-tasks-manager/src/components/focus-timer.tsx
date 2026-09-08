@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, RotateCcw, TimerReset } from 'lucide-react';
 
-const presets = [45, 60, 90] as const;
+const presets = [5, 10, 15, 45, 60, 90] as const;
 
 type WindowWithWebkitAudio = Window & {
   webkitAudioContext?: typeof AudioContext;

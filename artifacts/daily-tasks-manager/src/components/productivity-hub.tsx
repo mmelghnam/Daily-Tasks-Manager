@@ -50,7 +50,7 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
   };
 
   return (
-    <section className="mt-8 grid gap-4 lg:grid-cols-3" dir="rtl">
+    <section className="mt-8 mb-10 grid gap-4 lg:grid-cols-3" dir="rtl">
       <ProductivityCard title="أهدافك" icon={<Target size={18} />} accent="text-primary">
         <form onSubmit={(event) => { event.preventDefault(); addGoal(); }} className="mb-3 flex gap-2">
           <input value={goalTitle} onChange={(e) => setGoalTitle(e.target.value)} placeholder="هدف جديد..." className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" />

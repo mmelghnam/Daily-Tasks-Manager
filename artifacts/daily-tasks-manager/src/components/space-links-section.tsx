@@ -92,7 +92,7 @@ export function SpaceLinksSection({ spaces }: SpaceLinksSectionProps) {
 
   return (
     <>
-      <section className="animate-rise mb-8 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5">
+      <section className="animate-rise mb-10 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div><div className="flex items-center gap-2"><Link2 size={20} className="text-primary" /><h2 className="text-xl font-extrabold">روابط المساحات</h2></div><p className="mt-1 text-xs font-semibold text-muted-foreground">روابط ثابتة تفضل معك في كل يوم، مرتبة حسب الشركة أو المساحة</p></div>
           <button type="button" onClick={() => setShowForm(true)} disabled={!spaces.length} data-testid="button-add-space-link" className="flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-extrabold text-primary-foreground disabled:opacity-50"><Plus size={16} /> رابط جديد</button>

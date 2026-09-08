@@ -7,11 +7,15 @@ import spaceLinksRouter from "./space-links";
 import onboardingRouter from "./onboarding";
 import productivityRouter from "./productivity";
 import { requireAuth } from "../middlewares/auth";
+import notificationsRouter from "./notifications";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(requireAuth);
+router.use(notificationsRouter);
+router.use(adminRouter);
 router.use(onboardingRouter);
 router.use(productivityRouter);
 router.use(tasksRouter);
