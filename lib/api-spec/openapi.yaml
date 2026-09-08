@@ -16,6 +16,8 @@ tags:
     description: User-defined work spaces
   - name: events
     description: Countdown events
+  - name: space-links
+    description: Persistent links grouped by task space
 paths:
   /healthz:
     get:
@@ -177,6 +179,59 @@ paths:
           description: Deleted
         "404":
           description: Space not found
+  /space-links:
+    get:
+      operationId: listSpaceLinks
+      tags: [space-links]
+      summary: List persistent space links
+      parameters:
+        - name: spaceId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Persistent space links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpaceLink"
+    post:
+      operationId: createSpaceLink
+      tags: [space-links]
+      summary: Create a persistent space link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpaceLinkInput"
+      responses:
+        "201":
+          description: Created persistent link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpaceLink"
+  /space-links/{id}:
+    delete:
+      operationId: deleteSpaceLink
+      tags: [space-links]
+      summary: Delete a persistent space link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Link not found
   /events:
     get:
       operationId: listEvents
@@ -410,6 +465,33 @@ components:
         description:
           type: string
       required: [name]
+    SpaceLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        spaceId:
+          type: integer
+        title:
+          type: string
+        url:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, spaceId, title, url, createdAt]
+    SpaceLinkInput:
+      type: object
+      properties:
+        spaceId:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+        url:
+          type: string
+          format: uri
+      required: [spaceId, title, url]
     Event:
       type: object
       properties:

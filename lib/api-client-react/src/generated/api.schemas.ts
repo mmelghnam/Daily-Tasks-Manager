@@ -88,6 +88,21 @@ export interface SpaceInput {
   description?: string;
 }
 
+export interface SpaceLink {
+  id: number;
+  spaceId: number;
+  title: string;
+  url: string;
+  createdAt: string;
+}
+
+export interface SpaceLinkInput {
+  spaceId: number;
+  /** @minLength 1 */
+  title: string;
+  url: string;
+}
+
 export interface Event {
   id: number;
   title: string;
@@ -123,5 +138,9 @@ date?: string;
 
 export type GetTaskSummaryParams = {
 date?: string;
+};
+
+export type ListSpaceLinksParams = {
+spaceId?: number;
 };
 

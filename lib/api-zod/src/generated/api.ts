@@ -224,6 +224,54 @@ export const DeleteSpaceResponse = zod.void()
 
 
 /**
+ * @summary List persistent space links
+ */
+export const ListSpaceLinksQueryParams = zod.object({
+  "spaceId": zod.coerce.number().int().optional()
+})
+
+export const ListSpaceLinksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "spaceId": zod.number().int(),
+  "title": zod.string(),
+  "url": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListSpaceLinksResponse = zod.array(ListSpaceLinksResponseItem)
+
+
+/**
+ * @summary Create a persistent space link
+ */
+
+
+
+export const CreateSpaceLinkBody = zod.object({
+  "spaceId": zod.number().int(),
+  "title": zod.string().min(1),
+  "url": zod.string().url()
+})
+
+export const CreateSpaceLinkResponse = zod.object({
+  "id": zod.number().int(),
+  "spaceId": zod.number().int(),
+  "title": zod.string(),
+  "url": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a persistent space link
+ */
+export const DeleteSpaceLinkParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteSpaceLinkResponse = zod.void()
+
+
+/**
  * @summary List countdown events
  */
 export const ListEventsResponseItem = zod.object({

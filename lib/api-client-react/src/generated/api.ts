@@ -25,9 +25,12 @@ import type {
   EventUpdate,
   GetTaskSummaryParams,
   HealthStatus,
+  ListSpaceLinksParams,
   ListTasksParams,
   Space,
   SpaceInput,
+  SpaceLink,
+  SpaceLinkInput,
   Task,
   TaskInput,
   TaskSummary,
@@ -738,6 +741,232 @@ export const useDeleteSpace = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteSpaceMutationOptions(options));
+    }
+
+export const getListSpaceLinksUrl = (params?: ListSpaceLinksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/space-links?${stringifiedParams}` : `/api/space-links`
+}
+
+/**
+ * @summary List persistent space links
+ */
+export const listSpaceLinks = async (params?: ListSpaceLinksParams, options?: Parameters<typeof customFetch>[1]): Promise<SpaceLink[]> => {
+
+  return customFetch<SpaceLink[]>(getListSpaceLinksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSpaceLinksQueryKey = (params?: ListSpaceLinksParams,) => {
+    return [
+    `/api/space-links`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSpaceLinksQueryOptions = <TData = Awaited<ReturnType<typeof listSpaceLinks>>, TError = ErrorType<unknown>>(params?: ListSpaceLinksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSpaceLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSpaceLinksQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSpaceLinks>>> = ({ signal }) => listSpaceLinks(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSpaceLinks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSpaceLinksQueryResult = NonNullable<Awaited<ReturnType<typeof listSpaceLinks>>>
+export type ListSpaceLinksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List persistent space links
+ */
+
+export function useListSpaceLinks<TData = Awaited<ReturnType<typeof listSpaceLinks>>, TError = ErrorType<unknown>>(
+ params?: ListSpaceLinksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSpaceLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSpaceLinksQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSpaceLinkUrl = () => {
+
+
+
+
+  return `/api/space-links`
+}
+
+/**
+ * @summary Create a persistent space link
+ */
+export const createSpaceLink = async (spaceLinkInput: SpaceLinkInput, options?: Parameters<typeof customFetch>[1]): Promise<SpaceLink> => {
+
+  return customFetch<SpaceLink>(getCreateSpaceLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(spaceLinkInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSpaceLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSpaceLink>>, TError,{data: BodyType<SpaceLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSpaceLink>>, TError,{data: BodyType<SpaceLinkInput>}, TContext> => {
+
+const mutationKey = ['createSpaceLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSpaceLink>>, {data: BodyType<SpaceLinkInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSpaceLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSpaceLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createSpaceLink>>>
+    export type CreateSpaceLinkMutationBody = BodyType<SpaceLinkInput>
+    export type CreateSpaceLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a persistent space link
+ */
+export const useCreateSpaceLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSpaceLink>>, TError,{data: BodyType<SpaceLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSpaceLink>>,
+        TError,
+        {data: BodyType<SpaceLinkInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSpaceLinkMutationOptions(options));
+    }
+
+export const getDeleteSpaceLinkUrl = (id: number,) => {
+
+
+
+
+  return `/api/space-links/${id}`
+}
+
+/**
+ * @summary Delete a persistent space link
+ */
+export const deleteSpaceLink = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteSpaceLinkUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSpaceLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSpaceLink>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSpaceLink>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSpaceLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSpaceLink>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSpaceLink(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSpaceLinkMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSpaceLink>>>
+
+    export type DeleteSpaceLinkMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a persistent space link
+ */
+export const useDeleteSpaceLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSpaceLink>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSpaceLink>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSpaceLinkMutationOptions(options));
     }
 
 export const getListEventsUrl = () => {

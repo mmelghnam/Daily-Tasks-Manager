@@ -8,6 +8,7 @@ import { TaskForm } from '@/components/task-form';
 import { SpaceForm } from '@/components/space-form';
 import { PalettePicker } from '@/components/palette-picker';
 import { EventsSection } from '@/components/events-section';
+import { SpaceLinksSection } from '@/components/space-links-section';
 import { getDailyMessage } from '@/daily-messages';
 
 type Category = Task['category'];
@@ -155,6 +156,7 @@ export default function Home() {
         </section>
 
         <EventsSection />
+        <SpaceLinksSection spaces={spacesQuery.data ?? []} />
 
         <section className="animate-rise rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
           <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
