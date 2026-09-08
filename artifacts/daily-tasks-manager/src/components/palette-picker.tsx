@@ -39,9 +39,9 @@ export function PalettePicker() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-12 z-30 max-h-[75vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-border bg-popover p-2 shadow-2xl" role="dialog" aria-label="باليتات المظهر">
+        <div className="absolute right-0 top-12 z-30 max-h-[min(75vh,38rem)] w-[min(22rem,calc(100vw-1rem))] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-border bg-popover p-2 shadow-2xl sm:left-0 sm:right-auto" role="dialog" aria-label="باليتات المظهر">
           <div className="px-3 pb-2 pt-2">
-            <p className="text-sm font-extrabold text-popover-foreground">اختار شكل يومك</p>
+            <p className="text-base font-extrabold leading-6 text-popover-foreground">اختار شكل يومك</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">الباليت تتطبق وتحفظ على هذا الجهاز.</p>
           </div>
           <div className="space-y-1">
@@ -59,7 +59,7 @@ export function PalettePicker() {
                   }
                 }} data-testid={`button-palette-${id}`} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-right transition ${selected === id ? 'bg-primary/10' : 'hover:bg-muted'}`}>
                   <span className="flex shrink-0 -space-x-1" dir="ltr">{swatches.map((swatch, index) => <span key={`${swatch}-${index}`} className="h-5 w-5 rounded-full border-2 border-popover" style={{ backgroundColor: isHex(swatch) ? swatch : '#ffffff' }} />)}</span>
-                  <span className="min-w-0 flex-1"><span className="block text-xs font-extrabold text-popover-foreground">{palette.label}</span><span className="block truncate text-[10px] text-muted-foreground">{palette.description}</span></span>
+                   <span className="min-w-0 flex-1"><span className="block text-sm font-extrabold leading-5 text-popover-foreground">{palette.label}</span><span className="block break-words text-[11px] leading-4 text-muted-foreground">{palette.description}</span></span>
                   {selected === id && <Check size={15} className="shrink-0 text-primary" />}
                 </button>
               );
@@ -68,15 +68,15 @@ export function PalettePicker() {
 
           {editingCustom && (
             <div className="mt-2 border-t border-border px-2 pt-3">
-              <p className="px-1 text-sm font-extrabold">ألوانك المخصصة</p>
+               <p className="px-1 text-base font-extrabold leading-6 text-popover-foreground">ألوانك المخصصة</p>
               <p className="mb-3 mt-1 px-1 text-[11px] leading-5 text-muted-foreground">اضغط مربع اللون أو اكتب كود Hex. المعاينة تتغير مباشرة.</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {customPaletteFields.map(({ key, label }) => (
                   <label key={key} className="rounded-xl border border-border bg-background p-2">
-                    <span className="mb-1.5 block text-[11px] font-bold text-muted-foreground">{label}</span>
+                    <span className="mb-1.5 block text-xs font-bold leading-5 text-popover-foreground">{label}</span>
                     <span className="flex items-center gap-2" dir="ltr">
                       <input type="color" value={isHex(customColors[key]) ? customColors[key] : '#ffffff'} onChange={(event) => updateCustomColor(key, event.target.value)} className="h-8 w-9 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0" aria-label={`اختيار لون ${label}`} />
-                      <input value={customColors[key]} onChange={(event) => updateCustomColor(key, event.target.value)} maxLength={7} className={`h-8 min-w-0 flex-1 rounded-lg border bg-card px-2 font-mono text-xs outline-none ${isHex(customColors[key]) ? 'border-input' : 'border-destructive'}`} aria-label={`كود لون ${label}`} />
+                      <input value={customColors[key]} onChange={(event) => updateCustomColor(key, event.target.value)} maxLength={7} className={`h-9 min-w-0 flex-1 rounded-lg border bg-card px-2 font-mono text-xs text-foreground outline-none ${isHex(customColors[key]) ? 'border-input' : 'border-destructive'}`} aria-label={`كود لون ${label}`} />
                     </span>
                   </label>
                 ))}

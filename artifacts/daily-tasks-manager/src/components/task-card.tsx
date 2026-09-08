@@ -67,8 +67,8 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
   const followUps = Array.isArray(task.followUps) ? task.followUps : [];
 
   const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ date }) });
-    void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date }) });
+    void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+    void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() });
   };
 
   const saveFollowUps = (nextFollowUps: Task['followUps']) => {
@@ -81,10 +81,8 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
       { id: task.id, data: { taskDate: tomorrow } },
       {
         onSuccess: () => {
-          void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ date }) });
-          void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date }) });
-          void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ date: tomorrow }) });
-          void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date: tomorrow }) });
+          void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+          void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() });
         },
       },
     );
@@ -93,7 +91,27 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
 
   const toggle = () => {
     if (!task.completed) playCompletionSound();
-    updateTask.mutate({ id: task.id, data: { completed: !task.completed } }, { onSuccess: refresh });
+    const nextCompleted = !task.completed;
+    const taskListQueryKey = getListTasksQueryKey();
+    const snapshots = queryClient.getQueriesData<Task[]>({ queryKey: taskListQueryKey });
+
+    queryClient.setQueriesData<Task[]>({ queryKey: taskListQueryKey }, (currentTasks) =>
+      currentTasks?.map((currentTask) =>
+        currentTask.id === task.id ? { ...currentTask, completed: nextCompleted } : currentTask,
+      ),
+    );
+
+    updateTask.mutate(
+      { id: task.id, data: { completed: nextCompleted } },
+      {
+        onSuccess: refresh,
+        onError: () => {
+          snapshots.forEach(([queryKey, previousTasks]) => {
+            queryClient.setQueryData(queryKey, previousTasks);
+          });
+        },
+      },
+    );
   };
 
   const remove = () => {
