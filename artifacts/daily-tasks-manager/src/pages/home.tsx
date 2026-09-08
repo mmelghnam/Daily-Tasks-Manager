@@ -9,6 +9,7 @@ import { SpaceForm } from '@/components/space-form';
 import { PalettePicker } from '@/components/palette-picker';
 import { EventsSection } from '@/components/events-section';
 import { SpaceLinksSection } from '@/components/space-links-section';
+import { FocusTimer } from '@/components/focus-timer';
 import { getDailyMessage } from '@/daily-messages';
 
 type Category = Task['category'];
@@ -156,6 +157,7 @@ export default function Home() {
           </div>
         </section>
 
+        <FocusTimer />
         <EventsSection />
         <SpaceLinksSection spaces={spacesQuery.data ?? []} />
 

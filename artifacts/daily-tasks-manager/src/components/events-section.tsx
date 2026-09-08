@@ -163,13 +163,13 @@ export function EventsSection() {
         ) : sortedEvents.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-primary/20 bg-background/60 px-4 py-5 text-center text-sm font-semibold text-muted-foreground">أضف أول حدث مهم عشان يظهر عداده هنا.</div>
         ) : (
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {sortedEvents.map((event) => {
               const status = eventStatus(event, today);
               return (
                 <div key={event.id} className="relative overflow-hidden rounded-2xl border border-border bg-background/75 p-4" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
                   {event.imageUrl && (
-                    <div className="mb-4 aspect-[16/7] min-h-32 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                    <div className="mb-3 h-24 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
                       <img src={event.imageUrl} alt={`صورة ${event.title}`} className="h-full w-full object-cover object-center" />
                     </div>
                   )}
