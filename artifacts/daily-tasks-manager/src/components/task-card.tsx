@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { CalendarPlus, Check, ExternalLink, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -13,9 +13,49 @@ import { TaskForm } from '@/components/task-form';
 interface TaskCardProps {
   task: Task;
   date: string;
+  spaces: string[];
 }
 
-export function TaskCard({ task, date }: TaskCardProps) {
+function playCompletionSound() {
+  type WindowWithWebkitAudio = Window & {
+    webkitAudioContext?: typeof AudioContext;
+  };
+
+  const AudioContextConstructor =
+    window.AudioContext ??
+    (window as WindowWithWebkitAudio).webkitAudioContext;
+
+  if (!AudioContextConstructor) return;
+
+  const audioContext = new AudioContextConstructor();
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(523.25, now);
+  oscillator.frequency.exponentialRampToValueAtTime(783.99, now + 0.14);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.065, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.23);
+  oscillator.addEventListener('ended', () => {
+    void audioContext.close();
+  });
+}
+
+function nextDate(date: string) {
+  const tomorrow = new Date(`${date}T12:00:00`);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().slice(0, 10);
+}
+
+export function TaskCard({ task, date, spaces }: TaskCardProps) {
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -27,7 +67,24 @@ export function TaskCard({ task, date }: TaskCardProps) {
     void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date }) });
   };
 
+  const moveToTomorrow = () => {
+    const tomorrow = nextDate(date);
+    updateTask.mutate(
+      { id: task.id, data: { taskDate: tomorrow } },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ date }) });
+          void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date }) });
+          void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ date: tomorrow }) });
+          void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date: tomorrow }) });
+        },
+      },
+    );
+    setMenuOpen(false);
+  };
+
   const toggle = () => {
+    if (!task.completed) playCompletionSound();
     updateTask.mutate({ id: task.id, data: { completed: !task.completed } }, { onSuccess: refresh });
   };
 
@@ -51,6 +108,7 @@ export function TaskCard({ task, date }: TaskCardProps) {
                 {menuOpen && (
                   <div className="absolute left-0 top-9 z-20 w-32 overflow-hidden rounded-xl border border-border bg-popover p-1 text-sm shadow-xl">
                     <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل</button>
+                    {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarPlus size={14} /> ترحيل للغد</button>}
                     <button type="button" onClick={remove} disabled={deleteTask.isPending} data-testid={`button-delete-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold text-destructive hover:bg-destructive/10"><Trash2 size={14} /> حذف</button>
                   </div>
                 )}
@@ -68,7 +126,7 @@ export function TaskCard({ task, date }: TaskCardProps) {
           </div>
         </div>
       </article>
-      {editing && <TaskForm date={date} task={task} onClose={() => setEditing(false)} />}
+      {editing && <TaskForm date={date} task={task} spaces={spaces} onClose={() => setEditing(false)} />}
     </>
   );
 }

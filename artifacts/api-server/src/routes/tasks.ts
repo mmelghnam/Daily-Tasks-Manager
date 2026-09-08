@@ -12,10 +12,10 @@ import {
   UpdateTaskResponse,
 } from "@workspace/api-zod";
 import { db, tasksTable } from "@workspace/db";
+import { spacesTable } from "@workspace/db";
 import { asc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
-const categories = ["INV", "BR", "Qaff", "Wootz", "Self"] as const;
 
 function parseDateQuery(value: unknown) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -130,9 +130,14 @@ router.get("/tasks/summary", async (req, res, next) => {
       .from(tasksTable)
       .where(query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined);
 
-    const byCategory = Object.fromEntries(categories.map((category) => [category, 0]));
+    const spaces = await db
+      .select({ name: spacesTable.name })
+      .from(spacesTable)
+      .orderBy(asc(spacesTable.createdAt), asc(spacesTable.id));
+    const byCategory = Object.fromEntries(spaces.map((space) => [space.name, 0]));
     let completed = 0;
     for (const row of rows) {
+      if (!(row.category in byCategory)) byCategory[row.category] = 0;
       byCategory[row.category] += 1;
       if (row.completed) completed += 1;
     }

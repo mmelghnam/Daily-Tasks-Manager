@@ -9,16 +9,10 @@ export interface HealthStatus {
   status: string;
 }
 
-export type TaskCategory = typeof TaskCategory[keyof typeof TaskCategory];
-
-
-export const TaskCategory = {
-  INV: 'INV',
-  BR: 'BR',
-  Qaff: 'Qaff',
-  Wootz: 'Wootz',
-  Self: 'Self',
-} as const;
+/**
+ * @minLength 1
+ */
+export type TaskCategory = string;
 
 export interface TaskLink {
   label: string;
@@ -65,6 +59,22 @@ export interface TaskSummary {
   completed: number;
   remaining: number;
   byCategory: TaskSummaryByCategory;
+}
+
+export interface Space {
+  id: number;
+  name: string;
+  color: string;
+  /** @nullable */
+  description: string | null;
+  createdAt: string;
+}
+
+export interface SpaceInput {
+  /** @minLength 1 */
+  name: string;
+  color?: string;
+  description?: string;
 }
 
 export type ListTasksParams = {

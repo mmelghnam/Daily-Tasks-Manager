@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: tasks
     description: Daily task operations
+  - name: spaces
+    description: User-defined work spaces
 paths:
   /healthz:
     get:
@@ -124,6 +126,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TaskSummary"
+  /spaces:
+    get:
+      operationId: listSpaces
+      tags: [spaces]
+      summary: List task spaces
+      responses:
+        "200":
+          description: Task spaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Space"
+    post:
+      operationId: createSpace
+      tags: [spaces]
+      summary: Create a task space
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpaceInput"
+      responses:
+        "201":
+          description: Created space
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Space"
+        "409":
+          description: A space with this name already exists
 components:
   schemas:
     HealthStatus:
@@ -135,7 +170,7 @@ components:
         - status
     TaskCategory:
       type: string
-      enum: [INV, BR, Qaff, Wootz, Self]
+      minLength: 1
     TaskLink:
       type: object
       properties:
@@ -234,3 +269,29 @@ components:
           additionalProperties:
             type: integer
       required: [total, completed, remaining, byCategory]
+    Space:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, color, description, createdAt]
+    SpaceInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        color:
+          type: string
+        description:
+          type: string
+      required: [name]

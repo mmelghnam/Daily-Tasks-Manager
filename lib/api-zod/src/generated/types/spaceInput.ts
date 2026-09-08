@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @minLength 1
- */
-export type TaskCategory = string;
+export interface SpaceInput {
+  /** @minLength 1 */
+  name: string;
+  color?: string;
+  description?: string;
+}

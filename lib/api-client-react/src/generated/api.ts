@@ -23,6 +23,8 @@ import type {
   GetTaskSummaryParams,
   HealthStatus,
   ListTasksParams,
+  Space,
+  SpaceInput,
   Task,
   TaskInput,
   TaskSummary,
@@ -515,4 +517,152 @@ export function useGetTaskSummary<TData = Awaited<ReturnType<typeof getTaskSumma
 
 
 
+
+export const getListSpacesUrl = () => {
+
+
+
+
+  return `/api/spaces`
+}
+
+/**
+ * @summary List task spaces
+ */
+export const listSpaces = async ( options?: Parameters<typeof customFetch>[1]): Promise<Space[]> => {
+
+  return customFetch<Space[]>(getListSpacesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSpacesQueryKey = () => {
+    return [
+    `/api/spaces`
+    ] as const;
+    }
+
+
+export const getListSpacesQueryOptions = <TData = Awaited<ReturnType<typeof listSpaces>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSpaces>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSpacesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSpaces>>> = ({ signal }) => listSpaces({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSpaces>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSpacesQueryResult = NonNullable<Awaited<ReturnType<typeof listSpaces>>>
+export type ListSpacesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List task spaces
+ */
+
+export function useListSpaces<TData = Awaited<ReturnType<typeof listSpaces>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSpaces>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSpacesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSpaceUrl = () => {
+
+
+
+
+  return `/api/spaces`
+}
+
+/**
+ * @summary Create a task space
+ */
+export const createSpace = async (spaceInput: SpaceInput, options?: Parameters<typeof customFetch>[1]): Promise<Space> => {
+
+  return customFetch<Space>(getCreateSpaceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(spaceInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSpaceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSpace>>, TError,{data: BodyType<SpaceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSpace>>, TError,{data: BodyType<SpaceInput>}, TContext> => {
+
+const mutationKey = ['createSpace'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSpace>>, {data: BodyType<SpaceInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSpace(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSpaceMutationResult = NonNullable<Awaited<ReturnType<typeof createSpace>>>
+    export type CreateSpaceMutationBody = BodyType<SpaceInput>
+    export type CreateSpaceMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a task space
+ */
+export const useCreateSpace = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSpace>>, TError,{data: BodyType<SpaceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSpace>>,
+        TError,
+        {data: BodyType<SpaceInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSpaceMutationOptions(options));
+    }
 

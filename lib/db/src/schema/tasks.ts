@@ -1,14 +1,6 @@
 import { createInsertSchema } from "drizzle-zod";
-import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
-
-export const taskCategoryEnum = pgEnum("task_category", [
-  "INV",
-  "BR",
-  "Qaff",
-  "Wootz",
-  "Self",
-]);
 
 export const taskLinkSchema = z.object({
   label: z.string().min(1),
@@ -22,7 +14,7 @@ export const tasksTable = pgTable(
   {
     id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
     taskDate: date("task_date", { mode: "string" }).notNull(),
-    category: taskCategoryEnum("category").notNull(),
+    category: text("category").notNull(),
     title: text("title").notNull(),
     notes: text("notes"),
     completed: boolean("completed").notNull().default(false),

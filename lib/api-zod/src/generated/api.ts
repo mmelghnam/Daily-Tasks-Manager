@@ -24,10 +24,13 @@ export const ListTasksQueryParams = zod.object({
   "date": zod.date().optional()
 })
 
+
+
+
 export const ListTasksResponseItem = zod.object({
   "id": zod.number().int(),
   "taskDate": zod.coerce.date(),
-  "category": zod.enum(['INV', 'BR', 'Qaff', 'Wootz', 'Self']),
+  "category": zod.string().min(1),
   "title": zod.string(),
   "notes": zod.string().nullable(),
   "completed": zod.boolean(),
@@ -47,9 +50,10 @@ export const ListTasksResponse = zod.array(ListTasksResponseItem)
 
 
 
+
 export const CreateTaskBody = zod.object({
   "taskDate": zod.coerce.date(),
-  "category": zod.enum(['INV', 'BR', 'Qaff', 'Wootz', 'Self']),
+  "category": zod.string().min(1),
   "title": zod.string().min(1),
   "notes": zod.string().optional(),
   "completed": zod.boolean().optional(),
@@ -59,10 +63,13 @@ export const CreateTaskBody = zod.object({
 })).optional()
 })
 
+
+
+
 export const CreateTaskResponse = zod.object({
   "id": zod.number().int(),
   "taskDate": zod.coerce.date(),
-  "category": zod.enum(['INV', 'BR', 'Qaff', 'Wootz', 'Self']),
+  "category": zod.string().min(1),
   "title": zod.string(),
   "notes": zod.string().nullable(),
   "completed": zod.boolean(),
@@ -85,9 +92,10 @@ export const UpdateTaskParams = zod.object({
 
 
 
+
 export const UpdateTaskBody = zod.object({
   "taskDate": zod.coerce.date().optional(),
-  "category": zod.enum(['INV', 'BR', 'Qaff', 'Wootz', 'Self']).optional(),
+  "category": zod.string().min(1).optional(),
   "title": zod.string().min(1).optional(),
   "notes": zod.string().optional(),
   "completed": zod.boolean().optional(),
@@ -97,10 +105,13 @@ export const UpdateTaskBody = zod.object({
 })).optional()
 })
 
+
+
+
 export const UpdateTaskResponse = zod.object({
   "id": zod.number().int(),
   "taskDate": zod.coerce.date(),
-  "category": zod.enum(['INV', 'BR', 'Qaff', 'Wootz', 'Self']),
+  "category": zod.string().min(1),
   "title": zod.string(),
   "notes": zod.string().nullable(),
   "completed": zod.boolean(),
@@ -135,6 +146,40 @@ export const GetTaskSummaryResponse = zod.object({
   "completed": zod.number().int(),
   "remaining": zod.number().int(),
   "byCategory": zod.record(zod.string(), zod.number().int())
+})
+
+
+/**
+ * @summary List task spaces
+ */
+export const ListSpacesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "description": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListSpacesResponse = zod.array(ListSpacesResponseItem)
+
+
+/**
+ * @summary Create a task space
+ */
+
+
+
+export const CreateSpaceBody = zod.object({
+  "name": zod.string().min(1),
+  "color": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+export const CreateSpaceResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "description": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
 })
 
 

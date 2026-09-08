@@ -1,20 +1,31 @@
 import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Plus, RefreshCw, Sparkles, Target } from 'lucide-react';
-import { useGetTaskSummary, useListTasks } from '@workspace/api-client-react';
+import { useGetTaskSummary, useListSpaces, useListTasks } from '@workspace/api-client-react';
 import type { Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
+import { SpaceForm } from '@/components/space-form';
+import { PalettePicker } from '@/components/palette-picker';
 
 type Category = Task['category'];
 
-const categoryMeta: Record<Category, { label: string; tint: string; dot: string; description: string }> = {
-  INV: { label: 'INV', tint: 'bg-[#e4f0ec] text-[#1b5a4e]', dot: 'bg-[#2e8d77]', description: 'قرارات وعمليات' },
-  BR: { label: 'BR', tint: 'bg-[#fff0d2] text-[#805b1e]', dot: 'bg-[#d39a2f]', description: 'بناء ونمو' },
-  Qaff: { label: 'Qaff', tint: 'bg-[#f8e0dc] text-[#8b4940]', dot: 'bg-[#c97768]', description: 'مشاريع قاف' },
-  Wootz: { label: 'Wootz', tint: 'bg-[#e5e8f5] text-[#4f5d91]', dot: 'bg-[#6678bd]', description: 'فريق ووتز' },
-  Self: { label: 'Self', tint: 'bg-[#e6edd7] text-[#526b32]', dot: 'bg-[#77964d]', description: 'مساحتك أنت' },
+const fallbackSpaces = [
+  { name: 'INV', color: '#2e8d77', description: 'قرارات وعمليات' },
+  { name: 'BR', color: '#d39a2f', description: 'بناء ونمو' },
+  { name: 'Qaff', color: '#c97768', description: 'مشاريع قاف' },
+  { name: 'Wootz', color: '#6678bd', description: 'فريق ووتز' },
+  { name: 'Self', color: '#77964d', description: 'مساحتك أنت' },
+];
+const fallbackColors = ['#2e8d77', '#d39a2f', '#c97768', '#6678bd', '#77964d', '#9a6bb1'];
+
+function getSpaceMeta(name: string, spaces: Array<{ name: string; color?: string; description?: string | null }>) {
+  const index = spaces.findIndex((space) => space.name === name);
+  const fallback = fallbackSpaces.find((space) => space.name === name);
+  return {
+    color: spaces[index]?.color ?? fallback?.color ?? fallbackColors[Math.max(index, 0) % fallbackColors.length],
+    description: spaces[index]?.description ?? fallback?.description ?? 'مساحة مخصصة',
+  };
 };
-const categories: Category[] = ['INV', 'BR', 'Qaff', 'Wootz', 'Self'];
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -34,11 +45,16 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()));
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
+  const [showSpaceForm, setShowSpaceForm] = useState(false);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
 
+  const spacesQuery = useListSpaces();
   const taskQuery = useListTasks({ date: selectedDate });
   const summaryQuery = useGetTaskSummary({ date: selectedDate });
   const tasks = taskQuery.data ?? [];
+  const spaces = spacesQuery.data?.length ? spacesQuery.data : fallbackSpaces;
+  const categories = spaces.map((space) => space.name);
+  const spaceNames = categories;
   const visibleTasks = useMemo(() => activeCategory === 'all' ? tasks : tasks.filter((task) => task.category === activeCategory), [activeCategory, tasks]);
   const summary = summaryQuery.data;
   const completion = summary && summary.total > 0 ? Math.round((summary.completed / summary.total) * 100) : 0;
@@ -70,7 +86,10 @@ export default function Home() {
               <p className="text-xs font-semibold text-muted-foreground">مساحتك لترتيب المهم قبل أن يبدأ الزحام</p>
             </div>
           </div>
-          <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> كل إنجاز يفتح مساحة</div>
+           <div className="flex items-center gap-2">
+             <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> كل إنجاز يفتح مساحة</div>
+             <PalettePicker />
+           </div>
         </div>
       </header>
 
@@ -114,7 +133,7 @@ export default function Home() {
           <div className="rounded-3xl border border-card-border bg-card p-6">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-muted-foreground">كل المهام</p><LayoutGrid size={20} className="text-primary" /></div>
             <p data-testid="text-total-count" className="mt-4 text-4xl font-extrabold">{summary?.total ?? '—'}</p>
-            <p className="mt-2 text-xs font-semibold text-muted-foreground">عبر {categories.length} مساحات</p>
+            <p className="mt-2 text-xs font-semibold text-muted-foreground">عبر {spaceNames.length} مساحات</p>
           </div>
         </section>
 
@@ -124,7 +143,10 @@ export default function Home() {
               <h2 className="text-xl font-extrabold">خريطة اليوم</h2>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">اختر مساحة لتصفية تركيزك، أو ابدأ من الصورة الكاملة</p>
             </div>
-            <button type="button" onClick={() => openNew()} data-testid="button-add-task" className="flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-extrabold text-secondary-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-secondary/85"><Plus size={18} /> مهمة جديدة</button>
+             <div className="flex flex-col gap-2 sm:flex-row">
+               <button type="button" onClick={() => setShowSpaceForm(true)} data-testid="button-add-space" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-background px-4 text-sm font-extrabold text-primary shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40"><Plus size={18} /> مساحة جديدة</button>
+               <button type="button" onClick={() => openNew()} data-testid="button-add-task" className="flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-extrabold text-secondary-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-secondary/85"><Plus size={18} /> مهمة جديدة</button>
+             </div>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <button type="button" onClick={() => setActiveCategory('all')} data-testid="button-filter-all" className={`flex items-center justify-between rounded-2xl border p-3 text-right transition ${activeCategory === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}>
@@ -132,8 +154,8 @@ export default function Home() {
             </button>
             {categories.map((category) => {
               const count = summary?.byCategory?.[category] ?? 0;
-              const meta = categoryMeta[category];
-              return <button type="button" key={category} onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex items-center justify-between rounded-2xl border p-3 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className={`h-2.5 w-2.5 rounded-full ${meta.dot}`} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>;
+               const meta = getSpaceMeta(category, spaces);
+               return <button type="button" key={category} onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex items-center justify-between rounded-2xl border p-3 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>;
             })}
           </div>
         </section>
@@ -146,15 +168,16 @@ export default function Home() {
           ) : visibleTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/25 bg-card/55 px-6 py-20 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary/25 text-primary"><Sparkles size={29} /></div><h2 className="text-xl font-extrabold">{activeCategory === 'all' ? 'اليوم ما زال مفتوحاً' : `لا توجد مهام في ${activeCategory}`}</h2><p className="mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{activeCategory === 'all' ? 'أضف أول خطوة صغيرة، ودع بقية اليوم يتضح معها.' : 'مساحة هادئة. أضف مهمة عندما يحين وقتها.'}</p><button type="button" onClick={() => openNew(activeCategory === 'all' ? undefined : activeCategory)} data-testid="button-add-first-task" className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5"><Plus size={17} /> أضف مهمة</button></div>
           ) : activeCategory !== 'all' ? (
-            <div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={selectedDate} />)}</div>
+             <div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={selectedDate} spaces={spaceNames} />)}</div>
           ) : (
             <div className="space-y-8">
-              {categories.filter((category) => grouped[category].length > 0).map((category) => <div key={category}><div className="mb-3 flex items-center justify-between"><div className="flex items-center gap-3"><span className={`h-3 w-3 rounded-full ${categoryMeta[category].dot}`} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{categoryMeta[category].description}</p></div></div><button type="button" onClick={() => openNew(category)} data-testid={`button-add-task-${category}`} className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-primary"><Plus size={17} /></button></div><div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={selectedDate} />)}</div></div>)}
+               {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); return <div key={category}><div className="mb-3 flex items-center justify-between"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => openNew(category)} data-testid={`button-add-task-${category}`} className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-primary"><Plus size={17} /></button></div><div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={selectedDate} spaces={spaceNames} />)}</div></div>; })}
             </div>
           )}
         </section>
       </main>
-      {showForm && <TaskForm date={selectedDate} initialCategory={formCategory} onClose={() => setShowForm(false)} />}
+       {showForm && <TaskForm date={selectedDate} initialCategory={formCategory} spaces={spaceNames} onClose={() => setShowForm(false)} />}
+       {showSpaceForm && <SpaceForm onClose={() => setShowSpaceForm(false)} onCreated={(name) => { setActiveCategory(name); }} />}
     </div>
   );
 }

@@ -11,21 +11,20 @@ import type { Task } from '@workspace/api-client-react';
 
 type Category = Task['category'];
 
-const categories: Category[] = ['INV', 'BR', 'Qaff', 'Wootz', 'Self'];
-
 interface TaskFormProps {
   date: string;
   task?: Task | null;
   initialCategory?: Category;
+  spaces: string[];
   onClose: () => void;
 }
 
-export function TaskForm({ date, task, initialCategory, onClose }: TaskFormProps) {
+export function TaskForm({ date, task, initialCategory, spaces, onClose }: TaskFormProps) {
   const queryClient = useQueryClient();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const [title, setTitle] = useState(task?.title ?? '');
-  const [category, setCategory] = useState<Category>(task?.category ?? initialCategory ?? 'INV');
+  const [category, setCategory] = useState<Category>(task?.category ?? initialCategory ?? spaces[0] ?? 'INV');
   const [notes, setNotes] = useState(task?.notes ?? '');
   const [linkLabel, setLinkLabel] = useState(task?.links[0]?.label ?? '');
   const [linkUrl, setLinkUrl] = useState(task?.links[0]?.url ?? '');
@@ -111,8 +110,8 @@ export function TaskForm({ date, task, initialCategory, onClose }: TaskFormProps
 
           <div>
             <label className="mb-2 block text-sm font-bold">المساحة</label>
-            <div className="grid grid-cols-5 gap-2">
-              {categories.map((item) => (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {spaces.map((item) => (
                 <button key={item} type="button" onClick={() => setCategory(item)} data-testid={`button-category-${item}`} className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${category === item ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}>
                   {item}
                 </button>
