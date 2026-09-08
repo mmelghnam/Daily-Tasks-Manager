@@ -121,7 +121,7 @@ export default function Home() {
               <span className="text-border">/</span>
               <span className="font-mono-ui text-xs" dir="ltr">{selectedDate}</span>
             </div>
-            <h1 data-testid="text-date-heading" className="max-w-3xl text-4xl font-black leading-[1.2] tracking-[-0.025em] text-foreground drop-shadow-[0_1px_0_hsl(var(--background))] sm:text-6xl">{dateLabel(selectedDate)}</h1>
+            <h1 data-testid="text-date-heading" className="max-w-2xl text-3xl font-extrabold leading-[1.25] tracking-tight sm:text-5xl">{dateLabel(selectedDate)}</h1>
              <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">{getDailyMessage(selectedDate)}</p>
           </div>
           <div className="flex items-center justify-between rounded-2xl border border-border bg-card/75 p-2 shadow-sm">

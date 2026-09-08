@@ -184,7 +184,7 @@ export function EventsSection() {
                     </div>
                   </div>
                   <div className="mt-3 flex items-end gap-2">
-                    <span className={`font-mono-ui text-3xl font-extrabold ${status.tone}`}>{status.days}</span>
+                    <span className={`font-mono-ui text-4xl font-black leading-none tracking-tight drop-shadow-[0_1px_0_hsl(var(--background))] ${status.tone}`}>{status.days}</span>
                       <span className="pb-1 text-xs font-bold text-muted-foreground">{status.label} {status.label === 'يبدأ بعد' ? 'لبداية الحدث' : status.label === 'متبقي' ? 'على انتهاء الحدث' : 'يوم'}</span>
                   </div>
                 </div>
