@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Pencil, Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
-import { getListSpacesQueryKey, useDeleteSpace, useGetTaskSummary, useListSpaces, useListTasks } from '@workspace/api-client-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2 } from 'lucide-react';
+import { getGetOnboardingStatusQueryKey, getListSpacesQueryKey, UsageType, useDeleteSpace, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateUsageType } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
@@ -11,6 +11,8 @@ import { PalettePicker } from '@/components/palette-picker';
 import { EventsSection } from '@/components/events-section';
 import { SpaceLinksSection } from '@/components/space-links-section';
 import { getDailyMessage } from '@/daily-messages';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type Category = Task['category'];
 
@@ -49,12 +51,76 @@ function shiftDate(date: string, amount: number) {
 function AccountControl() {
   const { signOut } = useClerk();
   const { user } = useUser();
+  const queryClient = useQueryClient();
+  const onboarding = useGetOnboardingStatus();
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<UsageType | null>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const name = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'حسابي';
+  const typeLabels: Record<UsageType, string> = {
+    [UsageType.student]: 'طالب',
+    [UsageType.employee]: 'موظف',
+    [UsageType.freelancer]: 'مستقل',
+    [UsageType.personal]: 'شخصي',
+  };
+  const currentType = onboarding.data?.usageType ?? null;
+  const updateType = useUpdateUsageType({
+    mutation: {
+      onSuccess: (data) => {
+        queryClient.setQueryData(getGetOnboardingStatusQueryKey(), data);
+        setTypeDialogOpen(false);
+      },
+    },
+  });
+
+  const openTypeDialog = (open: boolean) => {
+    setTypeDialogOpen(open);
+    if (open) setSelectedType(currentType);
+  };
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-background/70 p-1.5">
+    <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background/70 p-1.5">
       <div className="hidden max-w-28 truncate px-1 text-xs font-extrabold text-foreground md:block">{name}</div>
+      <Dialog open={typeDialogOpen} onOpenChange={openTypeDialog}>
+        <DialogTrigger asChild>
+          <button type="button" className="flex items-center gap-1.5 rounded-lg bg-secondary/15 px-2.5 py-1.5 text-xs font-extrabold text-primary transition hover:bg-secondary/30" data-testid="button-change-usage-type">
+            <Settings2 size={14} />
+            <span>{currentType ? typeLabels[currentType] : 'نوع الحساب'}</span>
+          </button>
+        </DialogTrigger>
+        <DialogContent dir="rtl" className="max-w-lg rounded-3xl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center gap-2 text-xl"><GraduationCap className="text-primary" /> غيّر طريقة استخدامك</DialogTitle>
+            <DialogDescription className="leading-6">
+              سيُحدّث نوع حسابك فقط، وستظل جميع مساحاتك ومهامك الحالية كما هي.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-3">
+            {Object.values(UsageType).map((type) => (
+              <button
+                type="button"
+                key={type}
+                onClick={() => setSelectedType(type)}
+                disabled={updateType.isPending}
+                className={`flex items-center justify-between rounded-2xl border-2 px-4 py-4 text-sm font-extrabold transition ${selectedType === type ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card hover:border-primary/40'}`}
+                data-testid={`button-account-type-${type}`}
+              >
+                {typeLabels[type]}
+                {selectedType === type && <Check size={17} />}
+              </button>
+            ))}
+          </div>
+          {updateType.isError && <p className="text-sm font-bold text-destructive">تعذر حفظ التغيير. حاول مرة أخرى.</p>}
+          <Button
+            disabled={!selectedType || selectedType === currentType || updateType.isPending}
+            onClick={() => selectedType && updateType.mutate({ data: { usageType: selectedType } })}
+            className="h-12 rounded-xl font-extrabold"
+            data-testid="button-save-usage-type"
+          >
+            {updateType.isPending ? <Loader2 className="animate-spin" /> : 'حفظ نوع الحساب'}
+          </Button>
+        </DialogContent>
+      </Dialog>
       <button type="button" onClick={() => void signOut({ redirectUrl: basePath || '/' })} className="rounded-lg bg-muted px-3 py-1.5 text-xs font-extrabold text-primary transition hover:bg-secondary/30">تسجيل الخروج</button>
     </div>
   );

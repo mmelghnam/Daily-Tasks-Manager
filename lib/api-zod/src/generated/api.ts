@@ -41,6 +41,19 @@ export const CompleteOnboardingResponse = zod.object({
 
 
 /**
+ * @summary Change the signed-in account usage type without replacing existing data
+ */
+export const UpdateUsageTypeBody = zod.object({
+  "usageType": zod.enum(['student', 'employee', 'freelancer', 'personal'])
+})
+
+export const UpdateUsageTypeResponse = zod.object({
+  "completed": zod.boolean(),
+  "usageType": zod.union([zod.enum(['student', 'employee', 'freelancer', 'personal']),zod.null()])
+})
+
+
+/**
  * @summary List daily tasks
  */
 export const ListTasksQueryParams = zod.object({

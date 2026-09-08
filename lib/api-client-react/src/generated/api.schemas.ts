@@ -19,6 +19,10 @@ export const UsageType = {
   personal: 'personal',
 } as const;
 
+export interface UsageTypeUpdate {
+  usageType: UsageType;
+}
+
 export interface OnboardingStatus {
   completed: boolean;
   usageType: UsageType | null;

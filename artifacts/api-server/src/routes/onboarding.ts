@@ -3,6 +3,8 @@ import {
   CompleteOnboardingBody,
   CompleteOnboardingResponse,
   GetOnboardingStatusResponse,
+  UpdateUsageTypeBody,
+  UpdateUsageTypeResponse,
 } from "@workspace/api-zod";
 import { and, eq, isNull } from "drizzle-orm";
 import { appUsersTable, db, spacesTable, tasksTable } from "@workspace/db";
@@ -119,6 +121,28 @@ router.post("/onboarding", async (req, res, next) => {
 
     res.json(CompleteOnboardingResponse.parse({
       completed: completed || Boolean(user?.onboardedAt),
+      usageType: user?.usageType ?? null,
+    }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/onboarding", async (req, res, next) => {
+  try {
+    const { usageType } = UpdateUsageTypeBody.parse(req.body);
+
+    const [user] = await db
+      .update(appUsersTable)
+      .set({ usageType })
+      .where(eq(appUsersTable.userId, req.userId!))
+      .returning({
+        usageType: appUsersTable.usageType,
+        onboardedAt: appUsersTable.onboardedAt,
+      });
+
+    res.json(UpdateUsageTypeResponse.parse({
+      completed: Boolean(user?.onboardedAt),
       usageType: user?.usageType ?? null,
     }));
   } catch (error) {

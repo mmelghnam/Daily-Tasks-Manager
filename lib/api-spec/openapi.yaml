@@ -63,6 +63,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OnboardingStatus"
+    patch:
+      operationId: updateUsageType
+      tags: [onboarding]
+      summary: Change the signed-in account usage type without replacing existing data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsageTypeUpdate"
+      responses:
+        "200":
+          description: Updated account usage type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
   /tasks:
     get:
       operationId: listTasks
@@ -374,6 +391,12 @@ components:
     UsageType:
       type: string
       enum: [student, employee, freelancer, personal]
+    UsageTypeUpdate:
+      type: object
+      required: [usageType]
+      properties:
+        usageType:
+          $ref: "#/components/schemas/UsageType"
     OnboardingStatus:
       type: object
       properties:

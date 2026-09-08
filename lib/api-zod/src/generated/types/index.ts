@@ -29,3 +29,4 @@ export * from './taskSummary';
 export * from './taskSummaryByCategory';
 export * from './taskUpdate';
 export * from './usageType';
+export * from './usageTypeUpdate';

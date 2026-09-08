@@ -37,7 +37,8 @@ import type {
   Task,
   TaskInput,
   TaskSummary,
-  TaskUpdate
+  TaskUpdate,
+  UsageTypeUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -291,6 +292,77 @@ export const useCompleteOnboarding = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCompleteOnboardingMutationOptions(options));
+    }
+
+export const getUpdateUsageTypeUrl = () => {
+
+
+
+
+  return `/api/onboarding`
+}
+
+/**
+ * @summary Change the signed-in account usage type without replacing existing data
+ */
+export const updateUsageType = async (usageTypeUpdate: UsageTypeUpdate, options?: Parameters<typeof customFetch>[1]): Promise<OnboardingStatus> => {
+
+  return customFetch<OnboardingStatus>(getUpdateUsageTypeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(usageTypeUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateUsageTypeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUsageType>>, TError,{data: BodyType<UsageTypeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUsageType>>, TError,{data: BodyType<UsageTypeUpdate>}, TContext> => {
+
+const mutationKey = ['updateUsageType'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUsageType>>, {data: BodyType<UsageTypeUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateUsageType(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUsageTypeMutationResult = NonNullable<Awaited<ReturnType<typeof updateUsageType>>>
+    export type UpdateUsageTypeMutationBody = BodyType<UsageTypeUpdate>
+    export type UpdateUsageTypeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Change the signed-in account usage type without replacing existing data
+ */
+export const useUpdateUsageType = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUsageType>>, TError,{data: BodyType<UsageTypeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateUsageType>>,
+        TError,
+        {data: BodyType<UsageTypeUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateUsageTypeMutationOptions(options));
     }
 
 export const getListTasksUrl = (params?: ListTasksParams,) => {
