@@ -9,6 +9,15 @@ export const taskLinkSchema = z.object({
 
 export type TaskLink = z.infer<typeof taskLinkSchema>;
 
+export const taskFollowUpSchema = z.object({
+  id: z.number().int(),
+  title: z.string().min(1),
+  completed: z.boolean(),
+  dueDate: z.string().nullable(),
+});
+
+export type TaskFollowUp = z.infer<typeof taskFollowUpSchema>;
+
 export const tasksTable = pgTable(
   "daily_tasks",
   {
@@ -19,6 +28,7 @@ export const tasksTable = pgTable(
     notes: text("notes"),
     completed: boolean("completed").notNull().default(false),
     links: jsonb("links").$type<TaskLink[]>().notNull().default([]),
+    followUps: jsonb("follow_ups").$type<TaskFollowUp[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

@@ -19,6 +19,14 @@ export interface TaskLink {
   url: string;
 }
 
+export interface TaskFollowUp {
+  id: number;
+  title: string;
+  completed: boolean;
+  /** @nullable */
+  dueDate: string | null;
+}
+
 export interface Task {
   id: number;
   taskDate: string;
@@ -28,6 +36,7 @@ export interface Task {
   notes: string | null;
   completed: boolean;
   links: TaskLink[];
+  followUps: TaskFollowUp[];
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +49,7 @@ export interface TaskInput {
   notes?: string;
   completed?: boolean;
   links?: TaskLink[];
+  followUps?: TaskFollowUp[];
 }
 
 export interface TaskUpdate {
@@ -50,6 +60,7 @@ export interface TaskUpdate {
   notes?: string;
   completed?: boolean;
   links?: TaskLink[];
+  followUps?: TaskFollowUp[];
 }
 
 export type TaskSummaryByCategory = {[key: string]: number};

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TaskCategory } from './taskCategory';
+import type { TaskFollowUp } from './taskFollowUp';
 import type { TaskLink } from './taskLink';
 
 export interface TaskUpdate {
@@ -16,4 +17,5 @@ export interface TaskUpdate {
   notes?: string;
   completed?: boolean;
   links?: TaskLink[];
+  followUps?: TaskFollowUp[];
 }

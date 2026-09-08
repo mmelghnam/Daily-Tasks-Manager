@@ -9,6 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import type { Task } from '@workspace/api-client-react';
 import { TaskForm } from '@/components/task-form';
+import { FollowUpList } from '@/components/follow-up-list';
 
 interface TaskCardProps {
   task: Task;
@@ -67,6 +68,10 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
     void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date }) });
   };
 
+  const saveFollowUps = (followUps: Task['followUps']) => {
+    updateTask.mutate({ id: task.id, data: { followUps } }, { onSuccess: refresh });
+  };
+
   const moveToTomorrow = () => {
     const tomorrow = nextDate(date);
     updateTask.mutate(
@@ -123,6 +128,7 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
               ))}
               <time dateTime={task.updatedAt} className="mr-auto font-mono-ui text-[10px] tracking-wide text-muted-foreground/75">{new Date(task.updatedAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}</time>
             </div>
+            <FollowUpList followUps={task.followUps} isPending={updateTask.isPending} onChange={saveFollowUps} />
           </div>
         </div>
       </article>

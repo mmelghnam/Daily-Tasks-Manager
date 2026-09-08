@@ -38,6 +38,12 @@ export const ListTasksResponseItem = zod.object({
   "label": zod.string(),
   "url": zod.string().url()
 })),
+  "followUps": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "dueDate": zod.string().nullable()
+})),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -60,6 +66,12 @@ export const CreateTaskBody = zod.object({
   "links": zod.array(zod.object({
   "label": zod.string(),
   "url": zod.string().url()
+})).optional(),
+  "followUps": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "dueDate": zod.string().nullable()
 })).optional()
 })
 
@@ -76,6 +88,12 @@ export const CreateTaskResponse = zod.object({
   "links": zod.array(zod.object({
   "label": zod.string(),
   "url": zod.string().url()
+})),
+  "followUps": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "dueDate": zod.string().nullable()
 })),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -102,6 +120,12 @@ export const UpdateTaskBody = zod.object({
   "links": zod.array(zod.object({
   "label": zod.string(),
   "url": zod.string().url()
+})).optional(),
+  "followUps": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "dueDate": zod.string().nullable()
 })).optional()
 })
 
@@ -118,6 +142,12 @@ export const UpdateTaskResponse = zod.object({
   "links": zod.array(zod.object({
   "label": zod.string(),
   "url": zod.string().url()
+})),
+  "followUps": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "dueDate": zod.string().nullable()
 })),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()

@@ -57,6 +57,7 @@ router.post("/tasks", async (req, res, next) => {
         notes: input.notes?.trim() || null,
         completed: input.completed ?? false,
         links: input.links ?? [],
+        followUps: input.followUps ?? [],
       })
       .returning();
 
@@ -80,6 +81,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (input.notes !== undefined) updates.notes = input.notes.trim() || null;
     if (input.completed !== undefined) updates.completed = input.completed;
     if (input.links !== undefined) updates.links = input.links;
+    if (input.followUps !== undefined) updates.followUps = input.followUps;
 
     const [task] = await db
       .update(tasksTable)

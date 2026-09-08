@@ -13,6 +13,7 @@ export * from './space';
 export * from './spaceInput';
 export * from './task';
 export * from './taskCategory';
+export * from './taskFollowUp';
 export * from './taskInput';
 export * from './taskLink';
 export * from './taskSummary';

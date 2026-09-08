@@ -180,6 +180,18 @@ components:
           type: string
           format: uri
       required: [label, url]
+    TaskFollowUp:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        completed:
+          type: boolean
+        dueDate:
+          type: ["string", "null"]
+      required: [id, title, completed, dueDate]
     Task:
       type: object
       properties:
@@ -200,6 +212,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskLink"
+        followUps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskFollowUp"
         createdAt:
           type: string
           format: date-time
@@ -214,6 +230,7 @@ components:
         - notes
         - completed
         - links
+        - followUps
         - createdAt
         - updatedAt
     TaskInput:
@@ -235,6 +252,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskLink"
+        followUps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskFollowUp"
       required: [taskDate, category, title]
     TaskUpdate:
       type: object
@@ -255,6 +276,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskLink"
+        followUps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskFollowUp"
     TaskSummary:
       type: object
       properties:
