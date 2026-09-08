@@ -10,6 +10,13 @@ import { useQueryClient } from '@tanstack/react-query';
 
 type UsageType = 'student' | 'employee' | 'freelancer' | 'personal' | null | undefined;
 
+function dateOnly(value: string | Date | null | undefined) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
+  }
+  return typeof value === 'string' ? value.slice(0, 10) : '';
+}
+
 export function ProductivityHub({ usageType }: { usageType: UsageType }) {
   const queryClient = useQueryClient();
   const goals = useListGoals();
@@ -67,7 +74,7 @@ export function ProductivityHub({ usageType }: { usageType: UsageType }) {
         </form>
         <div className="space-y-2">
           {(habits.data ?? []).map((habit: Habit) => {
-            const doneToday = habit.lastCompleted === new Date().toISOString().slice(0, 10);
+            const doneToday = dateOnly(habit.lastCompleted) === new Date().toISOString().slice(0, 10);
             return <div key={habit.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
               <button type="button" onClick={() => updateHabit.mutate({ id: habit.id, data: { streak: doneToday ? Math.max(0, habit.streak - 1) : habit.streak + 1, lastCompleted: doneToday ? undefined : new Date().toISOString().slice(0, 10) } }, { onSuccess: () => refresh(getListHabitsQueryKey()) })} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
               <span className="min-w-0 flex-1 text-sm font-bold">{habit.name}</span><span className="text-xs font-extrabold text-primary">{habit.streak} يوم</span>

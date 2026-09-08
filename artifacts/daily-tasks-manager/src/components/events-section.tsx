@@ -27,8 +27,11 @@ function daysBetween(from: string, to: string) {
   return Math.max(0, Math.round((end - start) / 86_400_000));
 }
 
-function dateOnly(value: string) {
-  return value.slice(0, 10);
+function dateOnly(value: string | Date | null | undefined) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
+  }
+  return typeof value === 'string' ? value.slice(0, 10) : '';
 }
 
 function eventStatus(event: Event, today: string) {
@@ -44,7 +47,11 @@ function eventStatus(event: Event, today: string) {
 }
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${dateOnly(date)}T12:00:00`));
+  const normalized = dateOnly(date);
+  if (!normalized) return 'تاريخ غير متاح';
+  const parsed = new Date(`${normalized}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return 'تاريخ غير متاح';
+  return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short', year: 'numeric' }).format(parsed);
 }
 
 function EventForm({ event, onClose }: { event?: Event; onClose: () => void }) {
@@ -139,7 +146,10 @@ export function EventsSection() {
   const today = dateKey(new Date());
   const events = eventsQuery.data ?? [];
 
-  const sortedEvents = useMemo(() => [...events].sort((a, b) => a.endDate.localeCompare(b.endDate)), [events]);
+  const sortedEvents = useMemo(
+    () => [...events].sort((a, b) => dateOnly(a.endDate).localeCompare(dateOnly(b.endDate))),
+    [events],
+  );
 
   const removeEvent = (id: number) => {
     deleteEvent.mutate({ id }, { onSuccess: () => void queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() }) });

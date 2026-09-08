@@ -36,20 +36,23 @@ function toError(value: unknown): Error {
 }
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
+  const safeMessage = error.message
+    .split('\n', 1)[0]
+    .replace(/https?:\/\/\S+/gi, '[رابط]')
+    .slice(0, 180);
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-6" dir="rtl">
       <div className="max-w-lg w-full text-center">
         <h1 className="text-xl font-semibold text-gray-900">
-          Something went wrong
+          حدث خطأ غير متوقع
         </h1>
         <p className="mt-2 text-sm text-gray-600">
-          This part of the app hit an error. The rest of the app is still
-          running.
+          تعذر عرض هذا الجزء من التطبيق. يمكنك المحاولة مرة أخرى.
         </p>
-        {/* Dev only: messages can carry API responses and other internals. */}
-        {import.meta.env.DEV ? (
-          <pre className="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-left text-xs text-gray-800">
-            {error.message || String(error)}
+        {safeMessage ? (
+          <pre className="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-left text-xs text-gray-800" dir="ltr">
+            {error.name}: {safeMessage}
           </pre>
         ) : null}
         <button
@@ -57,7 +60,7 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
           onClick={resetError}
           className="mt-4 rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700"
         >
-          Try again
+          حاول مرة أخرى
         </button>
       </div>
     </div>
