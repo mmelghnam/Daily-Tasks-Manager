@@ -4,7 +4,7 @@ import { CalendarDays, CalendarPlus, Check, Copy, ExternalLink, MoreHorizontal, 
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
-  useCopyTask,
+  copyTask,
   useDeleteTask,
   useUpdateTask,
 } from '@workspace/api-client-react';
@@ -71,12 +71,12 @@ function shiftDate(date: string, amount: number) {
 export function TaskCard({ task, date, spaces }: TaskCardProps) {
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
-  const copyTask = useCopyTask();
   const deleteTask = useDeleteTask();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const [copyDate, setCopyDate] = useState(nextDate(date));
+  const [copyPending, setCopyPending] = useState(false);
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const links = Array.isArray(task.links) ? task.links : [];
   const followUps = Array.isArray(task.followUps) ? task.followUps : [];
@@ -105,13 +105,14 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
   };
 
   const copyToDates = (dates: string[]) => {
-    copyTask.mutate({ id: task.id, data: { dates } }, {
-      onSuccess: () => {
+    setCopyPending(true);
+    void copyTask(task.id, { dates })
+      .then(() => {
         setMenuOpen(false);
         setCopyOpen(false);
         refresh();
-      },
-    });
+      })
+      .finally(() => setCopyPending(false));
   };
 
   const toggle = () => {
@@ -160,8 +161,8 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
                   <div className="absolute left-0 top-9 z-20 w-32 overflow-hidden rounded-xl border border-border bg-popover p-1 text-sm shadow-xl">
                     <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل</button>
                     {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarPlus size={14} /> ترحيل للغد</button>}
-                    <button type="button" onClick={() => copyToDates([nextDate(date)])} disabled={copyTask.isPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Copy size={14} /> نسخ للغد</button>
-                    <button type="button" onClick={() => copyToDates(nextDates(date, 7))} disabled={copyTask.isPending} data-testid={`button-copy-week-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لأسبوع</button>
+                    <button type="button" onClick={() => copyToDates([nextDate(date)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Copy size={14} /> نسخ للغد</button>
+                    <button type="button" onClick={() => copyToDates(nextDates(date, 7))} disabled={copyPending} data-testid={`button-copy-week-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لأسبوع</button>
                     <button type="button" onClick={() => { setCopyOpen(true); setMenuOpen(false); }} data-testid={`button-copy-date-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ ليوم معين</button>
                     <button type="button" onClick={remove} disabled={deleteTask.isPending} data-testid={`button-delete-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold text-destructive hover:bg-destructive/10"><Trash2 size={14} /> حذف</button>
                   </div>
@@ -202,7 +203,7 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
           <div className="space-y-3">
             <label htmlFor={`copy-date-${task.id}`} className="block text-sm font-bold">التاريخ الجديد</label>
             <input id={`copy-date-${task.id}`} type="date" value={copyDate} min={date} onChange={(event) => setCopyDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
-            <button type="button" onClick={() => copyToDates([copyDate])} disabled={!copyDate || copyTask.isPending} data-testid={`button-confirm-copy-date-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Copy size={16} /> {copyTask.isPending ? 'جارٍ النسخ...' : 'نسخ المهمة'}</button>
+            <button type="button" onClick={() => copyToDates([copyDate])} disabled={!copyDate || copyPending} data-testid={`button-confirm-copy-date-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Copy size={16} /> {copyPending ? 'جارٍ النسخ...' : 'نسخ المهمة'}</button>
           </div>
         </DialogContent>
       </Dialog>

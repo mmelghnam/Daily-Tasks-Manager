@@ -2,3 +2,4 @@
 - [Legacy data ownership](legacy-data-ownership.md) — the first authenticated account claims all pre-authentication data exactly once.
 - [Usage type switching](usage-type-switching.md) — changing طالب/موظف/مستقل/شخصي preserves existing spaces and tasks.
 - [Primary admin and broadcasts](primary-admin-and-broadcasts.md) — the first authenticated account is the protected admin fallback; announcements currently appear in-app.
+- [Generated mutation hooks](generated-mutation-hooks.md) — isolated generated mutations can destabilize an existing card during client regeneration; imperative calls are safer when hook errors appear.

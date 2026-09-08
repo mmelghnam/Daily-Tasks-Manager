@@ -44,9 +44,15 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
   }, [onClose]);
 
   const isPending = createTask.isPending || updateTask.isPending;
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({ date }) });
-    void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey({ date }) });
+  const refresh = (updatedTask?: Task) => {
+    const taskListQueryKey = getListTasksQueryKey();
+    if (updatedTask) {
+      queryClient.setQueriesData<Task[]>({ queryKey: taskListQueryKey }, (currentTasks) =>
+        currentTasks?.map((currentTask) => currentTask.id === updatedTask.id ? updatedTask : currentTask),
+      );
+    }
+    void queryClient.invalidateQueries({ queryKey: taskListQueryKey });
+    void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() });
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -74,8 +80,8 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
 
     if (task) {
       updateTask.mutate({ id: task.id, data }, {
-        onSuccess: () => {
-          refresh();
+        onSuccess: (updatedTask) => {
+          refresh(updatedTask);
           onClose();
         },
         onError: () => setError('لم نتمكن من حفظ التعديل. حاول مرة أخرى.'),
