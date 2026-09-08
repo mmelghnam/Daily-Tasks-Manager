@@ -143,7 +143,7 @@ function AccountControl() {
   );
 }
 
-function QuickTaskInput({ date, category }: { date: string; category: Category }) {
+function QuickTaskInput({ date, category, onCreated }: { date: string; category: Category; onCreated?: () => void }) {
   const queryClient = useQueryClient();
   const createTask = useCreateTask();
   const [title, setTitle] = useState('');
@@ -170,6 +170,7 @@ function QuickTaskInput({ date, category }: { date: string; category: Category }
         setTitle('');
         void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() });
+        onCreated?.();
       },
       onError: () => setError('تعذر إضافة المهمة. حاول مرة أخرى.'),
     });
@@ -215,6 +216,7 @@ export default function Home() {
   const [showSpaceForm, setShowSpaceForm] = useState(false);
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
+  const [quickAddCategory, setQuickAddCategory] = useState<Category | null>(null);
 
   const spacesQuery = useListSpaces();
   const taskQuery = useListTasks(rangeFor(selectedDate, viewMode));
@@ -374,8 +376,8 @@ export default function Home() {
           ) : activeCategory !== 'all' ? (
               <div className="space-y-3"><QuickTaskInput date={selectedDate} category={activeCategory} /><div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>
           ) : (
-            <div className="space-y-8">
-                {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => openNew(category)} data-testid={`button-add-task-${category}`} className="rounded-xl border border-border bg-background p-2 text-muted-foreground shadow-sm transition hover:border-primary/30 hover:text-primary"><Plus size={17} /></button></div><div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>; })}
+             <div className="space-y-8">
+                 {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); const quickAddOpen = quickAddCategory === category; return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => setQuickAddCategory(quickAddOpen ? null : category)} aria-label={`إضافة مهمة سريعة في ${category}`} data-testid={`button-add-task-${category}`} className={`rounded-xl border bg-background p-2 shadow-sm transition hover:border-primary/30 hover:text-primary ${quickAddOpen ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}><Plus size={17} /></button></div>{quickAddOpen && <div className="mb-4"><QuickTaskInput date={selectedDate} category={category} onCreated={() => setQuickAddCategory(null)} /></div>}<div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>; })}
             </div>
           )}
         </section>
