@@ -12,5 +12,7 @@ export interface Event {
   startDate: Date;
   endDate: Date;
   color: string;
+  /** @nullable */
+  imageUrl: string | null;
   createdAt: Date;
 }

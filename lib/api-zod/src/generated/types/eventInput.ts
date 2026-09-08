@@ -12,4 +12,5 @@ export interface EventInput {
   startDate: Date;
   endDate: Date;
   color?: string;
+  imageUrl?: string;
 }

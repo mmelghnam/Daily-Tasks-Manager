@@ -161,6 +161,22 @@ paths:
                 $ref: "#/components/schemas/Space"
         "409":
           description: A space with this name already exists
+  /spaces/{id}:
+    delete:
+      operationId: deleteSpace
+      tags: [spaces]
+      summary: Delete a task space
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Space not found
   /events:
     get:
       operationId: listEvents
@@ -409,10 +425,12 @@ components:
           format: date
         color:
           type: string
+        imageUrl:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
-      required: [id, title, startDate, endDate, color, createdAt]
+      required: [id, title, startDate, endDate, color, imageUrl, createdAt]
     EventInput:
       type: object
       properties:
@@ -426,6 +444,8 @@ components:
           type: string
           format: date
         color:
+          type: string
+        imageUrl:
           type: string
       required: [title, startDate, endDate]
     EventUpdate:
@@ -441,4 +461,6 @@ components:
           type: string
           format: date
         color:
+          type: string
+        imageUrl:
           type: string

@@ -94,6 +94,8 @@ export interface Event {
   startDate: string;
   endDate: string;
   color: string;
+  /** @nullable */
+  imageUrl: string | null;
   createdAt: string;
 }
 
@@ -103,6 +105,7 @@ export interface EventInput {
   startDate: string;
   endDate: string;
   color?: string;
+  imageUrl?: string;
 }
 
 export interface EventUpdate {
@@ -111,6 +114,7 @@ export interface EventUpdate {
   startDate?: string;
   endDate?: string;
   color?: string;
+  imageUrl?: string;
 }
 
 export type ListTasksParams = {

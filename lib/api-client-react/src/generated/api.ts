@@ -669,6 +669,77 @@ export const useCreateSpace = <TError = ErrorType<void>,
       return useMutation(getCreateSpaceMutationOptions(options));
     }
 
+export const getDeleteSpaceUrl = (id: number,) => {
+
+
+
+
+  return `/api/spaces/${id}`
+}
+
+/**
+ * @summary Delete a task space
+ */
+export const deleteSpace = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteSpaceUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSpaceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSpace>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSpace>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSpace'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSpace>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSpace(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSpaceMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSpace>>>
+
+    export type DeleteSpaceMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a task space
+ */
+export const useDeleteSpace = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSpace>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSpace>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSpaceMutationOptions(options));
+    }
+
 export const getListEventsUrl = () => {
 
 

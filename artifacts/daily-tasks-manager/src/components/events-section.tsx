@@ -53,6 +53,7 @@ function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () 
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(shiftDate(new Date(), 1));
   const [color, setColor] = useState('#d39a2f');
+  const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState('');
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -66,7 +67,7 @@ function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () 
       return;
     }
     createEvent.mutate(
-      { data: { title: title.trim(), startDate, endDate, color } },
+      { data: { title: title.trim(), startDate, endDate, color, imageUrl: imageUrl.trim() || undefined } },
       {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
@@ -106,6 +107,10 @@ function EventForm({ onClose, onCreated }: { onClose: () => void; onCreated: () 
           <div>
             <label htmlFor="event-color" className="mb-2 block text-sm font-bold">لون الحدث</label>
             <input id="event-color" type="color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="input-event-color" className="h-11 w-full cursor-pointer rounded-xl border border-input bg-background p-1" />
+          </div>
+          <div>
+            <label htmlFor="event-image-url" className="mb-2 block text-sm font-bold">رابط صورة مميزة <span className="font-normal text-muted-foreground">(اختياري)</span></label>
+            <input id="event-image-url" type="url" dir="ltr" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." data-testid="input-event-image-url" className="h-11 w-full rounded-xl border border-input bg-background px-3 text-left text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10" />
           </div>
           {error && <p data-testid="status-event-form-error" className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">{error}</p>}
           <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
@@ -156,6 +161,7 @@ export function EventsSection() {
               const status = eventStatus(event, today);
               return (
                 <div key={event.id} className="relative overflow-hidden rounded-2xl border border-border bg-background/75 p-4" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
+                  {event.imageUrl && <img src={event.imageUrl} alt="" className="mb-3 h-24 w-full rounded-xl object-cover" />}
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-extrabold">{event.title}</p>

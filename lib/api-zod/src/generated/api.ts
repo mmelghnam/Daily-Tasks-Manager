@@ -214,6 +214,16 @@ export const CreateSpaceResponse = zod.object({
 
 
 /**
+ * @summary Delete a task space
+ */
+export const DeleteSpaceParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteSpaceResponse = zod.void()
+
+
+/**
  * @summary List countdown events
  */
 export const ListEventsResponseItem = zod.object({
@@ -222,6 +232,7 @@ export const ListEventsResponseItem = zod.object({
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
   "color": zod.string(),
+  "imageUrl": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const ListEventsResponse = zod.array(ListEventsResponseItem)
@@ -237,7 +248,8 @@ export const CreateEventBody = zod.object({
   "title": zod.string().min(1),
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
-  "color": zod.string().optional()
+  "color": zod.string().optional(),
+  "imageUrl": zod.string().optional()
 })
 
 export const CreateEventResponse = zod.object({
@@ -246,6 +258,7 @@ export const CreateEventResponse = zod.object({
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
   "color": zod.string(),
+  "imageUrl": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
 
@@ -264,7 +277,8 @@ export const UpdateEventBody = zod.object({
   "title": zod.string().min(1).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "color": zod.string().optional()
+  "color": zod.string().optional(),
+  "imageUrl": zod.string().optional()
 })
 
 export const UpdateEventResponse = zod.object({
@@ -273,6 +287,7 @@ export const UpdateEventResponse = zod.object({
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
   "color": zod.string(),
+  "imageUrl": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
 

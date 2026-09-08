@@ -28,6 +28,27 @@ export interface HexPalette {
   destructiveForeground: string;
 }
 
+export const customPaletteFields: Array<{ key: keyof HexPalette; label: string }> = [
+  { key: 'background', label: 'الخلفية' },
+  { key: 'foreground', label: 'النص الأساسي' },
+  { key: 'border', label: 'الحدود' },
+  { key: 'card', label: 'الكروت' },
+  { key: 'cardForeground', label: 'نص الكروت' },
+  { key: 'cardBorder', label: 'حدود الكروت' },
+  { key: 'primary', label: 'اللون الأساسي' },
+  { key: 'primaryForeground', label: 'نص الأساسي' },
+  { key: 'secondary', label: 'اللون الثانوي' },
+  { key: 'secondaryForeground', label: 'نص الثانوي' },
+  { key: 'muted', label: 'الخلفية الهادئة' },
+  { key: 'mutedForeground', label: 'النص الهادئ' },
+  { key: 'accent', label: 'لون التمييز' },
+  { key: 'accentForeground', label: 'نص التمييز' },
+  { key: 'input', label: 'حقول الإدخال' },
+  { key: 'ring', label: 'حلقة التركيز' },
+  { key: 'destructive', label: 'الحذف والتنبيه' },
+  { key: 'destructiveForeground', label: 'نص الحذف' },
+];
+
 // عدّل قيم Hex هنا لإضافة هويتك الخاصة، ثم ستظهر تلقائيًا في قائمة المظهر.
 export const customPaletteHex: HexPalette = {
   background: '#f4f1e8',
@@ -97,6 +118,27 @@ function makeHexPalette(colors: HexPalette): ThemePalette {
       '--destructive-foreground': hexToHsl(colors.destructiveForeground),
     },
   };
+}
+
+const customPaletteStorageKey = 'daily-tasks-manager-custom-palette';
+
+export function getStoredCustomPalette(): HexPalette {
+  if (typeof window === 'undefined') return { ...customPaletteHex };
+  try {
+    const stored = window.localStorage.getItem(customPaletteStorageKey);
+    if (!stored) return { ...customPaletteHex };
+    return { ...customPaletteHex, ...JSON.parse(stored) } as HexPalette;
+  } catch {
+    return { ...customPaletteHex };
+  }
+}
+
+export function applyCustomPalette(colors: HexPalette) {
+  const palette = makeHexPalette(colors);
+  Object.entries(palette.variables).forEach(([property, value]) => {
+    document.documentElement.style.setProperty(property, value);
+  });
+  window.localStorage.setItem(customPaletteStorageKey, JSON.stringify(colors));
 }
 
 export const themePalettes: Record<PaletteId, ThemePalette> = {
@@ -213,7 +255,7 @@ export function getStoredPalette(): PaletteId {
 
 export function applyPalette(id: PaletteId) {
   const root = document.documentElement;
-  const palette = themePalettes[id];
+  const palette = id === 'custom' ? makeHexPalette(getStoredCustomPalette()) : themePalettes[id];
   root.dataset.palette = id;
   Object.entries(palette.variables).forEach(([property, value]) => {
     root.style.setProperty(property, value);

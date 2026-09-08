@@ -48,6 +48,7 @@ router.post("/events", async (req, res, next) => {
         startDate: toDateOnly(input.startDate),
         endDate: toDateOnly(input.endDate),
         color: input.color ?? "#d39a2f",
+        imageUrl: input.imageUrl?.trim() || null,
       })
       .returning();
 
@@ -67,6 +68,7 @@ router.patch("/events/:id", async (req, res, next) => {
     if (input.startDate !== undefined) updates.startDate = toDateOnly(input.startDate);
     if (input.endDate !== undefined) updates.endDate = toDateOnly(input.endDate);
     if (input.color !== undefined) updates.color = input.color;
+    if (input.imageUrl !== undefined) updates.imageUrl = input.imageUrl.trim() || null;
 
     const [event] = await db
       .update(eventsTable)

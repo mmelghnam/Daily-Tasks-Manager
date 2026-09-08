@@ -12,4 +12,5 @@ export interface EventUpdate {
   startDate?: Date;
   endDate?: Date;
   color?: string;
+  imageUrl?: string;
 }

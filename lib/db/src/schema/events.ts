@@ -8,6 +8,7 @@ export const eventsTable = pgTable("countdown_events", {
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   color: text("color").notNull().default("#d39a2f"),
+  imageUrl: text("image_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Plus, RefreshCw, Sparkles, Target } from 'lucide-react';
-import { useGetTaskSummary, useListSpaces, useListTasks } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
+import { getListSpacesQueryKey, useDeleteSpace, useGetTaskSummary, useListSpaces, useListTasks } from '@workspace/api-client-react';
 import type { Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
@@ -44,6 +45,8 @@ function shiftDate(date: string, amount: number) {
 }
 
 export default function Home() {
+  const queryClient = useQueryClient();
+  const deleteSpace = useDeleteSpace();
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()));
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
@@ -54,9 +57,9 @@ export default function Home() {
   const taskQuery = useListTasks({ date: selectedDate });
   const summaryQuery = useGetTaskSummary({ date: selectedDate });
   const tasks = taskQuery.data ?? [];
-  const spaces = spacesQuery.data?.length ? spacesQuery.data : fallbackSpaces;
-  const categories = spaces.map((space) => space.name);
-  const spaceNames = categories;
+  const spaces = spacesQuery.data ?? fallbackSpaces;
+  const categories = useMemo(() => Array.from(new Set([...spaces.map((space) => space.name), ...tasks.map((task) => task.category)])), [spaces, tasks]);
+  const spaceNames = spaces.map((space) => space.name);
   const visibleTasks = useMemo(() => activeCategory === 'all' ? tasks : tasks.filter((task) => task.category === activeCategory), [activeCategory, tasks]);
   const summary = summaryQuery.data;
   const completion = summary && summary.total > 0 ? Math.round((summary.completed / summary.total) * 100) : 0;
@@ -65,6 +68,18 @@ export default function Home() {
   const openNew = (category?: Category) => {
     setFormCategory(category);
     setShowForm(true);
+  };
+
+  const removeSpace = (name: string) => {
+    const space = spacesQuery.data?.find((item) => item.name === name);
+    if (!space) return;
+    if (!window.confirm(`حذف مساحة ${name}؟ المهام الموجودة فيها لن تُحذف وستظل ظاهرة في يومها.`)) return;
+    deleteSpace.mutate({ id: space.id }, {
+      onSuccess: () => {
+        if (activeCategory === name) setActiveCategory('all');
+        void queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
+      },
+    });
   };
 
   const grouped = useMemo(() => categories.reduce<Record<string, Task[]>>((acc, category) => {
@@ -159,7 +174,8 @@ export default function Home() {
             {categories.map((category) => {
               const count = summary?.byCategory?.[category] ?? 0;
                const meta = getSpaceMeta(category, spaces);
-               return <button type="button" key={category} onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex items-center justify-between rounded-2xl border p-3 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>;
+               const canDelete = spacesQuery.data?.some((space) => space.name === category);
+               return <div key={category} className="relative"><button type="button" onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex w-full items-center justify-between rounded-2xl border p-3 pl-10 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>{canDelete && <button type="button" onClick={() => removeSpace(category)} disabled={deleteSpace.isPending} aria-label={`حذف مساحة ${category}`} data-testid={`button-delete-space-${category}`} className={`absolute left-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition ${activeCategory === category ? 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground' : 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive'}`}><Trash2 size={14} /></button>}</div>;
             })}
           </div>
         </section>

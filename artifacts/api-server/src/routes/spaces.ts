@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import {
   CreateSpaceBody,
   CreateSpaceResponse,
+  DeleteSpaceParams,
   ListSpacesResponse,
 } from "@workspace/api-zod";
 import { db, spacesTable } from "@workspace/db";
@@ -51,6 +52,25 @@ router.post("/spaces", async (req, res, next) => {
 
     res.status(201).json(CreateSpaceResponse.parse(space));
   } catch (error: unknown) {
+    next(error);
+  }
+});
+
+router.delete("/spaces/:id", async (req, res, next) => {
+  try {
+    const params = DeleteSpaceParams.parse({ id: Number(req.params.id) });
+    const deleted = await db
+      .delete(spacesTable)
+      .where(eq(spacesTable.id, params.id))
+      .returning({ id: spacesTable.id });
+
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Space not found" });
+      return;
+    }
+
+    res.status(204).send();
+  } catch (error) {
     next(error);
   }
 });
