@@ -1,1 +1,2 @@
 - [API date normalization](api-date-normalization.md) — nested JSON dates need explicit normalization because generated schemas coerce OpenAPI date formats.
+- [Legacy data ownership](legacy-data-ownership.md) — the first authenticated account claims all pre-authentication data exactly once.

@@ -5,6 +5,7 @@ import { spacesTable } from "./spaces";
 
 export const spaceLinksTable = pgTable("space_links", {
   id: serial("id").primaryKey(),
+  ownerId: text("owner_id"),
   spaceId: integer("space_id").notNull().references(() => spacesTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   url: text("url").notNull(),

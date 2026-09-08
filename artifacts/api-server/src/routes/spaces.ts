@@ -13,11 +13,12 @@ import { and, asc, eq, ne } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/spaces", async (_req, res, next) => {
+router.get("/spaces", async (req, res, next) => {
   try {
     const spaces = await db
       .select()
       .from(spacesTable)
+      .where(eq(spacesTable.ownerId, req.userId!))
       .orderBy(asc(spacesTable.createdAt), asc(spacesTable.id));
     res.json(ListSpacesResponse.parse(spaces));
   } catch (error) {
@@ -37,7 +38,7 @@ router.post("/spaces", async (req, res, next) => {
     const existing = await db
       .select({ id: spacesTable.id })
       .from(spacesTable)
-      .where(eq(spacesTable.name, name))
+      .where(and(eq(spacesTable.name, name), eq(spacesTable.ownerId, req.userId!)))
       .limit(1);
     if (existing.length > 0) {
       res.status(409).json({ error: "A space with this name already exists" });
@@ -47,6 +48,7 @@ router.post("/spaces", async (req, res, next) => {
     const [space] = await db
       .insert(spacesTable)
       .values({
+        ownerId: req.userId!,
         name,
         color: input.color?.trim() || "#2e8d77",
         description: input.description?.trim() || null,
@@ -73,7 +75,7 @@ router.patch("/spaces/:id", async (req, res, next) => {
     const [current] = await db
       .select()
       .from(spacesTable)
-      .where(eq(spacesTable.id, params.id))
+      .where(and(eq(spacesTable.id, params.id), eq(spacesTable.ownerId, req.userId!)))
       .limit(1);
     if (!current) {
       res.status(404).json({ error: "Space not found" });
@@ -83,7 +85,11 @@ router.patch("/spaces/:id", async (req, res, next) => {
     const duplicate = await db
       .select({ id: spacesTable.id })
       .from(spacesTable)
-      .where(and(eq(spacesTable.name, name), ne(spacesTable.id, params.id)))
+      .where(and(
+        eq(spacesTable.name, name),
+        eq(spacesTable.ownerId, req.userId!),
+        ne(spacesTable.id, params.id),
+      ))
       .limit(1);
     if (duplicate.length > 0) {
       res.status(409).json({ error: "A space with this name already exists" });
@@ -98,14 +104,14 @@ router.patch("/spaces/:id", async (req, res, next) => {
           color,
           description: input.description?.trim() || null,
         })
-        .where(eq(spacesTable.id, params.id))
+        .where(and(eq(spacesTable.id, params.id), eq(spacesTable.ownerId, req.userId!)))
         .returning();
 
       if (current.name !== name) {
         await tx
           .update(tasksTable)
           .set({ category: name })
-          .where(eq(tasksTable.category, current.name));
+          .where(and(eq(tasksTable.category, current.name), eq(tasksTable.ownerId, req.userId!)));
       }
 
       return space;
@@ -122,7 +128,7 @@ router.delete("/spaces/:id", async (req, res, next) => {
     const params = DeleteSpaceParams.parse({ id: Number(req.params.id) });
     const deleted = await db
       .delete(spacesTable)
-      .where(eq(spacesTable.id, params.id))
+      .where(and(eq(spacesTable.id, params.id), eq(spacesTable.ownerId, req.userId!)))
       .returning({ id: spacesTable.id });
 
     if (deleted.length === 0) {

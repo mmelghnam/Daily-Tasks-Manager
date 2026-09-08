@@ -23,6 +23,7 @@ export const tasksTable = pgTable(
   {
     id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
     taskDate: date("task_date", { mode: "string" }).notNull(),
+    ownerId: text("owner_id"),
     category: text("category").notNull(),
     title: text("title").notNull(),
     notes: text("notes"),
@@ -36,7 +37,7 @@ export const tasksTable = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    taskDateIdx: index("daily_tasks_task_date_idx").on(table.taskDate),
+    ownerTaskDateIdx: index("daily_tasks_owner_task_date_idx").on(table.ownerId, table.taskDate),
   }),
 );
 

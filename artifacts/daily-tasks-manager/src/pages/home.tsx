@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useClerk, useUser } from '@clerk/react';
 import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, LayoutGrid, Pencil, Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
 import { getListSpacesQueryKey, useDeleteSpace, useGetTaskSummary, useListSpaces, useListTasks } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
@@ -43,6 +44,20 @@ function shiftDate(date: string, amount: number) {
   const next = new Date(`${date}T12:00:00`);
   next.setDate(next.getDate() + amount);
   return dateKey(next);
+}
+
+function AccountControl() {
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const name = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'حسابي';
+
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-background/70 p-1.5">
+      <div className="hidden max-w-28 truncate px-1 text-xs font-extrabold text-foreground md:block">{name}</div>
+      <button type="button" onClick={() => void signOut({ redirectUrl: basePath || '/' })} className="rounded-lg bg-muted px-3 py-1.5 text-xs font-extrabold text-primary transition hover:bg-secondary/30">تسجيل الخروج</button>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -108,6 +123,7 @@ export default function Home() {
            <div className="flex items-center gap-2">
              <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> كل إنجاز يفتح مساحة</div>
              <PalettePicker />
+              <AccountControl />
            </div>
         </div>
       </header>

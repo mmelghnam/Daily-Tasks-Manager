@@ -21,3 +21,4 @@ export * from "./tasks";
 export * from "./spaces";
 export * from "./events";
 export * from "./space-links";
+export * from "./users";

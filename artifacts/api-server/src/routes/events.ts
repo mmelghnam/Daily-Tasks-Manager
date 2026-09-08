@@ -9,7 +9,7 @@ import {
   UpdateEventResponse,
 } from "@workspace/api-zod";
 import { db, eventsTable } from "@workspace/db";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -21,11 +21,12 @@ function hasInvalidDateRange(startDate: Date, endDate: Date) {
   return endDate.getTime() < startDate.getTime();
 }
 
-router.get("/events", async (_req, res, next) => {
+router.get("/events", async (req, res, next) => {
   try {
     const rows = await db
       .select()
       .from(eventsTable)
+      .where(eq(eventsTable.ownerId, req.userId!))
       .orderBy(asc(eventsTable.endDate), asc(eventsTable.id));
     res.json(ListEventsResponse.parse(rows));
   } catch (error) {
@@ -44,6 +45,7 @@ router.post("/events", async (req, res, next) => {
     const [event] = await db
       .insert(eventsTable)
       .values({
+        ownerId: req.userId!,
         title: input.title.trim(),
         startDate: toDateOnly(input.startDate),
         endDate: toDateOnly(input.endDate),
@@ -73,7 +75,7 @@ router.patch("/events/:id", async (req, res, next) => {
     const [event] = await db
       .update(eventsTable)
       .set(updates)
-      .where(eq(eventsTable.id, params.id))
+      .where(and(eq(eventsTable.id, params.id), eq(eventsTable.ownerId, req.userId!)))
       .returning();
 
     if (!event) {
@@ -92,7 +94,7 @@ router.delete("/events/:id", async (req, res, next) => {
     const params = DeleteEventParams.parse({ id: Number(req.params.id) });
     const deleted = await db
       .delete(eventsTable)
-      .where(eq(eventsTable.id, params.id))
+      .where(and(eq(eventsTable.id, params.id), eq(eventsTable.ownerId, req.userId!)))
       .returning({ id: eventsTable.id });
 
     if (deleted.length === 0) {

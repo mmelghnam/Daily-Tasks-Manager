@@ -13,7 +13,7 @@ import {
 } from "@workspace/api-zod";
 import { db, tasksTable } from "@workspace/db";
 import { spacesTable } from "@workspace/db";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -36,7 +36,10 @@ router.get("/tasks", async (req, res, next) => {
     const rows = await db
       .select()
       .from(tasksTable)
-      .where(query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined)
+      .where(and(
+        eq(tasksTable.ownerId, req.userId!),
+        query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined,
+      ))
       .orderBy(asc(tasksTable.taskDate), asc(tasksTable.category), asc(tasksTable.id));
 
     res.json(ListTasksResponse.parse(rows));
@@ -51,6 +54,7 @@ router.post("/tasks", async (req, res, next) => {
     const [task] = await db
       .insert(tasksTable)
       .values({
+        ownerId: req.userId!,
         taskDate: toDateOnly(input.taskDate),
         category: input.category,
         title: input.title.trim(),
@@ -86,7 +90,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
     const [task] = await db
       .update(tasksTable)
       .set(updates)
-      .where(eq(tasksTable.id, params.id))
+      .where(and(eq(tasksTable.id, params.id), eq(tasksTable.ownerId, req.userId!)))
       .returning();
 
     if (!task) {
@@ -105,7 +109,7 @@ router.delete("/tasks/:id", async (req, res, next) => {
     const params = DeleteTaskParams.parse({ id: Number(req.params.id) });
     const deleted = await db
       .delete(tasksTable)
-      .where(eq(tasksTable.id, params.id))
+      .where(and(eq(tasksTable.id, params.id), eq(tasksTable.ownerId, req.userId!)))
       .returning({ id: tasksTable.id });
 
     if (deleted.length === 0) {
@@ -130,11 +134,15 @@ router.get("/tasks/summary", async (req, res, next) => {
         completed: tasksTable.completed,
       })
       .from(tasksTable)
-      .where(query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined);
+      .where(and(
+        eq(tasksTable.ownerId, req.userId!),
+        query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined,
+      ));
 
     const spaces = await db
       .select({ name: spacesTable.name })
       .from(spacesTable)
+      .where(eq(spacesTable.ownerId, req.userId!))
       .orderBy(asc(spacesTable.createdAt), asc(spacesTable.id));
     const byCategory = Object.fromEntries(spaces.map((space) => [space.name, 0]));
     let completed = 0;
