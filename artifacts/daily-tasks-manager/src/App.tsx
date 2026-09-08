@@ -9,6 +9,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Home from '@/pages/home';
 import Landing from '@/pages/landing';
+import { OnboardingGuard } from '@/components/onboarding-guard';
 import {
   Redirect,
   Route,
@@ -98,7 +99,11 @@ function HomeRedirect() {
 function AppRoute() {
   return (
     <>
-      <Show when="signed-in"><Home /></Show>
+      <Show when="signed-in">
+        <OnboardingGuard>
+          <Home />
+        </OnboardingGuard>
+      </Show>
       <Show when="signed-out"><Redirect to="/" /></Show>
     </>
   );

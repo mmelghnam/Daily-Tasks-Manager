@@ -7,4 +7,4 @@ The first account that authenticates after the accounts feature is introduced be
 
 **Why:** The user explicitly chose to preserve the existing content and transfer it to their first registered account rather than copy it to every user or discard it.
 
-**How to apply:** Any future ownership migrations or onboarding defaults must preserve this one-time claim and must never expose or duplicate the original records for subsequent accounts.
+**How to apply:** Any future ownership migrations or onboarding defaults must preserve this one-time claim and must never expose or duplicate the original records for subsequent accounts. Starter templates are created once per account inside an atomic onboarding transaction; for the legacy claimant they are additive to claimed content, never a replacement or copy of it.

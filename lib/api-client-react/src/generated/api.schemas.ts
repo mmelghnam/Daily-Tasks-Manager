@@ -9,6 +9,26 @@ export interface HealthStatus {
   status: string;
 }
 
+export type UsageType = typeof UsageType[keyof typeof UsageType];
+
+
+export const UsageType = {
+  student: 'student',
+  employee: 'employee',
+  freelancer: 'freelancer',
+  personal: 'personal',
+} as const;
+
+export interface OnboardingStatus {
+  completed: boolean;
+  usageType: UsageType | null;
+}
+
+export interface OnboardingInput {
+  usageType: UsageType;
+  taskDate: string;
+}
+
 /**
  * @minLength 1
  */

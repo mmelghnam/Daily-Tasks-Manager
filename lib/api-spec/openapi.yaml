@@ -18,6 +18,8 @@ tags:
     description: Countdown events
   - name: space-links
     description: Persistent links grouped by task space
+  - name: onboarding
+    description: New-account setup and starter templates
 paths:
   /healthz:
     get:
@@ -32,6 +34,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /onboarding:
+    get:
+      operationId: getOnboardingStatus
+      tags: [onboarding]
+      summary: Get onboarding status for the signed-in account
+      responses:
+        "200":
+          description: Current onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+    post:
+      operationId: completeOnboarding
+      tags: [onboarding]
+      summary: Create the account starter spaces and daily template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingInput"
+      responses:
+        "200":
+          description: Completed onboarding
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
   /tasks:
     get:
       operationId: listTasks
@@ -340,6 +371,28 @@ components:
           type: string
       required:
         - status
+    UsageType:
+      type: string
+      enum: [student, employee, freelancer, personal]
+    OnboardingStatus:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        usageType:
+          oneOf:
+            - $ref: "#/components/schemas/UsageType"
+            - type: "null"
+      required: [completed, usageType]
+    OnboardingInput:
+      type: object
+      properties:
+        usageType:
+          $ref: "#/components/schemas/UsageType"
+        taskDate:
+          type: string
+          format: date
+      required: [usageType, taskDate]
     TaskCategory:
       type: string
       minLength: 1

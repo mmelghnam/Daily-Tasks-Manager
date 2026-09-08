@@ -18,6 +18,29 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get onboarding status for the signed-in account
+ */
+export const GetOnboardingStatusResponse = zod.object({
+  "completed": zod.boolean(),
+  "usageType": zod.union([zod.enum(['student', 'employee', 'freelancer', 'personal']),zod.null()])
+})
+
+
+/**
+ * @summary Create the account starter spaces and daily template
+ */
+export const CompleteOnboardingBody = zod.object({
+  "usageType": zod.enum(['student', 'employee', 'freelancer', 'personal']),
+  "taskDate": zod.coerce.date()
+})
+
+export const CompleteOnboardingResponse = zod.object({
+  "completed": zod.boolean(),
+  "usageType": zod.union([zod.enum(['student', 'employee', 'freelancer', 'personal']),zod.null()])
+})
+
+
+/**
  * @summary List daily tasks
  */
 export const ListTasksQueryParams = zod.object({

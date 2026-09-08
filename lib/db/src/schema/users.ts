@@ -6,6 +6,8 @@ import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
  */
 export const appUsersTable = pgTable("app_users", {
   userId: text("user_id").primaryKey(),
+  usageType: text("usage_type"),
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
