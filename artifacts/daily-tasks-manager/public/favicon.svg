@@ -1,3 +1,8 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+  <rect width="180" height="180" rx="44" fill="#2D6B5F"/>
+  <circle cx="90" cy="90" r="54" stroke="#F8F4E9" stroke-width="8" opacity=".22"/>
+  <circle cx="90" cy="90" r="35" stroke="#F8F4E9" stroke-width="7" opacity=".55"/>
+  <circle cx="90" cy="90" r="17" fill="#EFB955"/>
+  <circle cx="90" cy="90" r="7" fill="#2D6B5F"/>
+  <circle cx="130" cy="53" r="8" fill="#EFB955"/>
 </svg>
