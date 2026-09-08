@@ -243,10 +243,12 @@ export const DeleteTaskResponse = zod.void()
 
 
 /**
- * @summary Get daily task summary
+ * @summary Get task summary for a selected range
  */
 export const GetTaskSummaryQueryParams = zod.object({
-  "date": zod.date().optional()
+  "date": zod.date().optional(),
+  "dateFrom": zod.date().optional(),
+  "dateTo": zod.date().optional()
 })
 
 export const GetTaskSummaryResponse = zod.object({

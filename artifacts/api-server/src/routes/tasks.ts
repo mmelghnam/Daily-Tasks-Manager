@@ -185,6 +185,8 @@ router.get("/tasks/summary", async (req, res, next) => {
   try {
     const query = GetTaskSummaryQueryParams.parse({
       date: parseDateQuery(req.query.date),
+      dateFrom: parseDateRangeQuery(req.query.dateFrom),
+      dateTo: parseDateRangeQuery(req.query.dateTo),
     });
     const rows = await db
       .select({
@@ -195,6 +197,8 @@ router.get("/tasks/summary", async (req, res, next) => {
       .where(and(
         eq(tasksTable.ownerId, req.userId!),
         query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined,
+        !query.date && query.dateFrom ? gte(tasksTable.taskDate, toDateOnly(query.dateFrom)) : undefined,
+        !query.date && query.dateTo ? lte(tasksTable.taskDate, toDateOnly(query.dateTo)) : undefined,
       ));
 
     const spaces = await db

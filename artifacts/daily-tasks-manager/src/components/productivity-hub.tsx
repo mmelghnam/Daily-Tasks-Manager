@@ -44,10 +44,10 @@ export function ProductivityHub({ usageType }: { usageType: UsageType }) {
   return (
     <section className="mt-8 grid gap-4 lg:grid-cols-3" dir="rtl">
       <ProductivityCard title="أهدافك" icon={<Target size={18} />} accent="text-primary">
-        <div className="mb-3 flex gap-2">
+        <form onSubmit={(event) => { event.preventDefault(); addGoal(); }} className="mb-3 flex gap-2">
           <input value={goalTitle} onChange={(e) => setGoalTitle(e.target.value)} placeholder="هدف جديد..." className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" />
-          <button type="button" onClick={addGoal} className="rounded-xl bg-primary px-3 text-primary-foreground" aria-label="إضافة هدف"><Plus size={17} /></button>
-        </div>
+          <button type="submit" disabled={createGoal.isPending} className="rounded-xl bg-primary px-3 text-primary-foreground disabled:cursor-wait disabled:opacity-60" aria-label="إضافة هدف"><Plus size={17} /></button>
+        </form>
         <div className="space-y-2">
           {(goals.data ?? []).map((goal: Goal) => (
             <div key={goal.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
@@ -61,10 +61,10 @@ export function ProductivityHub({ usageType }: { usageType: UsageType }) {
       </ProductivityCard>
 
       <ProductivityCard title="عاداتك" icon={<HeartPulse size={18} />} accent="text-secondary">
-        <div className="mb-3 flex gap-2">
+        <form onSubmit={(event) => { event.preventDefault(); addHabit(); }} className="mb-3 flex gap-2">
           <input value={habitName} onChange={(e) => setHabitName(e.target.value)} placeholder="عادة جديدة..." className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" />
-          <button type="button" onClick={addHabit} className="rounded-xl bg-secondary px-3 text-secondary-foreground" aria-label="إضافة عادة"><Plus size={17} /></button>
-        </div>
+          <button type="submit" disabled={createHabit.isPending} className="rounded-xl bg-secondary px-3 text-secondary-foreground disabled:cursor-wait disabled:opacity-60" aria-label="إضافة عادة"><Plus size={17} /></button>
+        </form>
         <div className="space-y-2">
           {(habits.data ?? []).map((habit: Habit) => {
             const doneToday = habit.lastCompleted === new Date().toISOString().slice(0, 10);

@@ -688,7 +688,7 @@ export const getGetTaskSummaryUrl = (params?: GetTaskSummaryParams,) => {
 }
 
 /**
- * @summary Get daily task summary
+ * @summary Get task summary for a selected range
  */
 export const getTaskSummary = async (params?: GetTaskSummaryParams, options?: Parameters<typeof customFetch>[1]): Promise<TaskSummary> => {
 
@@ -735,7 +735,7 @@ export type GetTaskSummaryQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get daily task summary
+ * @summary Get task summary for a selected range
  */
 
 export function useGetTaskSummary<TData = Awaited<ReturnType<typeof getTaskSummary>>, TError = ErrorType<unknown>>(

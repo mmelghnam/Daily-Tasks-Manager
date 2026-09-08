@@ -156,7 +156,7 @@ export default function Home() {
 
   const spacesQuery = useListSpaces();
   const taskQuery = useListTasks(rangeFor(selectedDate, viewMode));
-  const summaryQuery = useGetTaskSummary({ date: selectedDate });
+  const summaryQuery = useGetTaskSummary(rangeFor(selectedDate, viewMode));
   const onboarding = useGetOnboardingStatus();
   const tasks = taskQuery.data ?? [];
   const spaces = spacesQuery.data ?? fallbackSpaces;

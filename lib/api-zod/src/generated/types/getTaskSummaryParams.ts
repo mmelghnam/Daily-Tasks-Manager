@@ -8,4 +8,6 @@
 
 export type GetTaskSummaryParams = {
 date?: Date;
+dateFrom?: Date;
+dateTo?: Date;
 };

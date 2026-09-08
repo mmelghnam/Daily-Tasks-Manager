@@ -362,6 +362,8 @@ dateTo?: string;
 
 export type GetTaskSummaryParams = {
 date?: string;
+dateFrom?: string;
+dateTo?: string;
 };
 
 export type ListSpaceLinksParams = {
