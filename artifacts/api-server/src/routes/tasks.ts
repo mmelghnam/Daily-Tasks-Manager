@@ -31,6 +31,22 @@ function toDateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
+function toTaskJson(task: {
+  taskDate: Date;
+  dueDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}) {
+  return {
+    ...task,
+    taskDate: toDateOnly(task.taskDate),
+    dueDate: task.dueDate ? toDateOnly(task.dueDate) : null,
+    createdAt: task.createdAt.toISOString(),
+    updatedAt: task.updatedAt.toISOString(),
+  };
+}
+
 function nextRecurringDate(date: string, recurrence: string | null) {
   if (!recurrence) return null;
   const next = new Date(`${date}T12:00:00.000Z`);
@@ -63,7 +79,7 @@ router.get("/tasks", async (req, res, next) => {
       ))
       .orderBy(asc(tasksTable.taskDate), asc(tasksTable.category), asc(tasksTable.id));
 
-    res.json(ListTasksResponse.parse(rows));
+    res.json(ListTasksResponse.parse(rows).map(toTaskJson));
   } catch (error) {
     next(error);
   }
@@ -90,7 +106,7 @@ router.post("/tasks", async (req, res, next) => {
       })
       .returning();
 
-    res.status(201).json(CreateTaskResponse.parse(task));
+    res.status(201).json(toTaskJson(CreateTaskResponse.parse(task)));
   } catch (error) {
     next(error);
   }
@@ -159,7 +175,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
       }
     }
 
-    res.json(UpdateTaskResponse.parse(task));
+    res.json(toTaskJson(UpdateTaskResponse.parse(task)));
   } catch (error) {
     next(error);
   }
@@ -216,7 +232,7 @@ router.post("/tasks/:id/copy", async (req, res, next) => {
       copied.push(copy);
     }
 
-    res.status(201).json(CopyTaskResponse.parse(copied));
+    res.status(201).json(CopyTaskResponse.parse(copied).map(toTaskJson));
   } catch (error) {
     next(error);
   }

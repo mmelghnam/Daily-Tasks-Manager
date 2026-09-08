@@ -52,8 +52,27 @@ function playCompletionSound() {
   });
 }
 
+function dateOnly(value: string | null | undefined) {
+  const match = value?.match(/^\d{4}-\d{2}-\d{2}/);
+  return match?.[0] ?? '';
+}
+
+function safeDate(value: string) {
+  const normalized = dateOnly(value);
+  const parsed = new Date(`${normalized}T12:00:00`);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+function formatUpdatedTime(value: string | null | undefined) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? ''
+    : parsed.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+}
+
 function nextDate(date: string) {
-  const tomorrow = new Date(`${date}T12:00:00`);
+  const tomorrow = safeDate(date);
   tomorrow.setDate(tomorrow.getDate() + 1);
   return tomorrow.toISOString().slice(0, 10);
 }
@@ -63,19 +82,21 @@ function nextDates(date: string, count: number) {
 }
 
 function shiftDate(date: string, amount: number) {
-  const next = new Date(`${date}T12:00:00`);
+  const next = safeDate(date);
   next.setDate(next.getDate() + amount);
   return next.toISOString().slice(0, 10);
 }
 
 export function TaskCard({ task, date, spaces }: TaskCardProps) {
+  const normalizedTaskDate = dateOnly(date) || new Date().toISOString().slice(0, 10);
+  const updatedTime = formatUpdatedTime(task.updatedAt);
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
-  const [copyDate, setCopyDate] = useState(nextDate(date));
+  const [copyDate, setCopyDate] = useState(nextDate(normalizedTaskDate));
   const [copyPending, setCopyPending] = useState(false);
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const links = Array.isArray(task.links) ? task.links : [];
@@ -91,7 +112,7 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
   };
 
   const moveToTomorrow = () => {
-    const tomorrow = nextDate(date);
+    const tomorrow = nextDate(normalizedTaskDate);
     updateTask.mutate(
       { id: task.id, data: { taskDate: tomorrow } },
       {
@@ -161,8 +182,8 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
                   <div className="absolute left-0 top-9 z-20 w-32 overflow-hidden rounded-xl border border-border bg-popover p-1 text-sm shadow-xl">
                     <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل</button>
                     {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarPlus size={14} /> ترحيل للغد</button>}
-                    <button type="button" onClick={() => copyToDates([nextDate(date)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Copy size={14} /> نسخ للغد</button>
-                    <button type="button" onClick={() => copyToDates(nextDates(date, 7))} disabled={copyPending} data-testid={`button-copy-week-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لأسبوع</button>
+                    <button type="button" onClick={() => copyToDates([nextDate(normalizedTaskDate)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Copy size={14} /> نسخ للغد</button>
+                    <button type="button" onClick={() => copyToDates(nextDates(normalizedTaskDate, 7))} disabled={copyPending} data-testid={`button-copy-week-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لأسبوع</button>
                     <button type="button" onClick={() => { setCopyOpen(true); setMenuOpen(false); }} data-testid={`button-copy-date-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ ليوم معين</button>
                     <button type="button" onClick={remove} disabled={deleteTask.isPending} data-testid={`button-delete-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold text-destructive hover:bg-destructive/10"><Trash2 size={14} /> حذف</button>
                   </div>
@@ -187,13 +208,13 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
                   <ExternalLink size={12} /> {link.label}
                 </a>
               ))}
-              <time dateTime={task.updatedAt} className="mr-auto font-mono-ui text-[10px] tracking-wide text-muted-foreground/75">{new Date(task.updatedAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}</time>
+              {updatedTime && <time dateTime={task.updatedAt} className="mr-auto font-mono-ui text-[10px] tracking-wide text-muted-foreground/75">{updatedTime}</time>}
             </div>
             <FollowUpList followUps={followUps} isPending={updateTask.isPending} onChange={saveFollowUps} />
           </div>
         </div>
       </article>
-      {editing && <TaskForm date={date} task={task} spaces={spaces} onClose={() => setEditing(false)} />}
+      {editing && <TaskForm date={normalizedTaskDate} task={task} spaces={spaces} onClose={() => setEditing(false)} />}
       <Dialog open={copyOpen} onOpenChange={setCopyOpen}>
         <DialogContent dir="rtl" className="max-w-sm rounded-3xl">
           <DialogHeader className="text-right">
@@ -202,7 +223,7 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
           </DialogHeader>
           <div className="space-y-3">
             <label htmlFor={`copy-date-${task.id}`} className="block text-sm font-bold">التاريخ الجديد</label>
-            <input id={`copy-date-${task.id}`} type="date" value={copyDate} min={date} onChange={(event) => setCopyDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
+            <input id={`copy-date-${task.id}`} type="date" value={copyDate} min={normalizedTaskDate} onChange={(event) => setCopyDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
             <button type="button" onClick={() => copyToDates([copyDate])} disabled={!copyDate || copyPending} data-testid={`button-confirm-copy-date-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Copy size={16} /> {copyPending ? 'جارٍ النسخ...' : 'نسخ المهمة'}</button>
           </div>
         </DialogContent>

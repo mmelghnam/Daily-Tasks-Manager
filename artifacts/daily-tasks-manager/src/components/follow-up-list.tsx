@@ -31,9 +31,12 @@ interface FollowUpListProps {
 }
 
 function formatDueDate(dueDate: string) {
-  return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short' }).format(
-    new Date(`${dueDate}T12:00:00`),
-  );
+  const normalized = dueDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (!normalized) return '';
+  const parsed = new Date(`${normalized}T12:00:00`);
+  return Number.isNaN(parsed.getTime())
+    ? ''
+    : new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short' }).format(parsed);
 }
 
 export function FollowUpList({ followUps, isPending, onChange }: FollowUpListProps) {

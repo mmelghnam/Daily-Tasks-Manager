@@ -1,4 +1,4 @@
-- [API date normalization](api-date-normalization.md) — nested JSON dates need explicit normalization because generated schemas coerce OpenAPI date formats.
+- [API date normalization](api-date-normalization.md) — generated schemas coerce OpenAPI dates; normalize date-only and timestamp fields before sending JSON.
 - [Legacy data ownership](legacy-data-ownership.md) — the first authenticated account claims all pre-authentication data exactly once.
 - [Usage type switching](usage-type-switching.md) — changing طالب/موظف/مستقل/شخصي preserves existing spaces and tasks.
 - [Primary admin and broadcasts](primary-admin-and-broadcasts.md) — the first authenticated account is the protected admin fallback; announcements currently appear in-app.

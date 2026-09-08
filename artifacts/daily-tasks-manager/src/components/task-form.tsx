@@ -11,6 +11,10 @@ import type { Task } from '@workspace/api-client-react';
 
 type Category = Task['category'];
 
+function dateOnly(value: string | null | undefined) {
+  return value?.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
+}
+
 interface TaskFormProps {
   date: string;
   task?: Task | null;
@@ -29,7 +33,7 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
   const [notes, setNotes] = useState(task?.notes ?? '');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority ?? 'medium');
   const [recurrence, setRecurrence] = useState(task?.recurrence ?? '');
-  const [dueDate, setDueDate] = useState(task?.dueDate ?? '');
+  const [dueDate, setDueDate] = useState(dateOnly(task?.dueDate));
   const [subtaskText, setSubtaskText] = useState(task?.subtasks.map((item) => item.title).join('\n') ?? '');
   const [linkLabel, setLinkLabel] = useState(task?.links[0]?.label ?? '');
   const [linkUrl, setLinkUrl] = useState(task?.links[0]?.url ?? '');
