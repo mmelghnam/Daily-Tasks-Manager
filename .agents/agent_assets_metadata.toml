@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "euvtGN1rn8Z-OW-inkiyd"
+uri = "file://exports/daily-tasks-source.zip"
+type = "unspecified"
+title = "Daily Tasks — Source Code"
+description = "الكود المصدري الكامل للجوال والويب والخادم وقاعدة البيانات والمكتبات المشتركة، بدون الأسرار أو node_modules وملفات البناء."
+logical_id = "889b99d9-4dd1-409b-8aaf-31583a3e83d5"
+content_hash = "sha256:84745a49270da86d2a80ff9fa6320c4b13abfc24cdfe231f59e41dee34aa3c8e"
+size = 3694450
+mtime_ms = 1788869220460
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/889b99d9-4dd1-409b-8aaf-31583a3e83d5/9aa6e6c7-b56d-4c93-9aa5-fc3176da579a"
+storage_version_token = "1788869225774177"
+content_type = "application/octet-stream"
