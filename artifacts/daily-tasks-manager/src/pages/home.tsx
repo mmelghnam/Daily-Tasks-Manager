@@ -9,7 +9,6 @@ import { SpaceForm } from '@/components/space-form';
 import { PalettePicker } from '@/components/palette-picker';
 import { EventsSection } from '@/components/events-section';
 import { SpaceLinksSection } from '@/components/space-links-section';
-import { FocusTimer } from '@/components/focus-timer';
 import { getDailyMessage } from '@/daily-messages';
 
 type Category = Task['category'];
@@ -113,8 +112,8 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1480px] px-5 pb-16 pt-8 sm:px-8 lg:px-12">
-        <section className="animate-rise mb-8 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+      <main className="mx-auto max-w-[1480px] px-5 pb-12 pt-6 sm:px-8 lg:px-12">
+        <section className="animate-rise mb-6 grid gap-5 lg:grid-cols-[1fr_360px] lg:items-end">
           <div>
             <div className="mb-3 flex flex-wrap items-center gap-2 text-sm font-bold text-muted-foreground">
               <CalendarDays size={17} className="text-primary" />
@@ -133,31 +132,30 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="animate-rise mb-8 grid gap-4 md:grid-cols-[1.35fr_1fr_1fr]">
-          <div className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground shadow-xl shadow-primary/10">
+        <section className="animate-rise mb-6 grid gap-3 md:grid-cols-[1.35fr_1fr_1fr]">
+          <div className="relative overflow-hidden rounded-2xl bg-primary p-4 text-primary-foreground shadow-lg shadow-primary/10">
             <Sparkles className="absolute -left-2 -top-3 h-24 w-24 opacity-10" />
             <div className="relative">
               <div className="flex items-start justify-between gap-3">
                 <div><p className="text-sm font-bold text-primary-foreground/70">إيقاع اليوم</p><p data-testid="status-progress" className="mt-2 text-4xl font-extrabold">{completion}<span className="text-2xl text-secondary">%</span></p></div>
                 <div className="rounded-xl bg-primary-foreground/10 p-3"><Target size={22} className="text-secondary" /></div>
               </div>
-              <div className="mt-5 h-2 overflow-hidden rounded-full bg-primary-foreground/15"><div className="h-full rounded-full bg-secondary transition-all duration-500" style={{ width: `${completion}%` }} /></div>
-              <p className="mt-3 text-xs font-semibold text-primary-foreground/70">{summary?.completed ?? 0} من {summary?.total ?? 0} مهام اكتملت — حافظ على الإيقاع</p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary-foreground/15"><div className="h-full rounded-full bg-secondary transition-all duration-500" style={{ width: `${completion}%` }} /></div>
+              <p className="mt-2 text-[11px] font-semibold text-primary-foreground/70">{summary?.completed ?? 0} من {summary?.total ?? 0} مهام اكتملت — حافظ على الإيقاع</p>
             </div>
           </div>
-          <div className="rounded-3xl border border-card-border bg-card p-6">
+          <div className="rounded-2xl border border-card-border bg-card p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-muted-foreground">المتبقي</p><ClipboardList size={20} className="text-accent" /></div>
-            <p data-testid="text-remaining-count" className="mt-4 text-4xl font-extrabold">{summary?.remaining ?? '—'}</p>
+            <p data-testid="text-remaining-count" className="mt-2 text-3xl font-extrabold">{summary?.remaining ?? '—'}</p>
             <p className="mt-2 text-xs font-semibold text-muted-foreground">مهمة تنتظر قرارك</p>
           </div>
-          <div className="rounded-3xl border border-card-border bg-card p-6">
+          <div className="rounded-2xl border border-card-border bg-card p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-muted-foreground">كل المهام</p><LayoutGrid size={20} className="text-primary" /></div>
-            <p data-testid="text-total-count" className="mt-4 text-4xl font-extrabold">{summary?.total ?? '—'}</p>
+            <p data-testid="text-total-count" className="mt-2 text-3xl font-extrabold">{summary?.total ?? '—'}</p>
             <p className="mt-2 text-xs font-semibold text-muted-foreground">عبر {spaceNames.length} مساحات</p>
           </div>
         </section>
 
-        <FocusTimer />
         <EventsSection />
         <SpaceLinksSection spaces={spacesQuery.data ?? []} />
 

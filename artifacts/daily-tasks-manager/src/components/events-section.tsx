@@ -9,6 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import type { Event } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { FocusTimer } from '@/components/focus-timer';
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -146,8 +147,8 @@ export function EventsSection() {
 
   return (
     <>
-      <section className="animate-rise mb-8 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '60ms' }}>
-        <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="animate-rise mb-6 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm" style={{ animationDelay: '50ms' }}>
+        <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <CalendarClock size={20} className="text-accent" />
@@ -155,22 +156,24 @@ export function EventsSection() {
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">خلي الأحداث المهمة قدامك، وكل حدث له عداده الخاص</p>
           </div>
-          <button type="button" onClick={() => setShowForm(true)} data-testid="button-add-event" className="flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-extrabold text-secondary-foreground transition hover:-translate-y-0.5 hover:bg-secondary/85"><CalendarPlus size={17} /> حدث جديد</button>
+          <button type="button" onClick={() => setShowForm(true)} data-testid="button-add-event" className="flex h-9 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-extrabold text-secondary-foreground transition hover:-translate-y-0.5 hover:bg-secondary/85"><CalendarPlus size={16} /> حدث جديد</button>
         </div>
 
-        {eventsQuery.isLoading ? (
-          <div className="mt-4 h-20 animate-pulse rounded-2xl bg-muted" />
-        ) : sortedEvents.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-primary/20 bg-background/60 px-4 py-5 text-center text-sm font-semibold text-muted-foreground">أضف أول حدث مهم عشان يظهر عداده هنا.</div>
-        ) : (
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
+          <div>
+          {eventsQuery.isLoading ? (
+            <div className="h-20 animate-pulse rounded-2xl bg-muted" />
+          ) : sortedEvents.length === 0 ? (
+            <div className="flex min-h-44 items-center justify-center rounded-2xl border border-dashed border-primary/20 bg-background/60 px-4 py-5 text-center text-sm font-semibold text-muted-foreground">أضف أول حدث مهم عشان يظهر عداده هنا.</div>
+          ) : (
+          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
             {sortedEvents.map((event) => {
               const status = eventStatus(event, today);
               return (
-                <div key={event.id} className="relative overflow-hidden rounded-2xl border border-border bg-background/75 p-4" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
+                <div key={event.id} className="relative overflow-hidden rounded-2xl border border-border bg-background/75 p-3" style={{ borderInlineStartColor: event.color, borderInlineStartWidth: 4 }}>
                   {event.imageUrl && (
-                    <div className="mb-3 h-24 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
-                      <img src={event.imageUrl} alt={`صورة ${event.title}`} className="h-full w-full object-cover object-center" />
+                    <div className="mb-2 h-20 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                      <img src={event.imageUrl} alt={`صورة ${event.title}`} className="h-full w-full object-contain object-center" />
                     </div>
                   )}
                   <div className="flex items-start gap-3">
@@ -183,15 +186,18 @@ export function EventsSection() {
                       <button type="button" onClick={() => removeEvent(event.id)} disabled={deleteEvent.isPending} aria-label={`حذف ${event.title}`} data-testid={`button-delete-event-${event.id}`} className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 size={14} /></button>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-end gap-2">
-                    <span className={`font-mono-ui text-4xl font-black leading-none tracking-tight drop-shadow-[0_1px_0_hsl(var(--background))] ${status.tone}`}>{status.days}</span>
+                  <div className="mt-2 flex items-end gap-2">
+                    <span className={`font-mono-ui text-3xl font-black leading-none tracking-tight drop-shadow-[0_1px_0_hsl(var(--background))] ${status.tone}`}>{status.days}</span>
                       <span className="pb-1 text-xs font-bold text-muted-foreground">{status.label} {status.label === 'يبدأ بعد' ? 'لبداية الحدث' : status.label === 'متبقي' ? 'على انتهاء الحدث' : 'يوم'}</span>
                   </div>
                 </div>
               );
             })}
           </div>
-        )}
+          )}
+          </div>
+          <FocusTimer />
+        </div>
       </section>
       {showForm && <EventForm onClose={() => setShowForm(false)} />}
       {editingEvent && <EventForm event={editingEvent} onClose={() => setEditingEvent(null)} />}
