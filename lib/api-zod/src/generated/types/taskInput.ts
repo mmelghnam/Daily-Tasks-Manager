@@ -7,7 +7,9 @@
  */
 import type { TaskCategory } from './taskCategory';
 import type { TaskFollowUp } from './taskFollowUp';
+import type { TaskInputPriority } from './taskInputPriority';
 import type { TaskLink } from './taskLink';
+import type { TaskSubtask } from './taskSubtask';
 
 export interface TaskInput {
   taskDate: Date;
@@ -18,4 +20,8 @@ export interface TaskInput {
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
+  priority?: TaskInputPriority;
+  recurrence?: string;
+  dueDate?: Date;
+  subtasks?: TaskSubtask[];
 }

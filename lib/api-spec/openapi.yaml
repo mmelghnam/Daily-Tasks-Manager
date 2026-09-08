@@ -20,6 +20,8 @@ tags:
     description: Persistent links grouped by task space
   - name: onboarding
     description: New-account setup and starter templates
+  - name: productivity
+    description: Goals, habits, and study planning
 paths:
   /healthz:
     get:
@@ -87,6 +89,18 @@ paths:
       summary: List daily tasks
       parameters:
         - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: dateFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: dateTo
           in: query
           required: false
           schema:
@@ -178,6 +192,195 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TaskSummary"
+  /goals:
+    get:
+      operationId: listGoals
+      tags: [productivity]
+      summary: List account goals
+      responses:
+        "200":
+          description: Goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      operationId: createGoal
+      tags: [productivity]
+      summary: Create a goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [productivity]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+    delete:
+      operationId: deleteGoal
+      tags: [productivity]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
+  /habits:
+    get:
+      operationId: listHabits
+      tags: [productivity]
+      summary: List account habits
+      responses:
+        "200":
+          description: Habits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Habit"
+    post:
+      operationId: createHabit
+      tags: [productivity]
+      summary: Create a habit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitInput"
+      responses:
+        "201":
+          description: Created habit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Habit"
+  /habits/{id}:
+    patch:
+      operationId: updateHabit
+      tags: [productivity]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitUpdate"
+      responses:
+        "200":
+          description: Updated habit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Habit"
+    delete:
+      operationId: deleteHabit
+      tags: [productivity]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
+  /study-items:
+    get:
+      operationId: listStudyItems
+      tags: [productivity]
+      summary: List study plan items
+      responses:
+        "200":
+          description: Study items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyItem"
+    post:
+      operationId: createStudyItem
+      tags: [productivity]
+      summary: Create a study item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyItemInput"
+      responses:
+        "201":
+          description: Created study item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyItem"
+  /study-items/{id}:
+    patch:
+      operationId: updateStudyItem
+      tags: [productivity]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyItemUpdate"
+      responses:
+        "200":
+          description: Updated study item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyItem"
+    delete:
+      operationId: deleteStudyItem
+      tags: [productivity]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
   /spaces:
     get:
       operationId: listSpaces
@@ -440,6 +643,16 @@ components:
         dueDate:
           type: ["string", "null"]
       required: [id, title, completed, dueDate]
+    TaskSubtask:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        completed:
+          type: boolean
+      required: [id, title, completed]
     Task:
       type: object
       properties:
@@ -454,6 +667,18 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        recurrence:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+          format: date
+        subtasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSubtask"
         completed:
           type: boolean
         links:
@@ -479,6 +704,10 @@ components:
         - completed
         - links
         - followUps
+        - priority
+        - recurrence
+        - dueDate
+        - subtasks
         - createdAt
         - updatedAt
     TaskInput:
@@ -504,6 +733,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskFollowUp"
+        priority:
+          type: string
+          enum: [low, medium, high]
+        recurrence:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        subtasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSubtask"
       required: [taskDate, category, title]
     TaskUpdate:
       type: object
@@ -528,6 +769,98 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskFollowUp"
+        priority:
+          type: string
+          enum: [low, medium, high]
+        recurrence:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        subtasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSubtask"
+    Goal:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        target: { type: integer }
+        current: { type: integer }
+        deadline: { type: ["string", "null"], format: date }
+        completed: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, target, current, deadline, completed, createdAt, updatedAt]
+    GoalInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        target: { type: integer, minimum: 1 }
+        deadline: { type: string, format: date }
+      required: [title]
+    GoalUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        target: { type: integer, minimum: 1 }
+        current: { type: integer, minimum: 0 }
+        deadline: { type: string, format: date }
+        completed: { type: boolean }
+    Habit:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        frequency: { type: string, enum: [daily, weekly] }
+        streak: { type: integer }
+        lastCompleted: { type: ["string", "null"], format: date }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, frequency, streak, lastCompleted, createdAt]
+    HabitInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        frequency: { type: string, enum: [daily, weekly] }
+      required: [name]
+    HabitUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        frequency: { type: string, enum: [daily, weekly] }
+        streak: { type: integer, minimum: 0 }
+        lastCompleted: { type: string, format: date }
+    StudyItem:
+      type: object
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [subject, assignment, exam, review] }
+        title: { type: string }
+        subject: { type: ["string", "null"] }
+        itemDate: { type: ["string", "null"], format: date }
+        completed: { type: boolean }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, kind, title, subject, itemDate, completed, notes, createdAt]
+    StudyItemInput:
+      type: object
+      properties:
+        kind: { type: string, enum: [subject, assignment, exam, review] }
+        title: { type: string, minLength: 1 }
+        subject: { type: string }
+        itemDate: { type: string, format: date }
+        notes: { type: string }
+      required: [kind, title]
+    StudyItemUpdate:
+      type: object
+      properties:
+        kind: { type: string, enum: [subject, assignment, exam, review] }
+        title: { type: string, minLength: 1 }
+        subject: { type: string }
+        itemDate: { type: string, format: date }
+        completed: { type: boolean }
+        notes: { type: string }
     TaskSummary:
       type: object
       properties:

@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListTasksParams = {
-date?: Date;
-dateFrom?: Date;
-dateTo?: Date;
-};
+export interface GoalInput {
+  /** @minLength 1 */
+  title: string;
+  /** @minimum 1 */
+  target?: number;
+  deadline?: Date;
+}

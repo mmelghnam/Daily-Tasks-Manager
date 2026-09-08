@@ -5,6 +5,7 @@ import spacesRouter from "./spaces";
 import eventsRouter from "./events";
 import spaceLinksRouter from "./space-links";
 import onboardingRouter from "./onboarding";
+import productivityRouter from "./productivity";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -12,6 +13,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(requireAuth);
 router.use(onboardingRouter);
+router.use(productivityRouter);
 router.use(tasksRouter);
 router.use(spacesRouter);
 router.use(eventsRouter);

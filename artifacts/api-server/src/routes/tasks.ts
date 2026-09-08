@@ -13,7 +13,7 @@ import {
 } from "@workspace/api-zod";
 import { db, tasksTable } from "@workspace/db";
 import { spacesTable } from "@workspace/db";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, lte } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -28,10 +28,26 @@ function toDateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
+function nextRecurringDate(date: string, recurrence: string | null) {
+  if (!recurrence) return null;
+  const next = new Date(`${date}T12:00:00.000Z`);
+  if (recurrence === "daily") next.setUTCDate(next.getUTCDate() + 1);
+  else if (recurrence === "weekly") next.setUTCDate(next.getUTCDate() + 7);
+  else if (recurrence === "monthly") next.setUTCMonth(next.getUTCMonth() + 1);
+  else return null;
+  return toDateOnly(next);
+}
+
+function parseDateRangeQuery(value: unknown) {
+  return parseDateQuery(value);
+}
+
 router.get("/tasks", async (req, res, next) => {
   try {
     const query = ListTasksQueryParams.parse({
       date: parseDateQuery(req.query.date),
+      dateFrom: parseDateRangeQuery(req.query.dateFrom),
+      dateTo: parseDateRangeQuery(req.query.dateTo),
     });
     const rows = await db
       .select()
@@ -39,6 +55,8 @@ router.get("/tasks", async (req, res, next) => {
       .where(and(
         eq(tasksTable.ownerId, req.userId!),
         query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined,
+        !query.date && query.dateFrom ? gte(tasksTable.taskDate, toDateOnly(query.dateFrom)) : undefined,
+        !query.date && query.dateTo ? lte(tasksTable.taskDate, toDateOnly(query.dateTo)) : undefined,
       ))
       .orderBy(asc(tasksTable.taskDate), asc(tasksTable.category), asc(tasksTable.id));
 
@@ -59,6 +77,10 @@ router.post("/tasks", async (req, res, next) => {
         category: input.category,
         title: input.title.trim(),
         notes: input.notes?.trim() || null,
+        priority: input.priority ?? "medium",
+        recurrence: input.recurrence?.trim() || null,
+        dueDate: input.dueDate ? toDateOnly(input.dueDate) : null,
+        subtasks: input.subtasks ?? [],
         completed: input.completed ?? false,
         links: input.links ?? [],
         followUps: input.followUps ?? [],
@@ -83,6 +105,10 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (input.category !== undefined) updates.category = input.category;
     if (input.title !== undefined) updates.title = input.title.trim();
     if (input.notes !== undefined) updates.notes = input.notes.trim() || null;
+    if (input.priority !== undefined) updates.priority = input.priority;
+    if (input.recurrence !== undefined) updates.recurrence = input.recurrence.trim() || null;
+    if (input.dueDate !== undefined) updates.dueDate = input.dueDate ? toDateOnly(input.dueDate) : null;
+    if (input.subtasks !== undefined) updates.subtasks = input.subtasks;
     if (input.completed !== undefined) updates.completed = input.completed;
     if (input.links !== undefined) updates.links = input.links;
     if (input.followUps !== undefined) updates.followUps = input.followUps;
@@ -96,6 +122,38 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (!task) {
       res.status(404).json({ error: "Task not found" });
       return;
+    }
+
+    if (input.completed === true && task.recurrence) {
+      const nextDate = nextRecurringDate(task.taskDate, task.recurrence);
+      if (nextDate) {
+        const [existing] = await db
+          .select({ id: tasksTable.id })
+          .from(tasksTable)
+          .where(and(
+            eq(tasksTable.ownerId, req.userId!),
+            eq(tasksTable.taskDate, nextDate),
+            eq(tasksTable.category, task.category),
+            eq(tasksTable.title, task.title),
+          ))
+          .limit(1);
+
+        if (!existing) {
+          await db.insert(tasksTable).values({
+            ownerId: req.userId!,
+            taskDate: nextDate,
+            category: task.category,
+            title: task.title,
+            notes: task.notes,
+            priority: task.priority,
+            recurrence: task.recurrence,
+            dueDate: task.dueDate ? nextRecurringDate(task.dueDate, task.recurrence) : null,
+            subtasks: task.subtasks.map((subtask) => ({ ...subtask, completed: false })),
+            links: task.links,
+            followUps: task.followUps,
+          });
+        }
+      }
     }
 
     res.json(UpdateTaskResponse.parse(task));

@@ -11,6 +11,8 @@ import { PalettePicker } from '@/components/palette-picker';
 import { EventsSection } from '@/components/events-section';
 import { SpaceLinksSection } from '@/components/space-links-section';
 import { getDailyMessage } from '@/daily-messages';
+import { ProductivityHub } from '@/components/productivity-hub';
+import { NotificationCenter } from '@/components/notification-center';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -46,6 +48,21 @@ function shiftDate(date: string, amount: number) {
   const next = new Date(`${date}T12:00:00`);
   next.setDate(next.getDate() + amount);
   return dateKey(next);
+}
+
+function rangeFor(date: string, mode: 'day' | 'week' | 'month') {
+  const start = new Date(`${date}T12:00:00`);
+  if (mode === 'day') return { date };
+  if (mode === 'week') {
+    const day = start.getDay();
+    start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    return { dateFrom: dateKey(start), dateTo: dateKey(end) };
+  }
+  start.setDate(1);
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 12);
+  return { dateFrom: dateKey(start), dateTo: dateKey(end) };
 }
 
 function AccountControl() {
@@ -130,6 +147,7 @@ export default function Home() {
   const queryClient = useQueryClient();
   const deleteSpace = useDeleteSpace();
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()));
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
   const [showSpaceForm, setShowSpaceForm] = useState(false);
@@ -137,8 +155,9 @@ export default function Home() {
   const [formCategory, setFormCategory] = useState<Category | undefined>();
 
   const spacesQuery = useListSpaces();
-  const taskQuery = useListTasks({ date: selectedDate });
+  const taskQuery = useListTasks(rangeFor(selectedDate, viewMode));
   const summaryQuery = useGetTaskSummary({ date: selectedDate });
+  const onboarding = useGetOnboardingStatus();
   const tasks = taskQuery.data ?? [];
   const spaces = spacesQuery.data ?? fallbackSpaces;
   const categories = useMemo(() => Array.from(new Set([...spaces.map((space) => space.name), ...tasks.map((task) => task.category)])), [spaces, tasks]);
@@ -204,7 +223,12 @@ export default function Home() {
               <span className="font-mono-ui text-xs" dir="ltr">{selectedDate}</span>
             </div>
             <h1 data-testid="text-date-heading" className="max-w-2xl text-3xl font-extrabold leading-[1.25] tracking-tight sm:text-5xl">{dateLabel(selectedDate)}</h1>
-             <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">{getDailyMessage(selectedDate)}</p>
+              <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
+                {onboarding.data?.usageType === 'student' ? 'خطتك الدراسية أمامك — اجعل كل جلسة مراجعة خطوة واضحة.' :
+                  onboarding.data?.usageType === 'employee' ? 'رتّب أولويات العمل واترك مساحة للاجتماعات والإنجاز العميق.' :
+                    onboarding.data?.usageType === 'freelancer' ? 'تابع العملاء والمشاريع دون أن تضيع التفاصيل المهمة.' :
+                      onboarding.data?.usageType === 'personal' ? 'وازن بين أهدافك وعاداتك وما يحتاجه يومك الآن.' : getDailyMessage(selectedDate)}
+              </p>
           </div>
           <div className="flex items-center justify-between rounded-2xl border border-border bg-card/75 p-2 shadow-sm">
             <button type="button" onClick={() => setSelectedDate(shiftDate(selectedDate, -1))} aria-label="اليوم السابق" data-testid="button-previous-day" className="rounded-xl p-3 text-muted-foreground transition hover:bg-muted hover:text-foreground"><ChevronRight size={20} /></button>
@@ -213,6 +237,12 @@ export default function Home() {
             <button type="button" onClick={() => setSelectedDate(shiftDate(selectedDate, 1))} aria-label="اليوم التالي" data-testid="button-next-day" className="rounded-xl p-3 text-muted-foreground transition hover:bg-muted hover:text-foreground"><ChevronLeft size={20} /></button>
           </div>
         </section>
+        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card/70 p-2" role="tablist" aria-label="طريقة عرض المهام">
+          <span className="px-2 text-xs font-extrabold text-muted-foreground">عرض المهام</span>
+          {([['day', 'يومي'], ['week', 'أسبوعي'], ['month', 'شهري']] as const).map(([mode, label]) => (
+            <button key={mode} type="button" onClick={() => setViewMode(mode)} role="tab" aria-selected={viewMode === mode} className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${viewMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>{label}</button>
+          ))}
+        </div>
 
         <section className="animate-rise mb-6 grid gap-3 md:grid-cols-[1.35fr_1fr_1fr]">
           <div className="relative overflow-hidden rounded-2xl bg-primary p-4 text-primary-foreground shadow-lg shadow-primary/10">
@@ -239,7 +269,9 @@ export default function Home() {
         </section>
 
         <EventsSection />
-        <SpaceLinksSection spaces={spacesQuery.data ?? []} />
+         <SpaceLinksSection spaces={spacesQuery.data ?? []} />
+         <ProductivityHub usageType={onboarding.data?.usageType} />
+         <NotificationCenter tasks={tasks} />
 
         <section className="animate-rise rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
           <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -274,10 +306,10 @@ export default function Home() {
           ) : visibleTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/25 bg-card/55 px-6 py-20 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary/25 text-primary"><Sparkles size={29} /></div><h2 className="text-xl font-extrabold">{activeCategory === 'all' ? 'اليوم ما زال مفتوحاً' : `لا توجد مهام في ${activeCategory}`}</h2><p className="mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{activeCategory === 'all' ? 'أضف أول خطوة صغيرة، ودع بقية اليوم يتضح معها.' : 'مساحة هادئة. أضف مهمة عندما يحين وقتها.'}</p><button type="button" onClick={() => openNew(activeCategory === 'all' ? undefined : activeCategory)} data-testid="button-add-first-task" className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5"><Plus size={17} /> أضف مهمة</button></div>
           ) : activeCategory !== 'all' ? (
-             <div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={selectedDate} spaces={spaceNames} />)}</div>
+              <div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div>
           ) : (
             <div className="space-y-8">
-               {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => openNew(category)} data-testid={`button-add-task-${category}`} className="rounded-xl border border-border bg-background p-2 text-muted-foreground shadow-sm transition hover:border-primary/30 hover:text-primary"><Plus size={17} /></button></div><div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={selectedDate} spaces={spaceNames} />)}</div></div>; })}
+                {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => openNew(category)} data-testid={`button-add-task-${category}`} className="rounded-xl border border-border bg-background p-2 text-muted-foreground shadow-sm transition hover:border-primary/30 hover:text-primary"><Plus size={17} /></button></div><div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>; })}
             </div>
           )}
         </section>

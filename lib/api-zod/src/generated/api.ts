@@ -57,7 +57,9 @@ export const UpdateUsageTypeResponse = zod.object({
  * @summary List daily tasks
  */
 export const ListTasksQueryParams = zod.object({
-  "date": zod.date().optional()
+  "date": zod.date().optional(),
+  "dateFrom": zod.date().optional(),
+  "dateTo": zod.date().optional()
 })
 
 
@@ -69,6 +71,14 @@ export const ListTasksResponseItem = zod.object({
   "category": zod.string().min(1),
   "title": zod.string(),
   "notes": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "recurrence": zod.string().nullable(),
+  "dueDate": zod.coerce.date().nullable(),
+  "subtasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean()
+})),
   "completed": zod.boolean(),
   "links": zod.array(zod.object({
   "label": zod.string(),
@@ -108,6 +118,14 @@ export const CreateTaskBody = zod.object({
   "title": zod.string(),
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
+})).optional(),
+  "priority": zod.enum(['low', 'medium', 'high']).optional(),
+  "recurrence": zod.string().optional(),
+  "dueDate": zod.coerce.date().optional(),
+  "subtasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean()
 })).optional()
 })
 
@@ -120,6 +138,14 @@ export const CreateTaskResponse = zod.object({
   "category": zod.string().min(1),
   "title": zod.string(),
   "notes": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "recurrence": zod.string().nullable(),
+  "dueDate": zod.coerce.date().nullable(),
+  "subtasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean()
+})),
   "completed": zod.boolean(),
   "links": zod.array(zod.object({
   "label": zod.string(),
@@ -162,6 +188,14 @@ export const UpdateTaskBody = zod.object({
   "title": zod.string(),
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
+})).optional(),
+  "priority": zod.enum(['low', 'medium', 'high']).optional(),
+  "recurrence": zod.string().optional(),
+  "dueDate": zod.coerce.date().optional(),
+  "subtasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean()
 })).optional()
 })
 
@@ -174,6 +208,14 @@ export const UpdateTaskResponse = zod.object({
   "category": zod.string().min(1),
   "title": zod.string(),
   "notes": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "recurrence": zod.string().nullable(),
+  "dueDate": zod.coerce.date().nullable(),
+  "subtasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "completed": zod.boolean()
+})),
   "completed": zod.boolean(),
   "links": zod.array(zod.object({
   "label": zod.string(),
@@ -213,6 +255,229 @@ export const GetTaskSummaryResponse = zod.object({
   "remaining": zod.number().int(),
   "byCategory": zod.record(zod.string(), zod.number().int())
 })
+
+
+/**
+ * @summary List account goals
+ */
+export const ListGoalsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "target": zod.number().int(),
+  "current": zod.number().int(),
+  "deadline": zod.coerce.date().nullable(),
+  "completed": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListGoalsResponse = zod.array(ListGoalsResponseItem)
+
+
+/**
+ * @summary Create a goal
+ */
+
+
+
+
+export const CreateGoalBody = zod.object({
+  "title": zod.string().min(1),
+  "target": zod.number().int().min(1).optional(),
+  "deadline": zod.coerce.date().optional()
+})
+
+export const CreateGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "target": zod.number().int(),
+  "current": zod.number().int(),
+  "deadline": zod.coerce.date().nullable(),
+  "completed": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const UpdateGoalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+export const updateGoalBodyCurrentMin = 0;
+
+
+
+export const UpdateGoalBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "target": zod.number().int().min(1).optional(),
+  "current": zod.number().int().min(updateGoalBodyCurrentMin).optional(),
+  "deadline": zod.coerce.date().optional(),
+  "completed": zod.boolean().optional()
+})
+
+export const UpdateGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "target": zod.number().int(),
+  "current": zod.number().int(),
+  "deadline": zod.coerce.date().nullable(),
+  "completed": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteGoalParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteGoalResponse = zod.void()
+
+
+/**
+ * @summary List account habits
+ */
+export const ListHabitsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "frequency": zod.enum(['daily', 'weekly']),
+  "streak": zod.number().int(),
+  "lastCompleted": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListHabitsResponse = zod.array(ListHabitsResponseItem)
+
+
+/**
+ * @summary Create a habit
+ */
+
+
+
+export const CreateHabitBody = zod.object({
+  "name": zod.string().min(1),
+  "frequency": zod.enum(['daily', 'weekly']).optional()
+})
+
+export const CreateHabitResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "frequency": zod.enum(['daily', 'weekly']),
+  "streak": zod.number().int(),
+  "lastCompleted": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateHabitParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const updateHabitBodyStreakMin = 0;
+
+
+
+export const UpdateHabitBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "frequency": zod.enum(['daily', 'weekly']).optional(),
+  "streak": zod.number().int().min(updateHabitBodyStreakMin).optional(),
+  "lastCompleted": zod.coerce.date().optional()
+})
+
+export const UpdateHabitResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "frequency": zod.enum(['daily', 'weekly']),
+  "streak": zod.number().int(),
+  "lastCompleted": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const DeleteHabitParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteHabitResponse = zod.void()
+
+
+/**
+ * @summary List study plan items
+ */
+export const ListStudyItemsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['subject', 'assignment', 'exam', 'review']),
+  "title": zod.string(),
+  "subject": zod.string().nullable(),
+  "itemDate": zod.coerce.date().nullable(),
+  "completed": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListStudyItemsResponse = zod.array(ListStudyItemsResponseItem)
+
+
+/**
+ * @summary Create a study item
+ */
+
+
+
+export const CreateStudyItemBody = zod.object({
+  "kind": zod.enum(['subject', 'assignment', 'exam', 'review']),
+  "title": zod.string().min(1),
+  "subject": zod.string().optional(),
+  "itemDate": zod.coerce.date().optional(),
+  "notes": zod.string().optional()
+})
+
+export const CreateStudyItemResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['subject', 'assignment', 'exam', 'review']),
+  "title": zod.string(),
+  "subject": zod.string().nullable(),
+  "itemDate": zod.coerce.date().nullable(),
+  "completed": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateStudyItemParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const UpdateStudyItemBody = zod.object({
+  "kind": zod.enum(['subject', 'assignment', 'exam', 'review']).optional(),
+  "title": zod.string().min(1).optional(),
+  "subject": zod.string().optional(),
+  "itemDate": zod.coerce.date().optional(),
+  "completed": zod.boolean().optional(),
+  "notes": zod.string().optional()
+})
+
+export const UpdateStudyItemResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['subject', 'assignment', 'exam', 'review']),
+  "title": zod.string(),
+  "subject": zod.string().nullable(),
+  "itemDate": zod.coerce.date().nullable(),
+  "completed": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const DeleteStudyItemParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteStudyItemResponse = zod.void()
 
 
 /**

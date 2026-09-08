@@ -8,6 +8,8 @@
 import type { TaskCategory } from './taskCategory';
 import type { TaskFollowUp } from './taskFollowUp';
 import type { TaskLink } from './taskLink';
+import type { TaskPriority } from './taskPriority';
+import type { TaskSubtask } from './taskSubtask';
 
 export interface Task {
   id: number;
@@ -16,6 +18,12 @@ export interface Task {
   title: string;
   /** @nullable */
   notes: string | null;
+  priority: TaskPriority;
+  /** @nullable */
+  recurrence: string | null;
+  /** @nullable */
+  dueDate: Date | null;
+  subtasks: TaskSubtask[];
   completed: boolean;
   links: TaskLink[];
   followUps: TaskFollowUp[];

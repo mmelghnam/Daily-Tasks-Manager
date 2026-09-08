@@ -18,6 +18,14 @@ export const taskFollowUpSchema = z.object({
 
 export type TaskFollowUp = z.infer<typeof taskFollowUpSchema>;
 
+export const taskSubtaskSchema = z.object({
+  id: z.number().int(),
+  title: z.string().min(1),
+  completed: z.boolean(),
+});
+
+export type TaskSubtask = z.infer<typeof taskSubtaskSchema>;
+
 export const tasksTable = pgTable(
   "daily_tasks",
   {
@@ -27,6 +35,10 @@ export const tasksTable = pgTable(
     category: text("category").notNull(),
     title: text("title").notNull(),
     notes: text("notes"),
+    priority: text("priority").notNull().default("medium"),
+    recurrence: text("recurrence"),
+    dueDate: date("due_date", { mode: "string" }),
+    subtasks: jsonb("subtasks").$type<TaskSubtask[]>().notNull().default([]),
     completed: boolean("completed").notNull().default(false),
     links: jsonb("links").$type<TaskLink[]>().notNull().default([]),
     followUps: jsonb("follow_ups").$type<TaskFollowUp[]>().notNull().default([]),

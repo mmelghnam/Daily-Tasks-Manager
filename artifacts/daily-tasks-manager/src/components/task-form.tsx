@@ -27,6 +27,10 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
   const [title, setTitle] = useState(task?.title ?? '');
   const [category, setCategory] = useState<Category>(task?.category ?? initialCategory ?? spaces[0] ?? 'INV');
   const [notes, setNotes] = useState(task?.notes ?? '');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority ?? 'medium');
+  const [recurrence, setRecurrence] = useState(task?.recurrence ?? '');
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? '');
+  const [subtaskText, setSubtaskText] = useState(task?.subtasks.map((item) => item.title).join('\n') ?? '');
   const [linkLabel, setLinkLabel] = useState(task?.links[0]?.label ?? '');
   const [linkUrl, setLinkUrl] = useState(task?.links[0]?.url ?? '');
   const [error, setError] = useState('');
@@ -61,6 +65,10 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
       category,
       title: cleanTitle,
       notes: notes.trim() || undefined,
+      priority,
+      recurrence: recurrence || undefined,
+      dueDate: dueDate || undefined,
+      subtasks: subtaskText.split('\n').map((title, index) => ({ id: task?.subtasks[index]?.id ?? Date.now() + index, title: title.trim(), completed: task?.subtasks[index]?.completed ?? false })).filter((item) => item.title),
       links,
     };
 
@@ -109,6 +117,30 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
             <input id="task-title" data-testid="input-task-title" value={title} onChange={(event) => setTitle(event.target.value)} autoFocus placeholder="مثلاً: مراجعة العرض مع الفريق" className="h-12 w-full rounded-xl border border-input bg-background px-4 text-base outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/10" />
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label htmlFor="task-priority" className="mb-2 block text-sm font-bold">الأولوية</label>
+              <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value as 'low' | 'medium' | 'high')} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary">
+                <option value="high">عالية</option>
+                <option value="medium">متوسطة</option>
+                <option value="low">منخفضة</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="task-recurrence" className="mb-2 block text-sm font-bold">التكرار</label>
+              <select id="task-recurrence" value={recurrence} onChange={(event) => setRecurrence(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary">
+                <option value="">بدون تكرار</option>
+                <option value="daily">يومي</option>
+                <option value="weekly">أسبوعي</option>
+                <option value="monthly">شهري</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="task-due-date" className="mb-2 block text-sm font-bold">موعد التسليم</label>
+              <input id="task-due-date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
+            </div>
+          </div>
+
           <div>
             <label className="mb-2 block text-sm font-bold">المساحة</label>
             {categoryLocked ? (
@@ -126,6 +158,11 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
                 ))}
               </div>
             )}
+          </div>
+
+          <div>
+            <label htmlFor="task-subtasks" className="mb-2 block text-sm font-bold">خطوات فرعية <span className="font-normal text-muted-foreground">(اختياري، كل خطوة في سطر)</span></label>
+            <textarea id="task-subtasks" value={subtaskText} onChange={(event) => setSubtaskText(event.target.value)} placeholder="مثلاً: جمع الملفات&#10;مراجعة المسودة" rows={2} className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm leading-7 outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/10" />
           </div>
 
           <div>

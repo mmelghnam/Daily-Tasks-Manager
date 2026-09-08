@@ -51,6 +51,21 @@ export interface TaskFollowUp {
   dueDate: string | null;
 }
 
+export interface TaskSubtask {
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
+
+
+export const TaskPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
 export interface Task {
   id: number;
   taskDate: string;
@@ -58,12 +73,27 @@ export interface Task {
   title: string;
   /** @nullable */
   notes: string | null;
+  priority: TaskPriority;
+  /** @nullable */
+  recurrence: string | null;
+  /** @nullable */
+  dueDate: string | null;
+  subtasks: TaskSubtask[];
   completed: boolean;
   links: TaskLink[];
   followUps: TaskFollowUp[];
   createdAt: string;
   updatedAt: string;
 }
+
+export type TaskInputPriority = typeof TaskInputPriority[keyof typeof TaskInputPriority];
+
+
+export const TaskInputPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
 
 export interface TaskInput {
   taskDate: string;
@@ -74,7 +104,20 @@ export interface TaskInput {
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
+  priority?: TaskInputPriority;
+  recurrence?: string;
+  dueDate?: string;
+  subtasks?: TaskSubtask[];
 }
+
+export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
+
+
+export const TaskUpdatePriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
 
 export interface TaskUpdate {
   taskDate?: string;
@@ -85,6 +128,153 @@ export interface TaskUpdate {
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
+  priority?: TaskUpdatePriority;
+  recurrence?: string;
+  dueDate?: string;
+  subtasks?: TaskSubtask[];
+}
+
+export interface Goal {
+  id: number;
+  title: string;
+  target: number;
+  current: number;
+  /** @nullable */
+  deadline: string | null;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalInput {
+  /** @minLength 1 */
+  title: string;
+  /** @minimum 1 */
+  target?: number;
+  deadline?: string;
+}
+
+export interface GoalUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @minimum 1 */
+  target?: number;
+  /** @minimum 0 */
+  current?: number;
+  deadline?: string;
+  completed?: boolean;
+}
+
+export type HabitFrequency = typeof HabitFrequency[keyof typeof HabitFrequency];
+
+
+export const HabitFrequency = {
+  daily: 'daily',
+  weekly: 'weekly',
+} as const;
+
+export interface Habit {
+  id: number;
+  name: string;
+  frequency: HabitFrequency;
+  streak: number;
+  /** @nullable */
+  lastCompleted: string | null;
+  createdAt: string;
+}
+
+export type HabitInputFrequency = typeof HabitInputFrequency[keyof typeof HabitInputFrequency];
+
+
+export const HabitInputFrequency = {
+  daily: 'daily',
+  weekly: 'weekly',
+} as const;
+
+export interface HabitInput {
+  /** @minLength 1 */
+  name: string;
+  frequency?: HabitInputFrequency;
+}
+
+export type HabitUpdateFrequency = typeof HabitUpdateFrequency[keyof typeof HabitUpdateFrequency];
+
+
+export const HabitUpdateFrequency = {
+  daily: 'daily',
+  weekly: 'weekly',
+} as const;
+
+export interface HabitUpdate {
+  /** @minLength 1 */
+  name?: string;
+  frequency?: HabitUpdateFrequency;
+  /** @minimum 0 */
+  streak?: number;
+  lastCompleted?: string;
+}
+
+export type StudyItemKind = typeof StudyItemKind[keyof typeof StudyItemKind];
+
+
+export const StudyItemKind = {
+  subject: 'subject',
+  assignment: 'assignment',
+  exam: 'exam',
+  review: 'review',
+} as const;
+
+export interface StudyItem {
+  id: number;
+  kind: StudyItemKind;
+  title: string;
+  /** @nullable */
+  subject: string | null;
+  /** @nullable */
+  itemDate: string | null;
+  completed: boolean;
+  /** @nullable */
+  notes: string | null;
+  createdAt: string;
+}
+
+export type StudyItemInputKind = typeof StudyItemInputKind[keyof typeof StudyItemInputKind];
+
+
+export const StudyItemInputKind = {
+  subject: 'subject',
+  assignment: 'assignment',
+  exam: 'exam',
+  review: 'review',
+} as const;
+
+export interface StudyItemInput {
+  kind: StudyItemInputKind;
+  /** @minLength 1 */
+  title: string;
+  subject?: string;
+  itemDate?: string;
+  notes?: string;
+}
+
+export type StudyItemUpdateKind = typeof StudyItemUpdateKind[keyof typeof StudyItemUpdateKind];
+
+
+export const StudyItemUpdateKind = {
+  subject: 'subject',
+  assignment: 'assignment',
+  exam: 'exam',
+  review: 'review',
+} as const;
+
+export interface StudyItemUpdate {
+  kind?: StudyItemUpdateKind;
+  /** @minLength 1 */
+  title?: string;
+  subject?: string;
+  itemDate?: string;
+  completed?: boolean;
+  notes?: string;
 }
 
 export type TaskSummaryByCategory = {[key: string]: number};
@@ -166,6 +356,8 @@ export interface EventUpdate {
 
 export type ListTasksParams = {
 date?: string;
+dateFrom?: string;
+dateTo?: string;
 };
 
 export type GetTaskSummaryParams = {

@@ -1,0 +1,24 @@
+import { Bell, CalendarClock, CircleAlert, Repeat2 } from 'lucide-react';
+import type { Task } from '@workspace/api-client-react';
+
+export function NotificationCenter({ tasks }: { tasks: Task[] }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const notifications = tasks
+    .filter((task) => !task.completed && ((task.dueDate && task.dueDate <= today) || task.recurrence))
+    .slice(0, 5);
+
+  return (
+    <section className="mt-8 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" dir="rtl">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2"><Bell size={18} className="text-primary" /><h2 className="font-extrabold">تنبيهات اليوم</h2></div>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${notifications.length ? 'bg-destructive/10 text-destructive' : 'bg-secondary/15 text-primary'}`}>{notifications.length ? `${notifications.length} تحتاج انتباهك` : 'لا توجد تنبيهات'}</span>
+      </div>
+      {notifications.length ? <div className="grid gap-2 md:grid-cols-2">
+        {notifications.map((task) => <div key={task.id} className="flex items-center gap-3 rounded-2xl bg-background/70 p-3">
+          {task.dueDate && task.dueDate <= today ? <CircleAlert size={17} className="shrink-0 text-destructive" /> : task.recurrence ? <Repeat2 size={17} className="shrink-0 text-primary" /> : <CalendarClock size={17} className="shrink-0 text-accent" />}
+          <div className="min-w-0"><p className="truncate text-sm font-extrabold">{task.title}</p><p className="text-xs font-semibold text-muted-foreground">{task.dueDate && task.dueDate <= today ? 'موعدها اليوم أو متأخر' : 'مهمة متكررة تحتاج متابعة'}</p></div>
+        </div>)}
+      </div> : <p className="text-sm font-semibold text-muted-foreground">ستظهر هنا المهام المستحقة والمتكررة قبل أن تفوتك.</p>}
+    </section>
+  );
+}
