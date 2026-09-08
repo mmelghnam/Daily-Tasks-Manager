@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/daily-tasks-mobile/"
+title = "Daily Tasks Mobile"
+description = "A simple Arabic RTL mobile companion for Daily Tasks Manager, focused on today's tasks, spaces, goals, and habits."
+version = "1.0.0"
+id = "artifacts/daily-tasks-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/daily-tasks-mobile/" ]
+localPort = 19101
+
+[services.development]
+run = "pnpm --filter @workspace/daily-tasks-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/daily-tasks-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/daily-tasks-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "19101"
+BASE_PATH = "/daily-tasks-mobile/"
