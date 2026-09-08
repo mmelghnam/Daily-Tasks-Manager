@@ -95,7 +95,7 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-[hsl(173_29%_18%/0.4)] p-0 backdrop-blur-sm sm:items-center sm:p-6" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <div className="animate-rise w-full max-w-xl overflow-hidden rounded-t-[1.7rem] border border-card-border bg-card shadow-2xl sm:rounded-[1.7rem]" role="dialog" aria-modal="true" aria-labelledby="task-form-title">
+      <div className="animate-rise max-h-[calc(100dvh-0.75rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-[1.7rem] border border-card-border bg-card shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-[1.7rem]" role="dialog" aria-modal="true" aria-labelledby="task-form-title">
         <div className="flex items-start justify-between border-b border-border px-5 py-5 sm:px-7">
           <div>
             <div className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.16em] text-muted-foreground">
