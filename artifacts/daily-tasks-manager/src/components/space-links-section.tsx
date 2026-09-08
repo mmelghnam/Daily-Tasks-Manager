@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Link2, Plus, Trash2, X } from 'lucide-react';
 import {
@@ -13,10 +13,10 @@ interface SpaceLinksSectionProps {
   spaces: Space[];
 }
 
-function LinkForm({ spaces, onClose }: { spaces: Space[]; onClose: () => void }) {
+function LinkForm({ spaces, initialSpaceId, onClose }: { spaces: Space[]; initialSpaceId?: number; onClose: () => void }) {
   const queryClient = useQueryClient();
   const createLink = useCreateSpaceLink();
-  const [spaceId, setSpaceId] = useState(spaces[0]?.id ?? 0);
+  const [spaceId, setSpaceId] = useState(initialSpaceId ?? spaces[0]?.id ?? 0);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
@@ -72,7 +72,18 @@ export function SpaceLinksSection({ spaces }: SpaceLinksSectionProps) {
   const deleteLink = useDeleteSpaceLink();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [activeSpaceId, setActiveSpaceId] = useState<number | null>(spaces[0]?.id ?? null);
   const links = linksQuery.data ?? [];
+  const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? spaces[0];
+  const activeSpaceLinks = activeSpace ? links.filter((link) => link.spaceId === activeSpace.id) : [];
+
+  useEffect(() => {
+    if (!spaces.length) {
+      setActiveSpaceId(null);
+      return;
+    }
+    if (!spaces.some((space) => space.id === activeSpaceId)) setActiveSpaceId(spaces[0].id);
+  }, [activeSpaceId, spaces]);
 
   const remove = (id: number) => {
     if (!window.confirm('هل تريد حذف هذا الرابط؟')) return;
@@ -89,21 +100,28 @@ export function SpaceLinksSection({ spaces }: SpaceLinksSectionProps) {
         {spaces.length === 0 ? (
           <p className="py-6 text-center text-sm font-semibold text-muted-foreground">أضف مساحة أولاً حتى تحفظ روابطها.</p>
         ) : (
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {spaces.map((space) => {
-              const spaceLinks = links.filter((link) => link.spaceId === space.id);
-              return <div key={space.id} className="rounded-2xl border border-border bg-background/70 p-3" style={{ borderInlineStartColor: space.color, borderInlineStartWidth: 4 }}>
-                <div className="mb-2 flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: space.color }} /><h3 className="text-sm font-extrabold">{space.name}</h3><span className="mr-auto rounded-full bg-muted px-2 py-0.5 font-mono-ui text-[10px] text-muted-foreground">{spaceLinks.length}</span></div>
-                {spaceLinks.length ? <div className="flex flex-wrap gap-2">{spaceLinks.map((link) => <div key={link.id} className="group/link flex items-center rounded-xl border border-border bg-card">
+          <>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {spaces.map((space) => {
+                const count = links.filter((link) => link.spaceId === space.id).length;
+                const isActive = activeSpace?.id === space.id;
+                return <button key={space.id} type="button" onClick={() => setActiveSpaceId(space.id)} data-testid={`button-space-links-filter-${space.name}`} className={`flex items-center justify-between rounded-2xl border p-3 text-right transition ${isActive ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}>
+                  <span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: space.color }} />{space.name}</span>
+                  <span className={`font-mono-ui text-xs ${isActive ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span>
+                </button>;
+              })}
+            </div>
+            {activeSpace && <div className="mt-3 rounded-2xl border border-border bg-background/70 p-4" style={{ borderInlineStartColor: activeSpace.color, borderInlineStartWidth: 4 }}>
+                <div className="mb-3 flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: activeSpace.color }} /><h3 className="text-sm font-extrabold">روابط {activeSpace.name}</h3><span className="mr-auto rounded-full bg-muted px-2 py-0.5 font-mono-ui text-[10px] text-muted-foreground">{activeSpaceLinks.length}</span></div>
+                {activeSpaceLinks.length ? <div className="flex flex-wrap gap-2">{activeSpaceLinks.map((link) => <div key={link.id} className="group/link flex items-center rounded-xl border border-border bg-card">
                   <a href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-primary transition hover:text-primary/75"><ExternalLink size={13} /> {link.title}</a>
                   <button type="button" onClick={() => remove(link.id)} aria-label={`حذف رابط ${link.title}`} className="border-r border-border p-2 text-muted-foreground opacity-100 transition hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover/link:opacity-100"><Trash2 size={12} /></button>
                 </div>)}</div> : <p className="py-2 text-xs font-semibold text-muted-foreground">لا توجد روابط محفوظة بعد.</p>}
-              </div>;
-            })}
-          </div>
+              </div>}
+          </>
         )}
       </section>
-      {showForm && <LinkForm spaces={spaces} onClose={() => setShowForm(false)} />}
+      {showForm && <LinkForm spaces={spaces} initialSpaceId={activeSpace?.id} onClose={() => setShowForm(false)} />}
     </>
   );
 }
