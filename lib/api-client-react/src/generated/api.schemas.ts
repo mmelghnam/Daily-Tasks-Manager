@@ -88,6 +88,31 @@ export interface SpaceInput {
   description?: string;
 }
 
+export interface Event {
+  id: number;
+  title: string;
+  startDate: string;
+  endDate: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface EventInput {
+  /** @minLength 1 */
+  title: string;
+  startDate: string;
+  endDate: string;
+  color?: string;
+}
+
+export interface EventUpdate {
+  /** @minLength 1 */
+  title?: string;
+  startDate?: string;
+  endDate?: string;
+  color?: string;
+}
+
 export type ListTasksParams = {
 date?: string;
 };

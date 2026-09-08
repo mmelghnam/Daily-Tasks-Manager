@@ -6,6 +6,8 @@ import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
 import { SpaceForm } from '@/components/space-form';
 import { PalettePicker } from '@/components/palette-picker';
+import { EventsSection } from '@/components/events-section';
+import { getDailyMessage } from '@/daily-messages';
 
 type Category = Task['category'];
 
@@ -103,7 +105,7 @@ export default function Home() {
               <span className="font-mono-ui text-xs" dir="ltr">{selectedDate}</span>
             </div>
             <h1 data-testid="text-date-heading" className="max-w-2xl text-3xl font-extrabold leading-[1.25] tracking-tight sm:text-5xl">{dateLabel(selectedDate)}</h1>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">نظرة واحدة تكفي لتعرف أين تضع طاقتك الآن.</p>
+             <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">{getDailyMessage(selectedDate)}</p>
           </div>
           <div className="flex items-center justify-between rounded-2xl border border-border bg-card/75 p-2 shadow-sm">
             <button type="button" onClick={() => setSelectedDate(shiftDate(selectedDate, -1))} aria-label="اليوم السابق" data-testid="button-previous-day" className="rounded-xl p-3 text-muted-foreground transition hover:bg-muted hover:text-foreground"><ChevronRight size={20} /></button>
@@ -136,6 +138,8 @@ export default function Home() {
             <p className="mt-2 text-xs font-semibold text-muted-foreground">عبر {spaceNames.length} مساحات</p>
           </div>
         </section>
+
+        <EventsSection />
 
         <section className="animate-rise rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
           <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -176,7 +180,7 @@ export default function Home() {
           )}
         </section>
       </main>
-       {showForm && <TaskForm date={selectedDate} initialCategory={formCategory} spaces={spaceNames} onClose={() => setShowForm(false)} />}
+       {showForm && <TaskForm date={selectedDate} initialCategory={formCategory} categoryLocked={Boolean(formCategory)} spaces={spaceNames} onClose={() => setShowForm(false)} />}
        {showSpaceForm && <SpaceForm onClose={() => setShowSpaceForm(false)} onCreated={(name) => { setActiveCategory(name); }} />}
     </div>
   );

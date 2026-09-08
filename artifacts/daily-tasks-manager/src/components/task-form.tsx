@@ -15,11 +15,12 @@ interface TaskFormProps {
   date: string;
   task?: Task | null;
   initialCategory?: Category;
+  categoryLocked?: boolean;
   spaces: string[];
   onClose: () => void;
 }
 
-export function TaskForm({ date, task, initialCategory, spaces, onClose }: TaskFormProps) {
+export function TaskForm({ date, task, initialCategory, categoryLocked = false, spaces, onClose }: TaskFormProps) {
   const queryClient = useQueryClient();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -110,13 +111,21 @@ export function TaskForm({ date, task, initialCategory, spaces, onClose }: TaskF
 
           <div>
             <label className="mb-2 block text-sm font-bold">المساحة</label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {spaces.map((item) => (
-                <button key={item} type="button" onClick={() => setCategory(item)} data-testid={`button-category-${item}`} className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${category === item ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}>
-                  {item}
-                </button>
-              ))}
-            </div>
+            {categoryLocked ? (
+              <div data-testid="text-locked-task-category" className="flex h-12 items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 text-sm font-extrabold text-primary">
+                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                {category}
+                <span className="mr-auto text-xs font-semibold text-primary/70">محددة من المساحة الحالية</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {spaces.map((item) => (
+                  <button key={item} type="button" onClick={() => setCategory(item)} data-testid={`button-category-${item}`} className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${category === item ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

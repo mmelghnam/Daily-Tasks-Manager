@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './event';
+export * from './eventInput';
+export * from './eventUpdate';
 export * from './getTaskSummaryParams';
 export * from './healthStatus';
 export * from './listTasksParams';

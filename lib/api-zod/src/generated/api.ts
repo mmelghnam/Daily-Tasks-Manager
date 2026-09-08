@@ -213,3 +213,77 @@ export const CreateSpaceResponse = zod.object({
 })
 
 
+/**
+ * @summary List countdown events
+ */
+export const ListEventsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListEventsResponse = zod.array(ListEventsResponseItem)
+
+
+/**
+ * @summary Create a countdown event
+ */
+
+
+
+export const CreateEventBody = zod.object({
+  "title": zod.string().min(1),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "color": zod.string().optional()
+})
+
+export const CreateEventResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a countdown event
+ */
+export const UpdateEventParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const UpdateEventBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "startDate": zod.coerce.date().optional(),
+  "endDate": zod.coerce.date().optional(),
+  "color": zod.string().optional()
+})
+
+export const UpdateEventResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a countdown event
+ */
+export const DeleteEventParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteEventResponse = zod.void()
+
+

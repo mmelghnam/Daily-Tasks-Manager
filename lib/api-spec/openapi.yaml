@@ -14,6 +14,8 @@ tags:
     description: Daily task operations
   - name: spaces
     description: User-defined work spaces
+  - name: events
+    description: Countdown events
 paths:
   /healthz:
     get:
@@ -159,6 +161,78 @@ paths:
                 $ref: "#/components/schemas/Space"
         "409":
           description: A space with this name already exists
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List countdown events
+      responses:
+        "200":
+          description: Countdown events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create a countdown event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created countdown event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+  /events/{id}:
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update a countdown event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated countdown event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Event not found
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete a countdown event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Event not found
 components:
   schemas:
     HealthStatus:
@@ -320,3 +394,51 @@ components:
         description:
           type: string
       required: [name]
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        color:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, startDate, endDate, color, createdAt]
+    EventInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        color:
+          type: string
+      required: [title, startDate, endDate]
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        color:
+          type: string

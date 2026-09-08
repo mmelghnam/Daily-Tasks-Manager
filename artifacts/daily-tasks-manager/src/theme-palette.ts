@@ -1,10 +1,102 @@
-export type PaletteId = 'orbit' | 'sea' | 'coral' | 'violet';
+export type PaletteId = 'orbit' | 'sea' | 'coral' | 'violet' | 'custom';
 
 export interface ThemePalette {
   label: string;
   description: string;
   swatches: string[];
   variables: Record<string, string>;
+}
+
+export interface HexPalette {
+  background: string;
+  foreground: string;
+  border: string;
+  card: string;
+  cardForeground: string;
+  cardBorder: string;
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
+  muted: string;
+  mutedForeground: string;
+  accent: string;
+  accentForeground: string;
+  input: string;
+  ring: string;
+  destructive: string;
+  destructiveForeground: string;
+}
+
+// عدّل قيم Hex هنا لإضافة هويتك الخاصة، ثم ستظهر تلقائيًا في قائمة المظهر.
+export const customPaletteHex: HexPalette = {
+  background: '#f4f1e8',
+  foreground: '#203e3a',
+  border: '#d8d2c3',
+  card: '#fffdf8',
+  cardForeground: '#203e3a',
+  cardBorder: '#ddd7ca',
+  primary: '#2d6b5f',
+  primaryForeground: '#f8f4e9',
+  secondary: '#efb955',
+  secondaryForeground: '#203e3a',
+  muted: '#ebe6da',
+  mutedForeground: '#66756e',
+  accent: '#d47b6d',
+  accentForeground: '#203e3a',
+  input: '#d4cdbc',
+  ring: '#2d6b5f',
+  destructive: '#c45248',
+  destructiveForeground: '#fff8f0',
+};
+
+function hexToHsl(hex: string) {
+  const value = hex.replace('#', '');
+  const red = Number.parseInt(value.slice(0, 2), 16) / 255;
+  const green = Number.parseInt(value.slice(2, 4), 16) / 255;
+  const blue = Number.parseInt(value.slice(4, 6), 16) / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const lightness = (max + min) / 2;
+
+  if (max === min) return `0 0% ${Math.round(lightness * 100)}%`;
+
+  const delta = max - min;
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  let hue = 0;
+  if (max === red) hue = (green - blue) / delta + (green < blue ? 6 : 0);
+  else if (max === green) hue = (blue - red) / delta + 2;
+  else hue = (red - green) / delta + 4;
+
+  return `${Math.round(hue * 60)} ${Math.round(saturation * 100)}% ${Math.round(lightness * 100)}%`;
+}
+
+function makeHexPalette(colors: HexPalette): ThemePalette {
+  return {
+    label: 'مخصص',
+    description: 'ألوانك الخاصة من Hex',
+    swatches: [colors.primary, colors.secondary, colors.accent],
+    variables: {
+      '--background': hexToHsl(colors.background),
+      '--foreground': hexToHsl(colors.foreground),
+      '--border': hexToHsl(colors.border),
+      '--card': hexToHsl(colors.card),
+      '--card-foreground': hexToHsl(colors.cardForeground),
+      '--card-border': hexToHsl(colors.cardBorder),
+      '--primary': hexToHsl(colors.primary),
+      '--primary-foreground': hexToHsl(colors.primaryForeground),
+      '--secondary': hexToHsl(colors.secondary),
+      '--secondary-foreground': hexToHsl(colors.secondaryForeground),
+      '--muted': hexToHsl(colors.muted),
+      '--muted-foreground': hexToHsl(colors.mutedForeground),
+      '--accent': hexToHsl(colors.accent),
+      '--accent-foreground': hexToHsl(colors.accentForeground),
+      '--input': hexToHsl(colors.input),
+      '--ring': hexToHsl(colors.ring),
+      '--destructive': hexToHsl(colors.destructive),
+      '--destructive-foreground': hexToHsl(colors.destructiveForeground),
+    },
+  };
 }
 
 export const themePalettes: Record<PaletteId, ThemePalette> = {
@@ -108,6 +200,7 @@ export const themePalettes: Record<PaletteId, ThemePalette> = {
       '--destructive-foreground': '260 32% 97%',
     },
   },
+  custom: makeHexPalette(customPaletteHex),
 };
 
 const storageKey = 'daily-tasks-manager-palette';

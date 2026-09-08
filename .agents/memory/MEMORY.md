@@ -1,0 +1,1 @@
+- [API date normalization](api-date-normalization.md) — nested JSON dates need explicit normalization because generated schemas coerce OpenAPI date formats.
