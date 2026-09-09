@@ -7,3 +7,4 @@
 - [Task scheduling fields](task-scheduling-fields.md) — task start times and durations are optional; clearing them must persist explicit nulls.
 - [Task menu positioning](task-menu-positioning.md) — RTL task menus need viewport anchoring and should flip to the button’s right side near the left edge.
 - [Account-scoped permission caches](account-scoped-permission-caches.md) — auth-dependent permissions must use account-specific query keys and refetch after account changes.
+- [Artifact deployment health](artifact-deployment-health.md) — each runnable artifact needs an unauthenticated 200 health path, with the probe path scoped to its artifact service.
