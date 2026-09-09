@@ -1,6 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ClerkProvider, Show, SignIn, SignUp, useClerk } from '@clerk/react';
+import { useMemo, type ReactNode } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ClerkProvider, Show, SignIn, SignUp, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { arSA } from '@clerk/localizations';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -11,6 +11,7 @@ import Home from '@/pages/home';
 import Landing from '@/pages/landing';
 import Admin from '@/pages/admin';
 import { OnboardingGuard } from '@/components/onboarding-guard';
+import { createAccountQueryClient } from '@/account-query-client';
 import {
   Redirect,
   Route,
@@ -19,7 +20,6 @@ import {
   Router as WouterRouter,
 } from 'wouter';
 
-const queryClient = new QueryClient();
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -129,23 +129,30 @@ function SignUpPage() {
   return <AuthShell><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></AuthShell>;
 }
 
-function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
-  const activeQueryClient = queryClient;
-  const prevUserIdRef = useRef<string | null | undefined>(undefined);
+function AccountLoadingScreen() {
+  return (
+    <div
+      className="min-h-[100dvh] task-shell noise-overlay"
+      dir="rtl"
+      data-testid="status-account-loading"
+    />
+  );
+}
 
-  useEffect(() => {
-    const unsubscribe = addListener(({ user }) => {
-      const userId = user?.id ?? null;
-      if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) {
-        activeQueryClient.clear();
-      }
-      prevUserIdRef.current = userId;
-    });
-    return unsubscribe;
-  }, [addListener, activeQueryClient]);
+function AccountQueryClientProvider({ children }: { children: ReactNode }) {
+  const { isLoaded, user } = useUser();
+  const accountId = isLoaded ? user?.id ?? 'signed-out' : 'loading';
+  const accountQueryClient = useMemo(createAccountQueryClient, [accountId]);
 
-  return null;
+  if (!isLoaded) {
+    return <AccountLoadingScreen />;
+  }
+
+  return (
+    <QueryClientProvider key={accountId} client={accountQueryClient}>
+      {children}
+    </QueryClientProvider>
+  );
 }
 
 function Router() {
@@ -184,13 +191,12 @@ function ClerkProviderWithRoutes() {
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
-      <QueryClientProvider client={queryClient}>
-        <ClerkQueryClientCacheInvalidator />
+      <AccountQueryClientProvider>
         <TooltipProvider>
           <Router />
           <Toaster />
         </TooltipProvider>
-      </QueryClientProvider>
+      </AccountQueryClientProvider>
     </ClerkProvider>
   );
 }
