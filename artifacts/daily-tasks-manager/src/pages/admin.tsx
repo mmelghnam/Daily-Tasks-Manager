@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
+import { useUser } from '@clerk/react';
 import { ArrowRight, BarChart3, CheckCircle2, Megaphone, Send, ShieldCheck, Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListNotificationsQueryKey,
+  getGetAdminAccessQueryKey,
   getGetAdminStatsQueryKey,
   useCreateAdminNotification,
   useGetAdminAccess,
@@ -15,9 +17,25 @@ function StatCard({ label, value, icon }: { label: string; value: string | numbe
 
 export default function Admin() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const { user } = useUser();
   const queryClient = useQueryClient();
-  const access = useGetAdminAccess();
-  const stats = useGetAdminStats({ query: { queryKey: getGetAdminStatsQueryKey(), enabled: access.data?.isAdmin === true } });
+  const accountQuerySuffix = user?.id ?? 'pending-account';
+  const access = useGetAdminAccess({
+    query: {
+      queryKey: [...getGetAdminAccessQueryKey(), accountQuerySuffix],
+      enabled: Boolean(user?.id),
+      staleTime: 0,
+      refetchOnMount: 'always',
+    },
+  });
+  const stats = useGetAdminStats({
+    query: {
+      queryKey: [...getGetAdminStatsQueryKey(), accountQuerySuffix],
+      enabled: access.data?.isAdmin === true,
+      staleTime: 0,
+      refetchOnMount: 'always',
+    },
+  });
   const createNotification = useCreateAdminNotification();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');

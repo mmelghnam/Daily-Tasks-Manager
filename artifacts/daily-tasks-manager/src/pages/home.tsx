@@ -2,7 +2,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2, ShieldCheck, UserRound } from 'lucide-react';
-import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask, useUpdateUsageType } from '@workspace/api-client-react';
+import { getGetAdminAccessQueryKey, getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask, useUpdateUsageType } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
@@ -72,7 +72,14 @@ function AccountControl() {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const onboarding = useGetOnboardingStatus();
-  const adminAccess = useGetAdminAccess();
+  const adminAccess = useGetAdminAccess({
+    query: {
+      queryKey: [...getGetAdminAccessQueryKey(), user?.id ?? 'pending-account'],
+      enabled: Boolean(user?.id),
+      staleTime: 0,
+      refetchOnMount: 'always',
+    },
+  });
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<UsageType | null>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
