@@ -14,3 +14,17 @@ mtime_ms = 1788869220460
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/889b99d9-4dd1-409b-8aaf-31583a3e83d5/9aa6e6c7-b56d-4c93-9aa5-fc3176da579a"
 storage_version_token = "1788869225774177"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "PUScUbqsB5fKWix2ss2Ac"
+uri = "file://PROJECT_REQUIREMENTS.md"
+type = "text"
+title = "متطلبات مشروع إنجازك اليومي"
+description = "ملف Markdown شامل يوضح بنية المشروع، المتطلبات الوظيفية والتقنية، API، قاعدة البيانات، المهاجرة، ومعايير القبول."
+logical_id = "0dec9d63-4267-49ca-ab0a-87950823e54d"
+content_hash = "sha256:595e8659403d72b7aae4459fc9c8f2605f27d4c37803b70f0c9a040f82ecaa5c"
+size = 41783
+mtime_ms = 1788987290380
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/0dec9d63-4267-49ca-ab0a-87950823e54d/9c79f01e-8695-44fe-8000-f15f30e07471"
+storage_version_token = "1788987412019690"
+content_type = "text/markdown"
