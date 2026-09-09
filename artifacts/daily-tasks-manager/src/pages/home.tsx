@@ -220,6 +220,7 @@ export default function Home() {
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
   const [quickAddCategory, setQuickAddCategory] = useState<Category | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
   const spacesQuery = useListSpaces();
   const taskQuery = useListTasks(rangeFor(selectedDate, viewMode));
@@ -249,6 +250,22 @@ export default function Home() {
     if (index < 0 || targetIndex < 0 || targetIndex >= categoryTasks.length) return;
     const reordered = [...categoryTasks];
     [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    await Promise.all(reordered.map((task, nextIndex) => reorderMutation.mutateAsync({ id: task.id, data: { sortOrder: nextIndex } })));
+    await queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+  };
+
+  const reorderDraggedTask = async (draggedId: number, targetId: number, category: string) => {
+    if (draggedId === targetId) return;
+    const categoryTasks = tasks
+      .filter((task) => task.category === category)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+    const fromIndex = categoryTasks.findIndex((task) => task.id === draggedId);
+    const targetIndex = categoryTasks.findIndex((task) => task.id === targetId);
+    if (fromIndex < 0 || targetIndex < 0) return;
+    const reordered = [...categoryTasks];
+    const [movedTask] = reordered.splice(fromIndex, 1);
+    reordered.splice(targetIndex, 0, movedTask);
+    setDraggedTaskId(null);
     await Promise.all(reordered.map((task, nextIndex) => reorderMutation.mutateAsync({ id: task.id, data: { sortOrder: nextIndex } })));
     await queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
   };
@@ -398,10 +415,10 @@ export default function Home() {
            ) : visibleTasks.length === 0 ? (
              <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/25 bg-card/55 px-6 py-20 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary/25 text-primary"><Sparkles size={29} /></div><h2 className="text-xl font-extrabold">{activeCategory === 'all' ? 'اليوم ما زال مفتوحاً' : `لا توجد مهام في ${activeCategory}`}</h2><p className="mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{activeCategory === 'all' ? 'أضف أول خطوة صغيرة، ودع بقية اليوم يتضح معها.' : 'أضف مهمة سريعة الآن، أو استخدم «مهمة جديدة» لو محتاج تفاصيل أكثر.'}</p>{activeCategory === 'all' ? <button type="button" onClick={() => openNew()} data-testid="button-add-first-task" className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5"><Plus size={17} /> أضف مهمة</button> : <div className="mt-6 w-full max-w-md"><QuickTaskInput date={selectedDate} category={activeCategory} /><button type="button" onClick={() => openNew(activeCategory)} data-testid="button-add-detailed-task" className="mt-3 text-sm font-bold text-primary underline-offset-4 hover:underline">أضف مهمة بالتفصيل</button></div>}</div>
           ) : activeCategory !== 'all' ? (
-              <div className="space-y-3"><QuickTaskInput date={selectedDate} category={activeCategory} /><div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task, index) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onReorder={(direction) => void reorderTask(task.id, task.category, direction)} canMoveUp={index > 0} canMoveDown={index < visibleTasks.length - 1} />)}</div></div>
+               <div className="space-y-3"><QuickTaskInput date={selectedDate} category={activeCategory} /><div className="space-y-3">{visibleTasks.map((task, index) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onReorder={(direction) => void reorderTask(task.id, task.category, direction)} onDragStart={setDraggedTaskId} onDropTask={(draggedId) => void reorderDraggedTask(draggedId, task.id, task.category)} isDragging={draggedTaskId === task.id} canMoveUp={index > 0} canMoveDown={index < visibleTasks.length - 1} />)}</div></div>
           ) : (
              <div className="space-y-8">
-                  {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); const quickAddOpen = quickAddCategory === category; const categoryTasks = grouped[category]; return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => setQuickAddCategory(quickAddOpen ? null : category)} aria-label={`إضافة مهمة سريعة في ${category}`} data-testid={`button-add-task-${category}`} className={`rounded-xl border bg-background p-2 shadow-sm transition hover:border-primary/30 hover:text-primary ${quickAddOpen ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}><Plus size={17} /></button></div>{quickAddOpen && <div className="mb-4"><QuickTaskInput date={selectedDate} category={category} onCreated={() => setQuickAddCategory(null)} /></div>}<div className="grid gap-3 md:grid-cols-2">{categoryTasks.map((task, index) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onReorder={(direction) => void reorderTask(task.id, task.category, direction)} canMoveUp={index > 0} canMoveDown={index < categoryTasks.length - 1} />)}</div></div>; })}
+                   {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); const quickAddOpen = quickAddCategory === category; const categoryTasks = grouped[category]; return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => setQuickAddCategory(quickAddOpen ? null : category)} aria-label={`إضافة مهمة سريعة في ${category}`} data-testid={`button-add-task-${category}`} className={`rounded-xl border bg-background p-2 shadow-sm transition hover:border-primary/30 hover:text-primary ${quickAddOpen ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}><Plus size={17} /></button></div>{quickAddOpen && <div className="mb-4"><QuickTaskInput date={selectedDate} category={category} onCreated={() => setQuickAddCategory(null)} /></div>}<div className="space-y-3">{categoryTasks.map((task, index) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onReorder={(direction) => void reorderTask(task.id, task.category, direction)} onDragStart={setDraggedTaskId} onDropTask={(draggedId) => void reorderDraggedTask(draggedId, task.id, category)} isDragging={draggedTaskId === task.id} canMoveUp={index > 0} canMoveDown={index < categoryTasks.length - 1} />)}</div></div>; })}
             </div>
           )}
         </section>

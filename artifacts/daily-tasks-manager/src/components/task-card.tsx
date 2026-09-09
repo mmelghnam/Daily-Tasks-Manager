@@ -204,7 +204,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
         onDrop={(event) => {
           event.preventDefault();
           const draggedId = Number(event.dataTransfer.getData('text/task-id'));
-          if (draggedId && draggedId !== task.id) onDropTask(draggedId);
+          if (draggedId && draggedId !== task.id) onDropTask?.(draggedId);
         }}
         onDragEnd={() => onDragStart?.(0)}
         className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${isDragging ? 'border-primary bg-primary/5 opacity-50 shadow-xl ring-2 ring-primary/20' : task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}
