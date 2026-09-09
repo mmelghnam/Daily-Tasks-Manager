@@ -63,6 +63,10 @@ export const ListTasksQueryParams = zod.object({
 })
 
 
+export const listTasksResponseStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const listTasksResponseDurationMinutesMin = 5;
+export const listTasksResponseDurationMinutesMax = 1440;
+
 
 
 export const ListTasksResponseItem = zod.object({
@@ -91,6 +95,8 @@ export const ListTasksResponseItem = zod.object({
   "dueDate": zod.string().nullable()
 })),
   "sortOrder": zod.number().int(),
+  "startTime": zod.string().regex(listTasksResponseStartTimeRegExp).nullish(),
+  "durationMinutes": zod.number().int().min(listTasksResponseDurationMinutesMin).max(listTasksResponseDurationMinutesMax).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -101,6 +107,10 @@ export const ListTasksResponse = zod.array(ListTasksResponseItem)
  * @summary Create a task
  */
 
+
+export const createTaskBodyStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const createTaskBodyDurationMinutesMin = 5;
+export const createTaskBodyDurationMinutesMax = 1440;
 
 
 
@@ -121,6 +131,8 @@ export const CreateTaskBody = zod.object({
   "dueDate": zod.string().nullable()
 })).optional(),
   "sortOrder": zod.number().int().optional(),
+  "startTime": zod.string().regex(createTaskBodyStartTimeRegExp).optional(),
+  "durationMinutes": zod.number().int().min(createTaskBodyDurationMinutesMin).max(createTaskBodyDurationMinutesMax).optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
   "recurrence": zod.string().optional(),
   "dueDate": zod.coerce.date().optional(),
@@ -131,6 +143,10 @@ export const CreateTaskBody = zod.object({
 })).optional()
 })
 
+
+export const createTaskResponseStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const createTaskResponseDurationMinutesMin = 5;
+export const createTaskResponseDurationMinutesMax = 1440;
 
 
 
@@ -160,6 +176,8 @@ export const CreateTaskResponse = zod.object({
   "dueDate": zod.string().nullable()
 })),
   "sortOrder": zod.number().int(),
+  "startTime": zod.string().regex(createTaskResponseStartTimeRegExp).nullish(),
+  "durationMinutes": zod.number().int().min(createTaskResponseDurationMinutesMin).max(createTaskResponseDurationMinutesMax).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -173,6 +191,10 @@ export const UpdateTaskParams = zod.object({
 })
 
 
+
+export const updateTaskBodyStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateTaskBodyDurationMinutesMin = 5;
+export const updateTaskBodyDurationMinutesMax = 1440;
 
 
 
@@ -192,6 +214,8 @@ export const UpdateTaskBody = zod.object({
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
 })).optional(),
+  "startTime": zod.string().regex(updateTaskBodyStartTimeRegExp).nullish(),
+  "durationMinutes": zod.number().int().min(updateTaskBodyDurationMinutesMin).max(updateTaskBodyDurationMinutesMax).nullish(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
   "recurrence": zod.string().optional(),
   "dueDate": zod.coerce.date().optional(),
@@ -203,6 +227,10 @@ export const UpdateTaskBody = zod.object({
   "sortOrder": zod.number().int().optional()
 })
 
+
+export const updateTaskResponseStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateTaskResponseDurationMinutesMin = 5;
+export const updateTaskResponseDurationMinutesMax = 1440;
 
 
 
@@ -232,6 +260,8 @@ export const UpdateTaskResponse = zod.object({
   "dueDate": zod.string().nullable()
 })),
   "sortOrder": zod.number().int(),
+  "startTime": zod.string().regex(updateTaskResponseStartTimeRegExp).nullish(),
+  "durationMinutes": zod.number().int().min(updateTaskResponseDurationMinutesMin).max(updateTaskResponseDurationMinutesMax).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -263,6 +293,10 @@ export const CopyTaskBody = zod.object({
 })
 
 
+export const copyTaskResponseStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const copyTaskResponseDurationMinutesMin = 5;
+export const copyTaskResponseDurationMinutesMax = 1440;
+
 
 
 export const CopyTaskResponseItem = zod.object({
@@ -291,6 +325,8 @@ export const CopyTaskResponseItem = zod.object({
   "dueDate": zod.string().nullable()
 })),
   "sortOrder": zod.number().int(),
+  "startTime": zod.string().regex(copyTaskResponseStartTimeRegExp).nullish(),
+  "durationMinutes": zod.number().int().min(copyTaskResponseDurationMinutesMin).max(copyTaskResponseDurationMinutesMax).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

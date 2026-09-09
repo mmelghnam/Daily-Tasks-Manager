@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, Check, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -242,6 +242,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
               <span className={`rounded-lg px-2 py-1 text-[11px] font-extrabold ${task.priority === 'high' ? 'bg-destructive/10 text-destructive' : task.priority === 'low' ? 'bg-muted text-muted-foreground' : 'bg-secondary/15 text-primary'}`}>
                 {task.priority === 'high' ? 'أولوية عالية' : task.priority === 'low' ? 'أولوية منخفضة' : 'أولوية متوسطة'}
               </span>
+              {task.startTime && <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-extrabold text-primary"><Clock3 size={12} /> {task.startTime}{task.durationMinutes ? ` · ${task.durationMinutes} د` : ''}</span>}
               {task.recurrence && <span className="rounded-lg bg-accent/15 px-2 py-1 text-[11px] font-extrabold text-accent-foreground">{task.recurrence === 'daily' ? 'تتكرر يوميًا' : task.recurrence === 'weekly' ? 'تتكرر أسبوعيًا' : 'تتكرر شهريًا'}</span>}
               {task.dueDate && <span className="rounded-lg bg-muted px-2 py-1 text-[11px] font-extrabold text-muted-foreground">التسليم {task.dueDate}</span>}
               {links.map((link, index) => (

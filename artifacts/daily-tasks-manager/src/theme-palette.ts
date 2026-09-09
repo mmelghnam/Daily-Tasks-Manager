@@ -401,6 +401,19 @@ export const themePalettes: Record<PaletteId, ThemePalette> = {
 };
 
 const storageKey = 'daily-tasks-manager-palette';
+const surfaceFallbacks: Record<string, string> = {
+  '--popover': '--card',
+  '--popover-foreground': '--card-foreground',
+  '--popover-border': '--card-border',
+};
+
+export function completePaletteVariables(variables: Record<string, string>) {
+  const completed = { ...variables };
+  Object.entries(surfaceFallbacks).forEach(([target, source]) => {
+    if (!completed[target] && completed[source]) completed[target] = completed[source];
+  });
+  return completed;
+}
 
 export function getStoredPalette(): PaletteId {
   if (typeof window === 'undefined') return 'orbit';
@@ -412,7 +425,7 @@ export function applyPalette(id: PaletteId) {
   const root = document.documentElement;
   const palette = id === 'custom' ? makeHexPalette(getStoredCustomPalette()) : themePalettes[id];
   root.dataset.palette = id;
-  Object.entries(palette.variables).forEach(([property, value]) => {
+  Object.entries(completePaletteVariables(palette.variables)).forEach(([property, value]) => {
     root.style.setProperty(property, value);
   });
   window.localStorage.setItem(storageKey, id);

@@ -103,6 +103,8 @@ router.post("/tasks", async (req, res, next) => {
         priority: input.priority ?? "medium",
         recurrence: input.recurrence?.trim() || null,
         dueDate: input.dueDate ? toDateOnly(input.dueDate) : null,
+        startTime: input.startTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         subtasks: input.subtasks ?? [],
         completed: input.completed ?? false,
         links: input.links ?? [],
@@ -130,6 +132,8 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (input.title !== undefined) updates.title = input.title.trim();
     if (input.notes !== undefined) updates.notes = input.notes.trim() || null;
     if (input.priority !== undefined) updates.priority = input.priority;
+    if (input.startTime !== undefined) updates.startTime = input.startTime || null;
+    if (input.durationMinutes !== undefined) updates.durationMinutes = input.durationMinutes || null;
     if (input.recurrence !== undefined) updates.recurrence = input.recurrence.trim() || null;
     if (input.dueDate !== undefined) updates.dueDate = input.dueDate ? toDateOnly(input.dueDate) : null;
     if (input.subtasks !== undefined) updates.subtasks = input.subtasks;
@@ -175,6 +179,8 @@ router.patch("/tasks/:id", async (req, res, next) => {
             title: task.title,
             notes: task.notes,
             priority: task.priority,
+            startTime: task.startTime,
+            durationMinutes: task.durationMinutes,
             recurrence: task.recurrence,
             dueDate: task.dueDate ? nextRecurringDate(task.dueDate, task.recurrence) : null,
             subtasks: task.subtasks.map((subtask) => ({ ...subtask, completed: false })),
@@ -236,6 +242,8 @@ router.post("/tasks/:id/copy", async (req, res, next) => {
           title: source.title,
           notes: source.notes,
           priority: source.priority,
+          startTime: source.startTime,
+          durationMinutes: source.durationMinutes,
           recurrence: source.recurrence,
           dueDate: source.dueDate,
           subtasks: source.subtasks.map((subtask) => ({ ...subtask, completed: false })),

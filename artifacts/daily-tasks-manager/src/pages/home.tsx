@@ -13,6 +13,7 @@ import { SpaceLinksSection } from '@/components/space-links-section';
 import { getDailyMessage } from '@/daily-messages';
 import { ProductivityHub } from '@/components/productivity-hub';
 import { NotificationCenter } from '@/components/notification-center';
+import { DailyPlan } from '@/components/daily-plan';
 import { DashboardCustomizer, defaultDashboardSections } from '@/components/dashboard-customizer';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -380,6 +381,8 @@ export default function Home() {
             <p className="mt-2 text-xs font-semibold text-muted-foreground">عبر {spaceNames.length} مساحات</p>
           </div>
         </section>}
+
+          {viewMode === 'day' && <DailyPlan tasks={tasks} />}
 
           {showSection('events') && <div style={sectionRank('events')}><EventsSection /></div>}
           {showSection('productivity') && <div style={sectionRank('productivity')}><ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} /></div>}

@@ -32,6 +32,8 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
   const [category, setCategory] = useState<Category>(task?.category ?? initialCategory ?? spaces[0] ?? 'INV');
   const [notes, setNotes] = useState(task?.notes ?? '');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority ?? 'medium');
+  const [startTime, setStartTime] = useState(task?.startTime ?? '');
+  const [durationMinutes, setDurationMinutes] = useState(task?.durationMinutes?.toString() ?? '');
   const [recurrence, setRecurrence] = useState(task?.recurrence ?? '');
   const [dueDate, setDueDate] = useState(dateOnly(task?.dueDate));
   const [subtaskText, setSubtaskText] = useState(task?.subtasks.map((item) => item.title).join('\n') ?? '');
@@ -67,10 +69,15 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
       return;
     }
     setError('');
+    const parsedDuration = durationMinutes ? Number(durationMinutes) : undefined;
+    if (parsedDuration !== undefined && (!Number.isInteger(parsedDuration) || parsedDuration < 5 || parsedDuration > 1440)) {
+      setError('مدة المهمة يجب أن تكون بين 5 دقائق و24 ساعة');
+      return;
+    }
     const links = linkUrl.trim()
       ? [{ label: linkLabel.trim() || 'فتح الرابط', url: linkUrl.trim() }]
       : [];
-    const data = {
+    const commonData = {
       taskDate: date,
       category,
       title: cleanTitle,
@@ -83,7 +90,7 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
     };
 
     if (task) {
-      updateTask.mutate({ id: task.id, data }, {
+      updateTask.mutate({ id: task.id, data: { ...commonData, startTime: startTime || null, durationMinutes: parsedDuration ?? null } }, {
         onSuccess: (updatedTask) => {
           refresh(updatedTask);
           onClose();
@@ -91,7 +98,7 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
         onError: () => setError('لم نتمكن من حفظ التعديل. حاول مرة أخرى.'),
       });
     } else {
-      createTask.mutate({ data }, {
+      createTask.mutate({ data: { ...commonData, startTime: startTime || undefined, durationMinutes: parsedDuration } }, {
         onSuccess: () => {
           refresh();
           onClose();
@@ -148,6 +155,26 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
             <div>
               <label htmlFor="task-due-date" className="mb-2 block text-sm font-bold">موعد التسليم</label>
               <input id="task-due-date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="task-start-time" className="mb-2 block text-sm font-bold">وقت التنفيذ <span className="font-normal text-muted-foreground">(اختياري)</span></label>
+              <input id="task-start-time" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label htmlFor="task-duration" className="mb-2 block text-sm font-bold">مدة المهمة <span className="font-normal text-muted-foreground">(اختياري)</span></label>
+              <select id="task-duration" value={durationMinutes} onChange={(event) => setDurationMinutes(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary">
+                <option value="">غير محددة</option>
+                <option value="15">15 دقيقة</option>
+                <option value="30">30 دقيقة</option>
+                <option value="45">45 دقيقة</option>
+                <option value="60">ساعة</option>
+                <option value="90">ساعة ونصف</option>
+                <option value="120">ساعتان</option>
+                <option value="180">3 ساعات</option>
+              </select>
             </div>
           </div>
 

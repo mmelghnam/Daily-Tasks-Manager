@@ -20,6 +20,17 @@ export interface TaskUpdate {
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  startTime?: string | null;
+  /**
+     * @minimum 5
+     * @maximum 1440
+     * @nullable
+     */
+  durationMinutes?: number | null;
   priority?: TaskUpdatePriority;
   recurrence?: string;
   dueDate?: Date;

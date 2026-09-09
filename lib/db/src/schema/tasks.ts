@@ -37,6 +37,8 @@ export const tasksTable = pgTable(
     notes: text("notes"),
     priority: text("priority").notNull().default("medium"),
     sortOrder: integer("sort_order").notNull().default(0),
+    startTime: text("start_time"),
+    durationMinutes: integer("duration_minutes"),
     recurrence: text("recurrence"),
     dueDate: date("due_date", { mode: "string" }),
     subtasks: jsonb("subtasks").$type<TaskSubtask[]>().notNull().default([]),

@@ -21,6 +21,13 @@ export interface TaskInput {
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
   sortOrder?: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  startTime?: string;
+  /**
+     * @minimum 5
+     * @maximum 1440
+     */
+  durationMinutes?: number;
   priority?: TaskInputPriority;
   recurrence?: string;
   dueDate?: Date;
