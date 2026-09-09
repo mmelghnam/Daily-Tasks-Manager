@@ -18,23 +18,34 @@ function dateOnly(value: string | Date | null | undefined) {
 }
 
 function playHabitSound() {
-  const AudioContextConstructor = window.AudioContext;
+  type WindowWithWebkitAudio = Window & {
+    webkitAudioContext?: typeof AudioContext;
+  };
+  const AudioContextConstructor = window.AudioContext ?? (window as WindowWithWebkitAudio).webkitAudioContext;
   if (!AudioContextConstructor) return;
   const context = new AudioContextConstructor();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  const now = context.currentTime;
-  oscillator.type = 'triangle';
-  oscillator.frequency.setValueAtTime(659.25, now);
-  oscillator.frequency.exponentialRampToValueAtTime(987.77, now + 0.16);
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.055, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start(now);
-  oscillator.stop(now + 0.27);
-  oscillator.addEventListener('ended', () => void context.close());
+  const play = () => {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const now = context.currentTime;
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(659.25, now);
+    oscillator.frequency.exponentialRampToValueAtTime(987.77, now + 0.16);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.31);
+    oscillator.addEventListener('ended', () => void context.close());
+  };
+
+  if (context.state === 'suspended') {
+    void context.resume().then(play).catch(() => void context.close());
+  } else {
+    play();
+  }
 }
 
 export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; tasks: Task[] }) {
@@ -107,7 +118,7 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
           {(habits.data ?? []).map((habit: Habit) => {
             const doneToday = dateOnly(habit.lastCompleted) === new Date().toISOString().slice(0, 10);
             return <div key={habit.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
-              <button type="button" onClick={() => { playHabitSound(); const today = new Date().toISOString().slice(0, 10); const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); const nextStreak = doneToday ? Math.max(0, habit.streak - 1) : (dateOnly(habit.lastCompleted) === yesterday ? habit.streak + 1 : 1); updateHabit.mutate({ id: habit.id, data: { streak: nextStreak, lastCompleted: doneToday ? null : today } }, { onSuccess: () => refresh(getListHabitsQueryKey()) }); }} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
+              <button type="button" onClick={() => { if (!doneToday) playHabitSound(); const today = new Date().toISOString().slice(0, 10); const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); const nextStreak = doneToday ? Math.max(0, habit.streak - 1) : (dateOnly(habit.lastCompleted) === yesterday ? habit.streak + 1 : 1); updateHabit.mutate({ id: habit.id, data: { streak: nextStreak, lastCompleted: doneToday ? null : today } }, { onSuccess: () => refresh(getListHabitsQueryKey()) }); }} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
               <span className="min-w-0 flex-1 text-sm font-bold">{habit.name}</span><span className="inline-flex items-center gap-1 text-xs font-extrabold text-primary"><Volume2 size={12} /> {habit.streak} يوم متتالي</span>
               <button type="button" onClick={() => deleteHabit.mutate({ id: habit.id }, { onSuccess: () => refresh(getListHabitsQueryKey()) })} className="text-muted-foreground hover:text-destructive" aria-label="حذف العادة"><Trash2 size={14} /></button>
             </div>;

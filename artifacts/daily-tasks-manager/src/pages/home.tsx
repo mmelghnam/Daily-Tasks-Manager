@@ -1,7 +1,7 @@
 import { type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2, ShieldCheck } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2, ShieldCheck, UserRound } from 'lucide-react';
 import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask, useUpdateUsageType } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
@@ -98,14 +98,21 @@ function AccountControl() {
   };
 
   return (
-    <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background/70 p-1.5">
-      <div className="hidden max-w-28 truncate px-1 text-xs font-extrabold text-foreground md:block">{name}</div>
-      {adminAccess.data?.isAdmin && <a href={`${basePath}/admin`} className="flex items-center gap-1.5 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-extrabold text-accent-foreground transition hover:bg-accent/20" data-testid="link-admin"><ShieldCheck size={14} /> الإدارة</a>}
+    <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-border/80 bg-background/80 px-2.5 py-1.5 shadow-sm">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><UserRound size={16} /></span>
+        <div className="hidden min-w-0 max-w-36 md:block">
+          <p className="truncate text-xs font-extrabold text-foreground">{name}</p>
+          <p className="mt-0.5 text-[10px] font-bold text-muted-foreground">{currentType ? typeLabels[currentType] : 'حساب شخصي'}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm">
+      {adminAccess.data?.isAdmin && <a href={`${basePath}/admin`} className="flex items-center gap-1.5 rounded-xl bg-accent/10 px-3 py-2 text-xs font-extrabold text-accent-foreground transition hover:bg-accent/20" data-testid="link-admin"><ShieldCheck size={14} /> الإدارة</a>}
       <Dialog open={typeDialogOpen} onOpenChange={openTypeDialog}>
         <DialogTrigger asChild>
-          <button type="button" className="flex items-center gap-1.5 rounded-lg bg-secondary/15 px-2.5 py-1.5 text-xs font-extrabold text-primary transition hover:bg-secondary/30" data-testid="button-change-usage-type">
+          <button type="button" className="flex items-center gap-1.5 rounded-xl bg-secondary/15 px-3 py-2 text-xs font-extrabold text-primary transition hover:bg-secondary/30" data-testid="button-change-usage-type">
             <Settings2 size={14} />
-            <span>{currentType ? typeLabels[currentType] : 'نوع الحساب'}</span>
+            <span className="hidden sm:inline">{currentType ? typeLabels[currentType] : 'نوع الحساب'}</span>
           </button>
         </DialogTrigger>
         <DialogContent dir="rtl" className="max-w-lg rounded-3xl">
@@ -141,7 +148,8 @@ function AccountControl() {
           </Button>
         </DialogContent>
       </Dialog>
-      <button type="button" onClick={() => void signOut({ redirectUrl: basePath || '/' })} className="rounded-lg bg-muted px-3 py-1.5 text-xs font-extrabold text-primary transition hover:bg-secondary/30">تسجيل الخروج</button>
+      <button type="button" onClick={() => void signOut({ redirectUrl: basePath || '/' })} className="rounded-xl bg-muted px-3 py-2 text-xs font-extrabold text-primary transition hover:bg-secondary/30">تسجيل الخروج</button>
+      </div>
     </div>
   );
 }
@@ -295,19 +303,17 @@ export default function Home() {
   return (
     <div className="noise-overlay task-shell min-h-[100dvh]">
       <header className="border-b border-border/70 bg-card/60">
-        <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-12">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-secondary shadow-lg shadow-primary/15">
+        <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-secondary shadow-lg shadow-primary/15">
               <Target size={23} strokeWidth={2.5} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-lg font-extrabold tracking-tight">إنجازك اليومي</p>
-              </div>
-              <p className="text-xs font-semibold text-muted-foreground">مساحتك لترتيب المهم قبل أن يبدأ الزحام</p>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black tracking-tight">إنجازك اليومي</p>
+              <p className="mt-0.5 truncate text-xs font-semibold text-muted-foreground">مساحتك لترتيب المهم قبل أن يبدأ الزحام</p>
             </div>
           </div>
-           <div className="flex items-center gap-2">
+           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
               <DashboardCustomizer />
               <PalettePicker />
               <AccountControl />
