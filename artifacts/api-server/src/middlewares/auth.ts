@@ -20,8 +20,11 @@ declare global {
   }
 }
 
-async function provisionUserAndClaimLegacyData(userId: string) {
-  await db.transaction(async (tx) => {
+export async function provisionUserAndClaimLegacyData(
+  userId: string,
+  database: typeof db = db,
+) {
+  await database.transaction(async (tx) => {
     await tx
       .insert(appUsersTable)
       .values({ userId })
@@ -37,12 +40,10 @@ async function provisionUserAndClaimLegacyData(userId: string) {
 
     if (claimed.length === 0) return;
 
-    await Promise.all([
-      tx.update(tasksTable).set({ ownerId: userId }).where(isNull(tasksTable.ownerId)),
-      tx.update(spacesTable).set({ ownerId: userId }).where(isNull(spacesTable.ownerId)),
-      tx.update(eventsTable).set({ ownerId: userId }).where(isNull(eventsTable.ownerId)),
-      tx.update(spaceLinksTable).set({ ownerId: userId }).where(isNull(spaceLinksTable.ownerId)),
-    ]);
+    await tx.update(tasksTable).set({ ownerId: userId }).where(isNull(tasksTable.ownerId));
+    await tx.update(spacesTable).set({ ownerId: userId }).where(isNull(spacesTable.ownerId));
+    await tx.update(eventsTable).set({ ownerId: userId }).where(isNull(eventsTable.ownerId));
+    await tx.update(spaceLinksTable).set({ ownerId: userId }).where(isNull(spaceLinksTable.ownerId));
   });
 }
 

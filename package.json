@@ -10,7 +10,10 @@
   },
   "private": true,
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@replit/connectors-sdk": "^0.4.1",
+    "@types/pg": "^8.20.3",
+    "pg": "^8.22.0",
+    "vitest": "^5.0.0"
   },
   "devDependencies": {
     "prettier": "^3.9.6",

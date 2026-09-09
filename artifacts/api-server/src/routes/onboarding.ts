@@ -62,10 +62,48 @@ const templates = {
   },
 } as const;
 
+export async function completeOnboarding(
+  userId: string,
+  usageType: keyof typeof templates,
+  taskDate: string,
+  database: typeof db = db,
+) {
+  return database.transaction(async (tx) => {
+    const [claimed] = await tx
+      .update(appUsersTable)
+      .set({ usageType, onboardedAt: new Date() })
+      .where(and(
+        eq(appUsersTable.userId, userId),
+        isNull(appUsersTable.onboardedAt),
+      ))
+      .returning({ userId: appUsersTable.userId });
+
+    if (!claimed) return false;
+
+    const template = templates[usageType];
+    await tx.insert(spacesTable).values(template.spaces.map(([name, color, description]) => ({
+      ownerId: userId,
+      name,
+      color,
+      description,
+    }))).onConflictDoNothing();
+    await tx.insert(tasksTable).values(template.tasks.map(([category, title]) => ({
+      ownerId: userId,
+      taskDate,
+      category,
+      title,
+    })));
+    return true;
+  });
+}
+
 router.get("/onboarding", async (req, res, next) => {
   try {
     const [user] = await db
-      .select({ usageType: appUsersTable.usageType, onboardedAt: appUsersTable.onboardedAt })
+      .select({
+        usageType: appUsersTable.usageType,
+        onboardedAt: appUsersTable.onboardedAt,
+      })
       .from(appUsersTable)
       .where(eq(appUsersTable.userId, req.userId!))
       .limit(1);
@@ -85,36 +123,13 @@ router.post("/onboarding", async (req, res, next) => {
     const usageType = input.usageType;
     const taskDate = input.taskDate.toISOString().slice(0, 10);
 
-    const completed = await db.transaction(async (tx) => {
-      const [claimed] = await tx
-        .update(appUsersTable)
-        .set({ usageType, onboardedAt: new Date() })
-        .where(and(
-          eq(appUsersTable.userId, req.userId!),
-          isNull(appUsersTable.onboardedAt),
-        ))
-        .returning({ userId: appUsersTable.userId });
-
-      if (!claimed) return false;
-
-      const template = templates[usageType];
-      await tx.insert(spacesTable).values(template.spaces.map(([name, color, description]) => ({
-        ownerId: req.userId!,
-        name,
-        color,
-        description,
-      }))).onConflictDoNothing();
-      await tx.insert(tasksTable).values(template.tasks.map(([category, title]) => ({
-        ownerId: req.userId!,
-        taskDate,
-        category,
-        title,
-      })));
-      return true;
-    });
+    const completed = await completeOnboarding(req.userId!, usageType, taskDate);
 
     const [user] = await db
-      .select({ usageType: appUsersTable.usageType, onboardedAt: appUsersTable.onboardedAt })
+      .select({
+        usageType: appUsersTable.usageType,
+        onboardedAt: appUsersTable.onboardedAt,
+      })
       .from(appUsersTable)
       .where(eq(appUsersTable.userId, req.userId!))
       .limit(1);
