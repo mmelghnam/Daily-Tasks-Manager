@@ -5,3 +5,4 @@
 - [Generated mutation hooks](generated-mutation-hooks.md) — isolated generated mutations can destabilize an existing card during client regeneration; imperative calls are safer when hook errors appear.
 - [Palette completeness](palette-completeness.md) — every theme must define popover colors or a previous dark palette can leak into light menus.
 - [Task scheduling fields](task-scheduling-fields.md) — task start times and durations are optional; clearing them must persist explicit nulls.
+- [Task menu positioning](task-menu-positioning.md) — RTL task menus need viewport anchoring and should flip to the button’s right side near the left edge.
