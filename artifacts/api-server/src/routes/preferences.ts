@@ -1,0 +1,83 @@
+import { Router, type IRouter } from "express";
+import {
+  GetDashboardPreferencesResponse,
+  UpdateDashboardPreferencesBody,
+  UpdateDashboardPreferencesResponse,
+} from "@workspace/api-zod";
+import { dashboardPreferencesTable, db, defaultDashboardSections } from "@workspace/db";
+import { eq } from "drizzle-orm";
+
+const router: IRouter = Router();
+
+function normalizeSections(value: unknown) {
+  const allowed = new Set<string>(defaultDashboardSections);
+  return Array.from(new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && allowed.has(item)) : []));
+}
+
+function normalizePreferences(row?: { visibleSections: string[]; sectionOrder: string[] }) {
+  const order = normalizeSections(row?.sectionOrder);
+  const visible = normalizeSections(row?.visibleSections);
+  const mergedOrder = [...order, ...defaultDashboardSections.filter((section) => !order.includes(section))];
+  return {
+    visibleSections: row && Array.isArray(row.visibleSections) ? visible : [...defaultDashboardSections],
+    sectionOrder: row && Array.isArray(row.sectionOrder) ? mergedOrder : [...defaultDashboardSections],
+  };
+}
+
+router.get("/preferences/dashboard", async (req, res, next) => {
+  try {
+    const [row] = await db
+      .select({
+        visibleSections: dashboardPreferencesTable.visibleSections,
+        sectionOrder: dashboardPreferencesTable.sectionOrder,
+      })
+      .from(dashboardPreferencesTable)
+      .where(eq(dashboardPreferencesTable.ownerId, req.userId!))
+      .limit(1);
+    res.json(GetDashboardPreferencesResponse.parse(normalizePreferences(row)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/preferences/dashboard", async (req, res, next) => {
+  try {
+    const input = UpdateDashboardPreferencesBody.parse(req.body);
+    const [existing] = await db
+      .select({
+        visibleSections: dashboardPreferencesTable.visibleSections,
+        sectionOrder: dashboardPreferencesTable.sectionOrder,
+      })
+      .from(dashboardPreferencesTable)
+      .where(eq(dashboardPreferencesTable.ownerId, req.userId!))
+      .limit(1);
+    const current = normalizePreferences(existing);
+    const visibleSections = input.visibleSections === undefined ? current.visibleSections : normalizeSections(input.visibleSections);
+    const sectionOrder = input.sectionOrder === undefined ? current.sectionOrder : normalizeSections(input.sectionOrder);
+    const [row] = await db
+      .insert(dashboardPreferencesTable)
+      .values({
+        ownerId: req.userId!,
+        visibleSections,
+        sectionOrder,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: dashboardPreferencesTable.ownerId,
+        set: {
+          visibleSections,
+          sectionOrder,
+          updatedAt: new Date(),
+        },
+      })
+      .returning({
+        visibleSections: dashboardPreferencesTable.visibleSections,
+        sectionOrder: dashboardPreferencesTable.sectionOrder,
+      });
+    res.json(UpdateDashboardPreferencesResponse.parse(normalizePreferences(row)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default router;

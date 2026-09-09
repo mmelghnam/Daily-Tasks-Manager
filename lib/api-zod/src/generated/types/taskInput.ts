@@ -20,6 +20,7 @@ export interface TaskInput {
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
+  sortOrder?: number;
   priority?: TaskInputPriority;
   recurrence?: string;
   dueDate?: Date;

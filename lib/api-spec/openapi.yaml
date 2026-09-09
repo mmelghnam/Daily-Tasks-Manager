@@ -204,6 +204,35 @@ paths:
                   $ref: "#/components/schemas/Task"
         "404":
           description: Task not found
+  /preferences/dashboard:
+    get:
+      operationId: getDashboardPreferences
+      tags: [preferences]
+      summary: Get dashboard layout preferences
+      responses:
+        "200":
+          description: Dashboard layout preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardPreferences"
+    patch:
+      operationId: updateDashboardPreferences
+      tags: [preferences]
+      summary: Update dashboard layout preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DashboardPreferencesUpdate"
+      responses:
+        "200":
+          description: Updated dashboard layout preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardPreferences"
   /notifications:
     get:
       operationId: listNotifications
@@ -792,6 +821,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskFollowUp"
+        sortOrder:
+          type: integer
         createdAt:
           type: string
           format: date-time
@@ -807,6 +838,7 @@ components:
         - completed
         - links
         - followUps
+        - sortOrder
         - priority
         - recurrence
         - dueDate
@@ -836,6 +868,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskFollowUp"
+        sortOrder:
+          type: integer
         priority:
           type: string
           enum: [low, medium, high]
@@ -884,6 +918,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskSubtask"
+        sortOrder:
+          type: integer
     TaskCopyInput:
       type: object
       properties:
@@ -895,6 +931,27 @@ components:
             type: string
             format: date
       required: [dates]
+    DashboardPreferences:
+      type: object
+      properties:
+        visibleSections:
+          type: array
+          items: { type: string }
+        sectionOrder:
+          type: array
+          items: { type: string }
+      required: [visibleSections, sectionOrder]
+    DashboardPreferencesUpdate:
+      type: object
+      properties:
+        visibleSections:
+          type: array
+          maxItems: 20
+          items: { type: string }
+        sectionOrder:
+          type: array
+          maxItems: 20
+          items: { type: string }
     Goal:
       type: object
       properties:
@@ -944,7 +1001,7 @@ components:
         name: { type: string, minLength: 1 }
         frequency: { type: string, enum: [daily, weekly] }
         streak: { type: integer, minimum: 0 }
-        lastCompleted: { type: string, format: date }
+        lastCompleted: { type: ["string", "null"], format: date }
     StudyItem:
       type: object
       properties:

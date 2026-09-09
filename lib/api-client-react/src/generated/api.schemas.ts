@@ -82,6 +82,7 @@ export interface Task {
   completed: boolean;
   links: TaskLink[];
   followUps: TaskFollowUp[];
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,6 +105,7 @@ export interface TaskInput {
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
+  sortOrder?: number;
   priority?: TaskInputPriority;
   recurrence?: string;
   dueDate?: string;
@@ -132,6 +134,7 @@ export interface TaskUpdate {
   recurrence?: string;
   dueDate?: string;
   subtasks?: TaskSubtask[];
+  sortOrder?: number;
 }
 
 export interface TaskCopyInput {
@@ -140,6 +143,18 @@ export interface TaskCopyInput {
      * @maxItems 31
      */
   dates: string[];
+}
+
+export interface DashboardPreferences {
+  visibleSections: string[];
+  sectionOrder: string[];
+}
+
+export interface DashboardPreferencesUpdate {
+  /** @maxItems 20 */
+  visibleSections?: string[];
+  /** @maxItems 20 */
+  sectionOrder?: string[];
 }
 
 export interface Goal {
@@ -219,7 +234,8 @@ export interface HabitUpdate {
   frequency?: HabitUpdateFrequency;
   /** @minimum 0 */
   streak?: number;
-  lastCompleted?: string;
+  /** @nullable */
+  lastCompleted?: string | null;
 }
 
 export type StudyItemKind = typeof StudyItemKind[keyof typeof StudyItemKind];

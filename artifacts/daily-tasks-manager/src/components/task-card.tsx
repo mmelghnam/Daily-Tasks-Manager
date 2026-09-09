@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, Check, Copy, ExternalLink, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Check, Copy, ExternalLink, MoreHorizontal, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -17,6 +17,9 @@ interface TaskCardProps {
   task: Task;
   date: string;
   spaces: string[];
+  onReorder?: (direction: 'up' | 'down') => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 function playCompletionSound() {
@@ -87,7 +90,20 @@ function shiftDate(date: string, amount: number) {
   return next.toISOString().slice(0, 10);
 }
 
-export function TaskCard({ task, date, spaces }: TaskCardProps) {
+function datesBetween(startDate: string, endDate: string) {
+  const start = safeDate(startDate);
+  const end = safeDate(endDate);
+  if (end < start) return [];
+  const dates: string[] = [];
+  const cursor = new Date(start);
+  while (cursor <= end && dates.length < 31) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+export function TaskCard({ task, date, spaces, onReorder, canMoveUp, canMoveDown }: TaskCardProps) {
   const normalizedTaskDate = dateOnly(date) || new Date().toISOString().slice(0, 10);
   const updatedTime = formatUpdatedTime(task.updatedAt);
   const queryClient = useQueryClient();
@@ -96,7 +112,8 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
-  const [copyDate, setCopyDate] = useState(nextDate(normalizedTaskDate));
+  const [copyStartDate, setCopyStartDate] = useState(nextDate(normalizedTaskDate));
+  const [copyEndDate, setCopyEndDate] = useState(shiftDate(nextDate(normalizedTaskDate), 2));
   const [copyPending, setCopyPending] = useState(false);
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const links = Array.isArray(task.links) ? task.links : [];
@@ -183,8 +200,8 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
                     <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل</button>
                     {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarPlus size={14} /> ترحيل للغد</button>}
                     <button type="button" onClick={() => copyToDates([nextDate(normalizedTaskDate)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Copy size={14} /> نسخ للغد</button>
-                    <button type="button" onClick={() => copyToDates(nextDates(normalizedTaskDate, 7))} disabled={copyPending} data-testid={`button-copy-week-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لأسبوع</button>
-                    <button type="button" onClick={() => { setCopyOpen(true); setMenuOpen(false); }} data-testid={`button-copy-date-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ ليوم معين</button>
+                    <button type="button" onClick={() => { setCopyOpen(true); setMenuOpen(false); }} data-testid={`button-copy-range-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لمدة</button>
+                    {onReorder && <><div className="my-1 border-t border-border" /><button type="button" onClick={() => onReorder('up')} disabled={!canMoveUp} data-testid={`button-move-task-up-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"><ChevronUp size={14} /> تقديم داخل المساحة</button><button type="button" onClick={() => onReorder('down')} disabled={!canMoveDown} data-testid={`button-move-task-down-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"><ChevronDown size={14} /> تأخير داخل المساحة</button></>}
                     <button type="button" onClick={remove} disabled={deleteTask.isPending} data-testid={`button-delete-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold text-destructive hover:bg-destructive/10"><Trash2 size={14} /> حذف</button>
                   </div>
                 )}
@@ -222,9 +239,12 @@ export function TaskCard({ task, date, spaces }: TaskCardProps) {
             <DialogDescription>ستظل المهمة الأصلية في مكانها، وتُضاف نسخة جديدة في التاريخ المحدد.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <label htmlFor={`copy-date-${task.id}`} className="block text-sm font-bold">التاريخ الجديد</label>
-            <input id={`copy-date-${task.id}`} type="date" value={copyDate} min={normalizedTaskDate} onChange={(event) => setCopyDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
-            <button type="button" onClick={() => copyToDates([copyDate])} disabled={!copyDate || copyPending} data-testid={`button-confirm-copy-date-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Copy size={16} /> {copyPending ? 'جارٍ النسخ...' : 'نسخ المهمة'}</button>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="space-y-1.5 text-sm font-bold"><span>من تاريخ</span><input id={`copy-start-${task.id}`} type="date" value={copyStartDate} min={normalizedTaskDate} onChange={(event) => setCopyStartDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" /></label>
+              <label className="space-y-1.5 text-sm font-bold"><span>إلى تاريخ</span><input id={`copy-end-${task.id}`} type="date" value={copyEndDate} min={copyStartDate} onChange={(event) => setCopyEndDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" /></label>
+            </div>
+            <p className="text-xs font-semibold text-muted-foreground">سيتم إنشاء نسخة لكل يوم في المدة، بحد أقصى 31 يومًا.</p>
+            <button type="button" onClick={() => copyToDates(datesBetween(copyStartDate, copyEndDate))} disabled={!datesBetween(copyStartDate, copyEndDate).length || copyPending} data-testid={`button-confirm-copy-range-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Copy size={16} /> {copyPending ? 'جارٍ النسخ...' : `نسخ ${datesBetween(copyStartDate, copyEndDate).length} يوم`}</button>
           </div>
         </DialogContent>
       </Dialog>

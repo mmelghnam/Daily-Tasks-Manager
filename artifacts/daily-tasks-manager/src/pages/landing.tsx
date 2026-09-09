@@ -8,7 +8,7 @@ export default function Landing() {
         <div className="flex items-center gap-3">
           <img src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/logo.svg`} alt="" className="h-11 w-11 rounded-2xl shadow-lg shadow-primary/15" />
           <div>
-            <p className="text-lg font-extrabold tracking-tight">مدار اليوم</p>
+            <p className="text-lg font-extrabold tracking-tight">خطوتك</p>
             <p className="text-xs font-semibold text-muted-foreground">مساحة هادئة لإنجاز المهم</p>
           </div>
         </div>
@@ -21,7 +21,7 @@ export default function Landing() {
             <Clock3 size={15} className="text-accent" /> رتّب يومك على إيقاعك
           </div>
           <h1 className="max-w-2xl text-balance text-4xl font-black leading-[1.25] tracking-tight sm:text-6xl">وقت أقل في التشتت، <span className="text-primary">ومساحة أكبر للإنجاز.</span></h1>
-          <p className="mt-5 max-w-xl text-base font-semibold leading-8 text-muted-foreground sm:text-lg">مدار اليوم يجمع مهامك ومساحاتك في لوحة واحدة بسيطة، لتعرف ما الذي يستحق تركيزك الآن.</p>
+           <p className="mt-5 max-w-xl text-base font-semibold leading-8 text-muted-foreground sm:text-lg">خطوتك يجمع مهامك ومساحاتك في لوحة واحدة بسيطة، لتعرف ما الذي يستحق تركيزك الآن.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/sign-up" className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-extrabold text-primary-foreground shadow-lg shadow-primary/15 transition hover:-translate-y-0.5">ابدأ مجاناً <ArrowLeft size={18} /></Link>
             <Link href="/sign-in" className="rounded-xl border border-border bg-card/80 px-5 py-3 text-sm font-extrabold text-primary transition hover:border-primary/40">لديك حساب بالفعل</Link>

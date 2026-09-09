@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-zod";
 import { db, tasksTable } from "@workspace/db";
 import { spacesTable } from "@workspace/db";
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, max } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -77,7 +77,7 @@ router.get("/tasks", async (req, res, next) => {
         !query.date && query.dateFrom ? gte(tasksTable.taskDate, toDateOnly(query.dateFrom)) : undefined,
         !query.date && query.dateTo ? lte(tasksTable.taskDate, toDateOnly(query.dateTo)) : undefined,
       ))
-      .orderBy(asc(tasksTable.taskDate), asc(tasksTable.category), asc(tasksTable.id));
+      .orderBy(asc(tasksTable.taskDate), asc(tasksTable.category), asc(tasksTable.sortOrder), asc(tasksTable.createdAt), asc(tasksTable.id));
 
     res.json(ListTasksResponse.parse(rows).map(toTaskJson));
   } catch (error) {
@@ -88,6 +88,10 @@ router.get("/tasks", async (req, res, next) => {
 router.post("/tasks", async (req, res, next) => {
   try {
     const input = CreateTaskBody.parse(req.body);
+    const [lastTask] = await db
+      .select({ sortOrder: max(tasksTable.sortOrder) })
+      .from(tasksTable)
+      .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, toDateOnly(input.taskDate)), eq(tasksTable.category, input.category)));
     const [task] = await db
       .insert(tasksTable)
       .values({
@@ -103,6 +107,7 @@ router.post("/tasks", async (req, res, next) => {
         completed: input.completed ?? false,
         links: input.links ?? [],
         followUps: input.followUps ?? [],
+        sortOrder: Number(lastTask?.sortOrder ?? -1) + 1,
       })
       .returning();
 
@@ -131,6 +136,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (input.completed !== undefined) updates.completed = input.completed;
     if (input.links !== undefined) updates.links = input.links;
     if (input.followUps !== undefined) updates.followUps = input.followUps;
+    if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
 
     const [task] = await db
       .update(tasksTable)
@@ -158,6 +164,10 @@ router.patch("/tasks/:id", async (req, res, next) => {
           .limit(1);
 
         if (!existing) {
+          const [lastTask] = await db
+            .select({ sortOrder: max(tasksTable.sortOrder) })
+            .from(tasksTable)
+            .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, nextDate), eq(tasksTable.category, task.category)));
           await db.insert(tasksTable).values({
             ownerId: req.userId!,
             taskDate: nextDate,
@@ -170,6 +180,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
             subtasks: task.subtasks.map((subtask) => ({ ...subtask, completed: false })),
             links: task.links,
             followUps: task.followUps,
+            sortOrder: Number(lastTask?.sortOrder ?? -1) + 1,
           });
         }
       }
@@ -212,6 +223,10 @@ router.post("/tasks/:id/copy", async (req, res, next) => {
 
       if (existing) continue;
 
+      const [lastTask] = await db
+        .select({ sortOrder: max(tasksTable.sortOrder) })
+        .from(tasksTable)
+        .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, taskDate), eq(tasksTable.category, source.category)));
       const [copy] = await db
         .insert(tasksTable)
         .values({
@@ -227,6 +242,7 @@ router.post("/tasks/:id/copy", async (req, res, next) => {
           completed: false,
           links: source.links,
           followUps: source.followUps.map((followUp) => ({ ...followUp, completed: false })),
+          sortOrder: Number(lastTask?.sortOrder ?? -1) + 1,
         })
         .returning();
       copied.push(copy);

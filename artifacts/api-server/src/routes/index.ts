@@ -9,6 +9,7 @@ import productivityRouter from "./productivity";
 import { requireAuth } from "../middlewares/auth";
 import notificationsRouter from "./notifications";
 import adminRouter from "./admin";
+import preferencesRouter from "./preferences";
 
 const router: IRouter = Router();
 
@@ -16,6 +17,7 @@ router.use(healthRouter);
 router.use(requireAuth);
 router.use(notificationsRouter);
 router.use(adminRouter);
+router.use(preferencesRouter);
 router.use(onboardingRouter);
 router.use(productivityRouter);
 router.use(tasksRouter);

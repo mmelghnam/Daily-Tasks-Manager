@@ -2,7 +2,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, GraduationCap, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, Settings2, Sparkles, Target, Trash2, ShieldCheck } from 'lucide-react';
-import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateUsageType } from '@workspace/api-client-react';
+import { getGetOnboardingStatusQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, UsageType, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences, useGetOnboardingStatus, useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask, useUpdateUsageType } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
 import { TaskForm } from '@/components/task-form';
@@ -13,6 +13,7 @@ import { SpaceLinksSection } from '@/components/space-links-section';
 import { getDailyMessage } from '@/daily-messages';
 import { ProductivityHub } from '@/components/productivity-hub';
 import { NotificationCenter } from '@/components/notification-center';
+import { DashboardCustomizer, defaultDashboardSections } from '@/components/dashboard-customizer';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -223,6 +224,8 @@ export default function Home() {
   const spacesQuery = useListSpaces();
   const taskQuery = useListTasks(rangeFor(selectedDate, viewMode));
   const summaryQuery = useGetTaskSummary(rangeFor(selectedDate, viewMode));
+  const dashboardPreferences = useGetDashboardPreferences();
+  const reorderMutation = useUpdateTask();
   const onboarding = useGetOnboardingStatus();
   const tasks = taskQuery.data ?? [];
   const spaces = spacesQuery.data ?? fallbackSpaces;
@@ -232,6 +235,23 @@ export default function Home() {
   const summary = summaryQuery.data;
   const completion = summary && summary.total > 0 ? Math.round((summary.completed / summary.total) * 100) : 0;
   const isToday = selectedDate === dateKey(new Date());
+  const visibleSections = dashboardPreferences.data?.visibleSections ?? defaultDashboardSections;
+  const sectionOrder = dashboardPreferences.data?.sectionOrder ?? defaultDashboardSections;
+  const showSection = (key: string) => visibleSections.includes(key);
+  const sectionRank = (key: string) => ({ order: sectionOrder.indexOf(key) < 0 ? 99 : sectionOrder.indexOf(key) });
+
+  const reorderTask = async (taskId: number, category: string, direction: 'up' | 'down') => {
+    const categoryTasks = tasks
+      .filter((task) => task.category === category)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+    const index = categoryTasks.findIndex((task) => task.id === taskId);
+    const targetIndex = index + (direction === 'up' ? -1 : 1);
+    if (index < 0 || targetIndex < 0 || targetIndex >= categoryTasks.length) return;
+    const reordered = [...categoryTasks];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    await Promise.all(reordered.map((task, nextIndex) => reorderMutation.mutateAsync({ id: task.id, data: { sortOrder: nextIndex } })));
+    await queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
+  };
 
   const openNew = (category?: Category) => {
     setFormCategory(category);
@@ -265,15 +285,15 @@ export default function Home() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-lg font-extrabold tracking-tight">مدار اليوم</p>
-                <span className="hidden rounded-full bg-secondary/25 px-2 py-0.5 font-mono-ui text-[9px] font-bold tracking-widest text-primary sm:inline">COMMAND CENTER</span>
+                <p className="text-lg font-extrabold tracking-tight">خطوتك</p>
               </div>
               <p className="text-xs font-semibold text-muted-foreground">مساحتك لترتيب المهم قبل أن يبدأ الزحام</p>
             </div>
           </div>
            <div className="flex items-center gap-2">
              <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> كل إنجاز يفتح مساحة</div>
-             <PalettePicker />
+              <DashboardCustomizer />
+              <PalettePicker />
               <AccountControl />
            </div>
         </div>
@@ -314,7 +334,8 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="animate-rise mb-6 grid gap-3 md:grid-cols-[1.35fr_1fr_1fr]">
+        <div className="flex flex-col">
+         {showSection('summary') && <section className="animate-rise mb-6 grid gap-3 md:grid-cols-[1.35fr_1fr_1fr]" style={sectionRank('summary')}>
           <div className="relative overflow-hidden rounded-2xl bg-primary p-4 text-primary-foreground shadow-lg shadow-primary/10">
             <Sparkles className="absolute -left-2 -top-3 h-24 w-24 opacity-10" />
             <div className="relative">
@@ -336,14 +357,14 @@ export default function Home() {
             <p data-testid="text-total-count" className="mt-2 text-3xl font-extrabold">{summary?.total ?? '—'}</p>
             <p className="mt-2 text-xs font-semibold text-muted-foreground">عبر {spaceNames.length} مساحات</p>
           </div>
-        </section>
+        </section>}
 
-         <EventsSection />
-          <ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} />
-          <SpaceLinksSection spaces={spacesQuery.data ?? []} />
-          <NotificationCenter tasks={tasks} />
+          {showSection('events') && <div style={sectionRank('events')}><EventsSection /></div>}
+          {showSection('productivity') && <div style={sectionRank('productivity')}><ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} /></div>}
+          {showSection('links') && <div style={sectionRank('links')}><SpaceLinksSection spaces={spacesQuery.data ?? []} /></div>}
+          {showSection('notifications') && <div style={sectionRank('notifications')}><NotificationCenter tasks={tasks} /></div>}
 
-        <section className="animate-rise mt-10 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ animationDelay: '90ms' }}>
+        {showSection('taskMap') && <section className="animate-rise mt-10 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ ...sectionRank('taskMap'), animationDelay: '90ms' }}>
           <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-extrabold">خريطة اليوم</h2>
@@ -366,7 +387,8 @@ export default function Home() {
                 return <div key={category} className="relative"><button type="button" onClick={() => setActiveCategory(category)} data-testid={`button-filter-${category}`} className={`flex w-full items-center justify-between rounded-2xl border p-3 pl-16 text-right transition ${activeCategory === category ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/40'}`}><span className="flex items-center gap-2 text-sm font-extrabold"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />{category}</span><span className={`font-mono-ui text-xs ${activeCategory === category ? 'text-secondary' : 'text-muted-foreground'}`}>{count}</span></button>{editableSpace && <button type="button" onClick={() => setEditingSpace(editableSpace)} aria-label={`تعديل مساحة ${category}`} data-testid={`button-edit-space-${category}`} className={`absolute left-8 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition ${activeCategory === category ? 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}><Pencil size={14} /></button>}{canDelete && <button type="button" onClick={() => removeSpace(category)} disabled={deleteSpace.isPending} aria-label={`حذف مساحة ${category}`} data-testid={`button-delete-space-${category}`} className={`absolute left-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition ${activeCategory === category ? 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground' : 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive'}`}><Trash2 size={14} /></button>}</div>;
             })}
           </div>
-        </section>
+        </section>}
+        </div>
 
         <section className="mt-8">
           {taskQuery.isLoading ? (
@@ -376,10 +398,10 @@ export default function Home() {
            ) : visibleTasks.length === 0 ? (
              <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-primary/25 bg-card/55 px-6 py-20 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary/25 text-primary"><Sparkles size={29} /></div><h2 className="text-xl font-extrabold">{activeCategory === 'all' ? 'اليوم ما زال مفتوحاً' : `لا توجد مهام في ${activeCategory}`}</h2><p className="mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{activeCategory === 'all' ? 'أضف أول خطوة صغيرة، ودع بقية اليوم يتضح معها.' : 'أضف مهمة سريعة الآن، أو استخدم «مهمة جديدة» لو محتاج تفاصيل أكثر.'}</p>{activeCategory === 'all' ? <button type="button" onClick={() => openNew()} data-testid="button-add-first-task" className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5"><Plus size={17} /> أضف مهمة</button> : <div className="mt-6 w-full max-w-md"><QuickTaskInput date={selectedDate} category={activeCategory} /><button type="button" onClick={() => openNew(activeCategory)} data-testid="button-add-detailed-task" className="mt-3 text-sm font-bold text-primary underline-offset-4 hover:underline">أضف مهمة بالتفصيل</button></div>}</div>
           ) : activeCategory !== 'all' ? (
-              <div className="space-y-3"><QuickTaskInput date={selectedDate} category={activeCategory} /><div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>
+              <div className="space-y-3"><QuickTaskInput date={selectedDate} category={activeCategory} /><div className="grid gap-3 md:grid-cols-2">{visibleTasks.map((task, index) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onReorder={(direction) => void reorderTask(task.id, task.category, direction)} canMoveUp={index > 0} canMoveDown={index < visibleTasks.length - 1} />)}</div></div>
           ) : (
              <div className="space-y-8">
-                 {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); const quickAddOpen = quickAddCategory === category; return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => setQuickAddCategory(quickAddOpen ? null : category)} aria-label={`إضافة مهمة سريعة في ${category}`} data-testid={`button-add-task-${category}`} className={`rounded-xl border bg-background p-2 shadow-sm transition hover:border-primary/30 hover:text-primary ${quickAddOpen ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}><Plus size={17} /></button></div>{quickAddOpen && <div className="mb-4"><QuickTaskInput date={selectedDate} category={category} onCreated={() => setQuickAddCategory(null)} /></div>}<div className="grid gap-3 md:grid-cols-2">{grouped[category].map((task) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} />)}</div></div>; })}
+                  {categories.filter((category) => grouped[category].length > 0).map((category) => { const meta = getSpaceMeta(category, spaces); const quickAddOpen = quickAddCategory === category; const categoryTasks = grouped[category]; return <div key={category} className="rounded-[1.75rem] border border-card-border bg-card/55 p-4 shadow-sm sm:p-5" style={{ borderInlineStartColor: meta.color, borderInlineStartWidth: 4 }}><div className="mb-4 flex items-center justify-between border-b border-border/70 pb-3"><div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: meta.color }} /><div><h3 className="font-extrabold">{category}</h3><p className="text-xs font-semibold text-muted-foreground">{meta.description}</p></div></div><button type="button" onClick={() => setQuickAddCategory(quickAddOpen ? null : category)} aria-label={`إضافة مهمة سريعة في ${category}`} data-testid={`button-add-task-${category}`} className={`rounded-xl border bg-background p-2 shadow-sm transition hover:border-primary/30 hover:text-primary ${quickAddOpen ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}><Plus size={17} /></button></div>{quickAddOpen && <div className="mb-4"><QuickTaskInput date={selectedDate} category={category} onCreated={() => setQuickAddCategory(null)} /></div>}<div className="grid gap-3 md:grid-cols-2">{categoryTasks.map((task, index) => <TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onReorder={(direction) => void reorderTask(task.id, task.category, direction)} canMoveUp={index > 0} canMoveDown={index < categoryTasks.length - 1} />)}</div></div>; })}
             </div>
           )}
         </section>

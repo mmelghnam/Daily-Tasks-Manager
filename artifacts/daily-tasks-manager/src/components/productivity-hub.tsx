@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, GraduationCap, HeartPulse, ListChecks, Plus, Target, Trash2 } from 'lucide-react';
+import { Check, GraduationCap, HeartPulse, ListChecks, Minus, Plus, Target, Trash2, Volume2 } from 'lucide-react';
 import {
   getListGoalsQueryKey, getListHabitsQueryKey, getListStudyItemsQueryKey,
   useCreateGoal, useCreateHabit, useCreateStudyItem, useDeleteGoal, useDeleteHabit,
@@ -17,12 +17,33 @@ function dateOnly(value: string | Date | null | undefined) {
   return typeof value === 'string' ? value.slice(0, 10) : '';
 }
 
+function playHabitSound() {
+  const AudioContextConstructor = window.AudioContext;
+  if (!AudioContextConstructor) return;
+  const context = new AudioContextConstructor();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const now = context.currentTime;
+  oscillator.type = 'triangle';
+  oscillator.frequency.setValueAtTime(659.25, now);
+  oscillator.frequency.exponentialRampToValueAtTime(987.77, now + 0.16);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.055, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.27);
+  oscillator.addEventListener('ended', () => void context.close());
+}
+
 export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; tasks: Task[] }) {
   const queryClient = useQueryClient();
   const goals = useListGoals();
   const habits = useListHabits();
   const studyItems = useListStudyItems();
   const [goalTitle, setGoalTitle] = useState('');
+  const [goalTarget, setGoalTarget] = useState('1');
   const [habitName, setHabitName] = useState('');
   const [studyTitle, setStudyTitle] = useState('');
   const createGoal = useCreateGoal();
@@ -38,7 +59,7 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
   const refresh = (key: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey: key });
   const addGoal = () => {
     if (!goalTitle.trim()) return;
-    createGoal.mutate({ data: { title: goalTitle.trim(), target: 1 } }, { onSuccess: () => { setGoalTitle(''); refresh(getListGoalsQueryKey()); } });
+    createGoal.mutate({ data: { title: goalTitle.trim(), target: Math.max(1, Number(goalTarget) || 1) } }, { onSuccess: () => { setGoalTitle(''); setGoalTarget('1'); refresh(getListGoalsQueryKey()); } });
   };
   const addHabit = () => {
     if (!habitName.trim()) return;
@@ -52,16 +73,25 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
   return (
     <section className="mt-8 mb-10 grid gap-4 lg:grid-cols-3" dir="rtl">
       <ProductivityCard title="أهدافك" icon={<Target size={18} />} accent="text-primary">
-        <form onSubmit={(event) => { event.preventDefault(); addGoal(); }} className="mb-3 flex gap-2">
-          <input value={goalTitle} onChange={(e) => setGoalTitle(e.target.value)} placeholder="هدف جديد..." className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" />
+        <form onSubmit={(event) => { event.preventDefault(); addGoal(); }} className="mb-3 grid grid-cols-[1fr_4.5rem_auto] gap-2">
+          <input value={goalTitle} onChange={(e) => setGoalTitle(e.target.value)} placeholder="هدف جديد..." className="h-10 min-w-0 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" />
+          <input type="number" min="1" value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} aria-label="قيمة الهدف" className="h-10 w-full rounded-xl border border-input bg-background px-2 text-center text-sm outline-none focus:border-primary" />
           <button type="submit" disabled={createGoal.isPending} className="rounded-xl bg-primary px-3 text-primary-foreground disabled:cursor-wait disabled:opacity-60" aria-label="إضافة هدف"><Plus size={17} /></button>
         </form>
         <div className="space-y-2">
           {(goals.data ?? []).map((goal: Goal) => (
-            <div key={goal.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
-              <button type="button" onClick={() => updateGoal.mutate({ id: goal.id, data: { completed: !goal.completed } }, { onSuccess: () => refresh(getListGoalsQueryKey()) })} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${goal.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
-              <span className={`min-w-0 flex-1 text-sm font-bold ${goal.completed ? 'text-muted-foreground line-through' : ''}`}>{goal.title}</span>
-              <button type="button" onClick={() => deleteGoal.mutate({ id: goal.id }, { onSuccess: () => refresh(getListGoalsQueryKey()) })} className="text-muted-foreground hover:text-destructive" aria-label="حذف الهدف"><Trash2 size={14} /></button>
+            <div key={goal.id} className="rounded-xl bg-background/70 p-3">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => updateGoal.mutate({ id: goal.id, data: { completed: !goal.completed, current: goal.completed ? Math.min(goal.current, goal.target - 1) : goal.target } }, { onSuccess: () => refresh(getListGoalsQueryKey()) })} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${goal.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
+                <span className={`min-w-0 flex-1 text-sm font-bold ${goal.completed ? 'text-muted-foreground line-through' : ''}`}>{goal.title}</span>
+                <button type="button" onClick={() => deleteGoal.mutate({ id: goal.id }, { onSuccess: () => refresh(getListGoalsQueryKey()) })} className="text-muted-foreground hover:text-destructive" aria-label="حذف الهدف"><Trash2 size={14} /></button>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, Math.round((goal.current / Math.max(goal.target, 1)) * 100))}%` }} /></div>
+                <span className="min-w-14 text-left text-[11px] font-extrabold text-primary">{goal.current}/{goal.target}</span>
+                <button type="button" onClick={() => updateGoal.mutate({ id: goal.id, data: { current: Math.max(0, goal.current - 1), completed: false } }, { onSuccess: () => refresh(getListGoalsQueryKey()) })} disabled={goal.current <= 0} className="rounded-lg border border-border p-1 text-muted-foreground disabled:opacity-30" aria-label="إنقاص تقدم الهدف"><Minus size={12} /></button>
+                <button type="button" onClick={() => { const current = Math.min(goal.target, goal.current + 1); updateGoal.mutate({ id: goal.id, data: { current, completed: current >= goal.target } }, { onSuccess: () => refresh(getListGoalsQueryKey()) }); }} disabled={goal.current >= goal.target} className="rounded-lg border border-border p-1 text-primary disabled:opacity-30" aria-label="زيادة تقدم الهدف"><Plus size={12} /></button>
+              </div>
             </div>
           ))}
           {!goals.data?.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">أضف هدفًا صغيرًا يتحرك معك.</p>}
@@ -77,8 +107,8 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
           {(habits.data ?? []).map((habit: Habit) => {
             const doneToday = dateOnly(habit.lastCompleted) === new Date().toISOString().slice(0, 10);
             return <div key={habit.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
-              <button type="button" onClick={() => updateHabit.mutate({ id: habit.id, data: { streak: doneToday ? Math.max(0, habit.streak - 1) : habit.streak + 1, lastCompleted: doneToday ? undefined : new Date().toISOString().slice(0, 10) } }, { onSuccess: () => refresh(getListHabitsQueryKey()) })} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
-              <span className="min-w-0 flex-1 text-sm font-bold">{habit.name}</span><span className="text-xs font-extrabold text-primary">{habit.streak} يوم</span>
+              <button type="button" onClick={() => { playHabitSound(); const today = new Date().toISOString().slice(0, 10); const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); const nextStreak = doneToday ? Math.max(0, habit.streak - 1) : (dateOnly(habit.lastCompleted) === yesterday ? habit.streak + 1 : 1); updateHabit.mutate({ id: habit.id, data: { streak: nextStreak, lastCompleted: doneToday ? null : today } }, { onSuccess: () => refresh(getListHabitsQueryKey()) }); }} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
+              <span className="min-w-0 flex-1 text-sm font-bold">{habit.name}</span><span className="inline-flex items-center gap-1 text-xs font-extrabold text-primary"><Volume2 size={12} /> {habit.streak} يوم متتالي</span>
               <button type="button" onClick={() => deleteHabit.mutate({ id: habit.id }, { onSuccess: () => refresh(getListHabitsQueryKey()) })} className="text-muted-foreground hover:text-destructive" aria-label="حذف العادة"><Trash2 size={14} /></button>
             </div>;
           })}

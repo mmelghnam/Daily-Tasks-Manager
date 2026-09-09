@@ -24,4 +24,5 @@ export interface TaskUpdate {
   recurrence?: string;
   dueDate?: Date;
   subtasks?: TaskSubtask[];
+  sortOrder?: number;
 }

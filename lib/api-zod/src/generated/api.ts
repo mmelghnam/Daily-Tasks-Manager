@@ -90,6 +90,7 @@ export const ListTasksResponseItem = zod.object({
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
 })),
+  "sortOrder": zod.number().int(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -119,6 +120,7 @@ export const CreateTaskBody = zod.object({
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
 })).optional(),
+  "sortOrder": zod.number().int().optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
   "recurrence": zod.string().optional(),
   "dueDate": zod.coerce.date().optional(),
@@ -157,6 +159,7 @@ export const CreateTaskResponse = zod.object({
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
 })),
+  "sortOrder": zod.number().int(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -196,7 +199,8 @@ export const UpdateTaskBody = zod.object({
   "id": zod.number().int(),
   "title": zod.string(),
   "completed": zod.boolean()
-})).optional()
+})).optional(),
+  "sortOrder": zod.number().int().optional()
 })
 
 
@@ -227,6 +231,7 @@ export const UpdateTaskResponse = zod.object({
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
 })),
+  "sortOrder": zod.number().int(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -285,10 +290,40 @@ export const CopyTaskResponseItem = zod.object({
   "completed": zod.boolean(),
   "dueDate": zod.string().nullable()
 })),
+  "sortOrder": zod.number().int(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
 export const CopyTaskResponse = zod.array(CopyTaskResponseItem)
+
+
+/**
+ * @summary Get dashboard layout preferences
+ */
+export const GetDashboardPreferencesResponse = zod.object({
+  "visibleSections": zod.array(zod.string()),
+  "sectionOrder": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Update dashboard layout preferences
+ */
+export const updateDashboardPreferencesBodyVisibleSectionsMax = 20;
+
+export const updateDashboardPreferencesBodySectionOrderMax = 20;
+
+
+
+export const UpdateDashboardPreferencesBody = zod.object({
+  "visibleSections": zod.array(zod.string()).max(updateDashboardPreferencesBodyVisibleSectionsMax).optional(),
+  "sectionOrder": zod.array(zod.string()).max(updateDashboardPreferencesBodySectionOrderMax).optional()
+})
+
+export const UpdateDashboardPreferencesResponse = zod.object({
+  "visibleSections": zod.array(zod.string()),
+  "sectionOrder": zod.array(zod.string())
+})
 
 
 /**
@@ -492,7 +527,7 @@ export const UpdateHabitBody = zod.object({
   "name": zod.string().min(1).optional(),
   "frequency": zod.enum(['daily', 'weekly']).optional(),
   "streak": zod.number().int().min(updateHabitBodyStreakMin).optional(),
-  "lastCompleted": zod.coerce.date().optional()
+  "lastCompleted": zod.coerce.date().nullish()
 })
 
 export const UpdateHabitResponse = zod.object({

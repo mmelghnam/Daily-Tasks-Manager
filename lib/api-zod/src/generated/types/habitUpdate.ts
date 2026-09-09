@@ -13,5 +13,6 @@ export interface HabitUpdate {
   frequency?: HabitUpdateFrequency;
   /** @minimum 0 */
   streak?: number;
-  lastCompleted?: Date;
+  /** @nullable */
+  lastCompleted?: Date | null;
 }

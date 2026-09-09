@@ -27,6 +27,7 @@ export interface Task {
   completed: boolean;
   links: TaskLink[];
   followUps: TaskFollowUp[];
+  sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
 }

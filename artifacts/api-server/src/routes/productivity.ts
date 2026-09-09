@@ -82,7 +82,7 @@ router.patch("/habits/:id", async (req, res, next) => {
     if (input.name !== undefined) updates.name = input.name.trim();
     if (input.frequency !== undefined) updates.frequency = input.frequency;
     if (input.streak !== undefined) updates.streak = input.streak;
-    if (input.lastCompleted !== undefined) updates.lastCompleted = dateOnly(input.lastCompleted);
+    if (input.lastCompleted !== undefined) updates.lastCompleted = input.lastCompleted ? dateOnly(input.lastCompleted) : null;
     const [row] = await db.update(habitsTable).set(updates).where(and(eq(habitsTable.id, params.id), eq(habitsTable.ownerId, req.userId!))).returning();
     if (!row) {
       res.status(404).json({ error: "Habit not found" });

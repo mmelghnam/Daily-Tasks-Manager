@@ -51,7 +51,7 @@ export function Onboarding() {
       <div className="max-w-2xl w-full space-y-10 animate-rise relative z-10">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight" data-testid="text-onboarding-title">
-            مدار اليوم
+             خطوتك
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground font-medium" data-testid="text-onboarding-subtitle">
             كيف تخطط لاستخدام مساحتك الشخصية؟

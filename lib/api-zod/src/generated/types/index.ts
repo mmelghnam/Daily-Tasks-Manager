@@ -11,6 +11,8 @@ export * from './adminStats';
 export * from './adminStatsUsageTypes';
 export * from './broadcastNotification';
 export * from './broadcastNotificationInput';
+export * from './dashboardPreferences';
+export * from './dashboardPreferencesUpdate';
 export * from './event';
 export * from './eventInput';
 export * from './eventUpdate';
