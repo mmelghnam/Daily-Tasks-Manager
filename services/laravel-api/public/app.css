@@ -1,0 +1,71 @@
+:root {
+    color-scheme: light;
+    --ink: #1e2a26;
+    --muted: #71817a;
+    --paper: #f5f7f3;
+    --card: #ffffff;
+    --line: #dfe8e0;
+    --primary: #2e8d77;
+    --primary-dark: #226c5b;
+    --gold: #d39a2f;
+    --danger: #bd5f5c;
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    min-width: 320px;
+    color: var(--ink);
+    background: radial-gradient(circle at 10% 0%, #e7f2e8 0, transparent 35%), var(--paper);
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.shell { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
+.topbar, .panel-heading, .toolbar, .account-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.topbar { margin-bottom: 28px; }
+h1, h2, p { margin: 0; }
+h1 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -1px; }
+h2 { font-size: 20px; }
+.eyebrow { color: var(--primary); font-size: 12px; font-weight: 800; letter-spacing: .08em; margin-bottom: 6px; }
+.muted { color: var(--muted); font-size: 13px; }
+.notice { padding: 16px 18px; border: 1px solid #efd9a7; border-radius: 14px; background: #fff9e9; color: #755817; }
+.toolbar { justify-content: flex-start; margin: 18px 0; }
+label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+input, select { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--ink); background: #fff; outline: none; }
+input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px #2e8d7720; }
+.button { border: 0; border-radius: 10px; padding: 10px 15px; font-weight: 800; white-space: nowrap; }
+.button.primary { color: white; background: var(--primary); }
+.button.primary:hover { background: var(--primary-dark); }
+.button.secondary { color: var(--primary-dark); background: #e7f1ea; }
+.button.danger { color: var(--danger); background: #fff0ee; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, .8fr); gap: 18px; }
+.panel { padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--card) 92%, transparent); box-shadow: 0 16px 40px #3353440b; }
+.panel-heading { align-items: flex-start; margin-bottom: 18px; }
+.pill { color: #80621f; background: #fff4d7; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 800; }
+.task-form { display: grid; grid-template-columns: minmax(180px, 1fr) 150px 120px auto; gap: 8px; margin-bottom: 18px; }
+.task-list, .space-list, .stack { display: grid; gap: 10px; }
+.task-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: #fbfdfb; }
+.task-card.done { opacity: .62; }
+.task-card.done .task-title { text-decoration: line-through; }
+.task-title { font-weight: 800; }
+.task-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; color: var(--muted); font-size: 12px; }
+.priority-high { color: #a34d49; }
+.priority-medium { color: #8b681e; }
+.priority-low { color: var(--primary-dark); }
+.check { width: 20px; height: 20px; accent-color: var(--primary); }
+.task-actions { display: flex; gap: 6px; }
+.icon-button { border: 0; border-radius: 8px; padding: 7px; color: var(--muted); background: transparent; }
+.icon-button:hover { background: #edf4ee; color: var(--ink); }
+.space-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; border-radius: 11px; background: #f0f6f0; }
+.space-dot { width: 10px; height: 10px; margin-left: 8px; display: inline-block; border-radius: 50%; background: var(--primary); }
+.empty { padding: 28px 10px; color: var(--muted); text-align: center; }
+.error { margin: 8px 0; color: var(--danger); font-size: 13px; }
+@media (max-width: 760px) {
+    .shell { width: min(100% - 22px, 560px); padding-top: 24px; }
+    .topbar, .toolbar { align-items: flex-start; flex-direction: column; }
+    .account-actions { width: 100%; justify-content: space-between; }
+    .grid { grid-template-columns: 1fr; }
+    .task-form { grid-template-columns: 1fr 1fr; }
+    .task-form input, .task-form button { grid-column: span 2; }
+}
