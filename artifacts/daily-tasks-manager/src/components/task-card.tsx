@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, Check, Copy, ExternalLink, MoreHorizontal, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Check, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -18,6 +18,9 @@ interface TaskCardProps {
   date: string;
   spaces: string[];
   onReorder?: (direction: 'up' | 'down') => void;
+  onDragStart?: (taskId: number) => void;
+  onDropTask?: (taskId: number) => void;
+  isDragging?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
 }
@@ -103,7 +106,7 @@ function datesBetween(startDate: string, endDate: string) {
   return dates;
 }
 
-export function TaskCard({ task, date, spaces, onReorder, canMoveUp, canMoveDown }: TaskCardProps) {
+export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTask, isDragging, canMoveUp, canMoveDown }: TaskCardProps) {
   const normalizedTaskDate = dateOnly(date) || new Date().toISOString().slice(0, 10);
   const updatedTime = formatUpdatedTime(task.updatedAt);
   const queryClient = useQueryClient();
@@ -185,8 +188,29 @@ export function TaskCard({ task, date, spaces, onReorder, canMoveUp, canMoveDown
 
   return (
     <>
-      <article data-testid={`card-task-${task.id}`} className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}>
+      <article
+        data-testid={`card-task-${task.id}`}
+        draggable={Boolean(onDragStart)}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/task-id', String(task.id));
+          onDragStart?.(task.id);
+        }}
+        onDragOver={(event) => {
+          if (!onDropTask) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          const draggedId = Number(event.dataTransfer.getData('text/task-id'));
+          if (draggedId && draggedId !== task.id) onDropTask(draggedId);
+        }}
+        onDragEnd={() => onDragStart?.(0)}
+        className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${isDragging ? 'border-primary bg-primary/5 opacity-50 shadow-xl ring-2 ring-primary/20' : task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}
+      >
         <div className="flex items-start gap-3">
+          {onDragStart && <span title="اسحب لترتيب المهمة" aria-label="اسحب لترتيب المهمة" className="mt-1 flex h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-muted hover:text-primary active:cursor-grabbing"><GripVertical size={18} /></span>}
           <button type="button" onClick={toggle} disabled={updateTask.isPending} aria-label={task.completed ? 'إلغاء إكمال المهمة' : 'إكمال المهمة'} data-testid={`button-toggle-task-${task.id}`} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${task.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-background text-transparent hover:border-secondary hover:bg-secondary/15'}`}>
             <Check size={16} strokeWidth={3} />
           </button>
@@ -196,7 +220,7 @@ export function TaskCard({ task, date, spaces, onReorder, canMoveUp, canMoveDown
               <div className="relative shrink-0">
                 <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-label="خيارات المهمة" data-testid={`button-task-menu-${task.id}`} className="rounded-lg p-1.5 text-muted-foreground opacity-100 transition hover:bg-muted hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"><MoreHorizontal size={18} /></button>
                 {menuOpen && (
-                  <div className="absolute left-0 top-9 z-20 w-32 overflow-hidden rounded-xl border border-border bg-popover p-1 text-sm shadow-xl">
+                   <div className="absolute right-0 top-9 z-20 w-52 overflow-hidden rounded-xl border border-border bg-popover p-1 text-sm shadow-xl">
                     <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل</button>
                     {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><CalendarPlus size={14} /> ترحيل للغد</button>}
                     <button type="button" onClick={() => copyToDates([nextDate(normalizedTaskDate)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right font-semibold hover:bg-muted"><Copy size={14} /> نسخ للغد</button>
