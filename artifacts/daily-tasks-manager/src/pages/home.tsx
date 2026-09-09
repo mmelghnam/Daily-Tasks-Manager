@@ -302,13 +302,12 @@ export default function Home() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-lg font-extrabold tracking-tight">خطوتك</p>
+                <p className="text-lg font-extrabold tracking-tight">إنجازك اليومي</p>
               </div>
               <p className="text-xs font-semibold text-muted-foreground">مساحتك لترتيب المهم قبل أن يبدأ الزحام</p>
             </div>
           </div>
            <div className="flex items-center gap-2">
-             <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> إنجازك اليومي</div>
               <DashboardCustomizer />
               <PalettePicker />
               <AccountControl />
