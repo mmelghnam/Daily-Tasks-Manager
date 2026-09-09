@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -115,12 +116,45 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [copyStartDate, setCopyStartDate] = useState(nextDate(normalizedTaskDate));
   const [copyEndDate, setCopyEndDate] = useState(shiftDate(nextDate(normalizedTaskDate), 2));
   const [copyPending, setCopyPending] = useState(false);
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const links = Array.isArray(task.links) ? task.links : [];
   const followUps = Array.isArray(task.followUps) ? task.followUps : [];
+
+  const toggleTaskMenu = () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+
+    const button = menuButtonRef.current;
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 224;
+    const gutter = 8;
+    const availableHeight = Math.max(180, window.innerHeight - gutter * 2);
+    const preferredTop = rect.bottom + gutter;
+    const menuHeight = Math.min(390, availableHeight);
+    const top = preferredTop + menuHeight <= window.innerHeight - gutter
+      ? preferredTop
+      : Math.max(gutter, rect.top - menuHeight - gutter);
+    const preferredLeft = rect.right - menuWidth;
+    const rightSideLeft = rect.left;
+    const left = preferredLeft >= gutter
+      ? Math.min(preferredLeft, window.innerWidth - menuWidth - gutter)
+      : Math.min(rightSideLeft, window.innerWidth - menuWidth - gutter);
+
+    setMenuPosition({
+      top,
+      left,
+      maxHeight: Math.max(180, Math.min(390, window.innerHeight - top - gutter)),
+    });
+    setMenuOpen(true);
+  };
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
@@ -218,17 +252,16 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
             <div className="flex items-start justify-between gap-3">
               <h3 data-testid={`text-task-title-${task.id}`} className={`text-[0.98rem] font-bold leading-7 ${task.completed ? 'text-muted-foreground line-through decoration-secondary decoration-2' : 'text-foreground'}`}>{task.title}</h3>
                <div className="relative shrink-0">
-                 <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-label="خيارات المهمة" data-testid={`button-task-menu-${task.id}`} className="rounded-lg p-1.5 text-muted-foreground opacity-100 transition hover:bg-muted hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"><MoreHorizontal size={18} /></button>
-                 {menuOpen && (
-                   <div dir="rtl" className="absolute right-0 top-full z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-border bg-card p-1.5 text-sm text-foreground shadow-2xl">
+                  <button ref={menuButtonRef} type="button" onClick={toggleTaskMenu} aria-expanded={menuOpen} aria-label="خيارات المهمة" data-testid={`button-task-menu-${task.id}`} className="rounded-lg p-1.5 text-muted-foreground opacity-100 transition hover:bg-muted hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"><MoreHorizontal size={18} /></button>
+                  {menuOpen && menuPosition && createPortal(
+                    <div dir="rtl" className="fixed z-[100] w-56 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border border-popover-border bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl" style={{ top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight }}>
                      <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل المهمة</button>
                      {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-50"><CalendarPlus size={14} /> ترحيل للغد</button>}
                      <button type="button" onClick={() => copyToDates([nextDate(normalizedTaskDate)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-50"><Copy size={14} /> نسخ للغد</button>
                      <button type="button" onClick={() => { setCopyOpen(true); setMenuOpen(false); }} data-testid={`button-copy-range-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لمدة</button>
-                     {onReorder && <><div className="my-1 border-t border-border" /><button type="button" onClick={() => { onReorder('up'); setMenuOpen(false); }} disabled={!canMoveUp} data-testid={`button-move-task-up-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-40"><ChevronUp size={14} /> تقديم داخل المساحة</button><button type="button" onClick={() => { onReorder('down'); setMenuOpen(false); }} disabled={!canMoveDown} data-testid={`button-move-task-down-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-40"><ChevronDown size={14} /> تأخير داخل المساحة</button></>}
                      <button type="button" onClick={remove} disabled={deleteTask.isPending} data-testid={`button-delete-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"><Trash2 size={14} /> حذف المهمة</button>
                    </div>
-                 )}
+                  , document.body)}
                </div>
             </div>
             {task.notes && <p data-testid={`text-task-notes-${task.id}`} className="mt-1 text-sm leading-6 text-muted-foreground">{task.notes}</p>}
