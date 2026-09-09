@@ -274,8 +274,8 @@
   .text-balance { text-wrap: balance; }
   .task-shell {
     background:
-      radial-gradient(circle at 93% 8%, hsl(38 84% 64% / 0.14), transparent 24rem),
-      radial-gradient(circle at 3% 87%, hsl(12 64% 67% / 0.11), transparent 22rem),
+      radial-gradient(circle at 93% 8%, hsl(var(--secondary) / 0.14), transparent 24rem),
+      radial-gradient(circle at 3% 87%, hsl(var(--accent) / 0.11), transparent 22rem),
       hsl(var(--background));
   }
   .noise-overlay::after {
