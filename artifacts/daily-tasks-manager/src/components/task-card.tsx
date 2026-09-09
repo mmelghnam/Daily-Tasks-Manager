@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
@@ -118,12 +118,49 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
   const [copyOpen, setCopyOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuCloseTimerRef = useRef<number | null>(null);
   const [copyStartDate, setCopyStartDate] = useState(nextDate(normalizedTaskDate));
   const [copyEndDate, setCopyEndDate] = useState(shiftDate(nextDate(normalizedTaskDate), 2));
   const [copyPending, setCopyPending] = useState(false);
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const links = Array.isArray(task.links) ? task.links : [];
   const followUps = Array.isArray(task.followUps) ? task.followUps : [];
+
+  const cancelScheduledMenuClose = () => {
+    if (menuCloseTimerRef.current !== null) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+  };
+
+  const scheduleMenuClose = () => {
+    cancelScheduledMenuClose();
+    menuCloseTimerRef.current = window.setTimeout(() => {
+      setMenuOpen(false);
+      menuCloseTimerRef.current = null;
+    }, 160);
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const closeFromOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (menuButtonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeFromOutside, true);
+    document.addEventListener('keydown', closeWithEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeFromOutside, true);
+      document.removeEventListener('keydown', closeWithEscape);
+    };
+  }, [menuOpen]);
 
   const toggleTaskMenu = () => {
     if (menuOpen) {
@@ -252,9 +289,9 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
             <div className="flex items-start justify-between gap-3">
               <h3 data-testid={`text-task-title-${task.id}`} className={`text-[0.98rem] font-bold leading-7 ${task.completed ? 'text-muted-foreground line-through decoration-secondary decoration-2' : 'text-foreground'}`}>{task.title}</h3>
                <div className="relative shrink-0">
-                  <button ref={menuButtonRef} type="button" onClick={toggleTaskMenu} aria-expanded={menuOpen} aria-label="خيارات المهمة" data-testid={`button-task-menu-${task.id}`} className="rounded-lg p-1.5 text-muted-foreground opacity-100 transition hover:bg-muted hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"><MoreHorizontal size={18} /></button>
+                  <button ref={menuButtonRef} type="button" onClick={toggleTaskMenu} onPointerEnter={cancelScheduledMenuClose} onPointerLeave={scheduleMenuClose} aria-expanded={menuOpen} aria-label="خيارات المهمة" data-testid={`button-task-menu-${task.id}`} className="rounded-lg p-1.5 text-muted-foreground opacity-100 transition hover:bg-muted hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"><MoreHorizontal size={18} /></button>
                   {menuOpen && menuPosition && createPortal(
-                    <div dir="rtl" className="fixed z-[100] w-56 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border border-popover-border bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl" style={{ top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight }}>
+                    <div ref={menuRef} dir="rtl" onPointerEnter={cancelScheduledMenuClose} onPointerLeave={scheduleMenuClose} className="fixed z-[100] w-56 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border border-popover-border bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl" style={{ top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight }}>
                      <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل المهمة</button>
                      {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-50"><CalendarPlus size={14} /> ترحيل للغد</button>}
                      <button type="button" onClick={() => copyToDates([nextDate(normalizedTaskDate)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-50"><Copy size={14} /> نسخ للغد</button>
