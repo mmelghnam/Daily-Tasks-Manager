@@ -308,7 +308,7 @@ export default function Home() {
             </div>
           </div>
            <div className="flex items-center gap-2">
-             <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> كل إنجاز يفتح مساحة</div>
+             <div className="hidden items-center gap-2 text-xs font-bold text-muted-foreground sm:flex"><Clock3 size={16} className="text-accent" /> إنجازك اليومي</div>
               <DashboardCustomizer />
               <PalettePicker />
               <AccountControl />
