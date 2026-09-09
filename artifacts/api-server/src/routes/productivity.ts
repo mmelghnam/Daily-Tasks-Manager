@@ -11,7 +11,15 @@ import { db, goalsTable, habitsTable, studyItemsTable } from "@workspace/db";
 import { and, asc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
-const dateOnly = (value: string | Date | null | undefined) => value ? new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) : null;
+const dateOnly = (value: string | Date | null | undefined) => {
+  if (!value) return null;
+  const parsed = value instanceof Date
+    ? value
+    : /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Date(`${value}T00:00:00.000Z`)
+      : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+};
 
 router.get("/goals", async (req, res, next) => {
   try {
