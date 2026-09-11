@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="إنجازك اليومي - إدارة المهام والمساحات">
+  <title>إنجازك اليومي</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1e2a26;
+      --muted: #71817a;
+      --paper: #f5f7f3;
+      --card: #ffffff;
+      --line: #dfe8e0;
+      --primary: #2e8d77;
+      --primary-dark: #226c5b;
+      --danger: #bd5f5c;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%, #e7f2e8 0, transparent 35%),
+        var(--paper);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
+    .topbar, .panel-heading, .toolbar, .account-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .topbar { margin-bottom: 28px; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -1px; }
+    h2 { font-size: 20px; }
+    .eyebrow {
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      margin-bottom: 6px;
+    }
+    .muted { color: var(--muted); font-size: 13px; }
+    .notice {
+      padding: 16px 18px;
+      border: 1px solid #efd9a7;
+      border-radius: 14px;
+      background: #fff9e9;
+      color: #755817;
+    }
+    .toolbar { justify-content: flex-start; margin: 18px 0; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px #2e8d7720; }
+    .button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .button.primary { color: white; background: var(--primary); }
+    .button.primary:hover { background: var(--primary-dark); }
+    .button.secondary { color: var(--primary-dark); background: #e7f1ea; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, .8fr); gap: 18px; }
+    .panel {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 16px 40px #3353440b;
+    }
+    .panel-heading { align-items: flex-start; margin-bottom: 18px; }
+    .pill {
+      color: #80621f;
+      background: #fff4d7;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .task-form { display: grid; grid-template-columns: minmax(180px, 1fr) 150px 120px auto; gap: 8px; margin-bottom: 18px; }
+    .task-list, .space-list, .stack { display: grid; gap: 10px; }
+    .task-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fbfdfb;
+    }
+    .task-card.done { opacity: .62; }
+    .task-card.done .task-title { text-decoration: line-through; }
+    .task-title { font-weight: 800; }
+    .task-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .priority-high { color: #a34d49; }
+    .priority-medium { color: #8b681e; }
+    .priority-low { color: var(--primary-dark); }
+    .check { width: 20px; height: 20px; accent-color: var(--primary); }
+    .task-actions { display: flex; gap: 6px; }
+    .icon-button { border: 0; border-radius: 8px; padding: 7px; color: var(--muted); background: transparent; }
+    .icon-button:hover { background: #edf4ee; color: var(--ink); }
+    .space-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 11px 12px;
+      border-radius: 11px;
+      background: #f0f6f0;
+    }
+    .space-dot { width: 10px; height: 10px; margin-left: 8px; display: inline-block; border-radius: 50%; background: var(--primary); }
+    .empty { padding: 28px 10px; color: var(--muted); text-align: center; }
+    .error { margin: 8px 0; color: var(--danger); font-size: 13px; }
+    .config-help {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f4f7f5;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    .config-help code { direction: ltr; display: inline-block; color: var(--primary-dark); }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 22px, 560px); padding-top: 24px; }
+      .topbar, .toolbar { align-items: flex-start; flex-direction: column; }
+      .account-actions { width: 100%; justify-content: space-between; }
+      .grid { grid-template-columns: 1fr; }
+      .task-form { grid-template-columns: 1fr 1fr; }
+      .task-form input, .task-form button { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">إنجازك اليومي</p>
+        <h1>خطتك لليوم</h1>
+      </div>
+      <div class="account-actions">
+        <span id="account-name" class="muted">جارٍ التحميل...</span>
+        <button id="sign-in" class="button secondary" hidden>تسجيل الدخول</button>
+        <button id="sign-out" class="button secondary" hidden>تسجيل الخروج</button>
+      </div>
+    </header>
+
+    <section id="auth-message" class="notice" hidden>
+      سجّل الدخول لعرض مهامك ومساحاتك الخاصة.
+      <div id="config-help" class="config-help">
+        لتشغيل هذه النسخة خارج Laravel، عرّف الإعدادات قبل تحميل الملف:
+        <br>
+        <code>window.DAILY_TASKS_CONFIG = { clerkPublishableKey: "...", apiBase: "https://your-api.example.com/api" };</code>
+      </div>
+    </section>
+
+    <section id="app-content" hidden>
+      <div class="toolbar">
+        <label>
+          <span>تاريخ اليوم</span>
+          <input id="task-date" type="date">
+        </label>
+        <button id="refresh" class="button secondary">تحديث</button>
+      </div>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">المهام</p>
+              <h2 id="task-count">مهام اليوم</h2>
+            </div>
+            <span id="task-summary" class="pill">0 متبقية</span>
+          </div>
+          <form id="task-form" class="task-form">
+            <input id="task-title" type="text" placeholder="ما الذي تريد إنجازه؟" required>
+            <select id="task-category" aria-label="المساحة"></select>
+            <select id="task-priority" aria-label="الأولوية">
+              <option value="high">عالية</option>
+              <option value="medium" selected>متوسطة</option>
+              <option value="low">منخفضة</option>
+            </select>
+            <button class="button primary" type="submit">إضافة</button>
+          </form>
+          <p id="task-error" class="error" role="alert" hidden></p>
+          <div id="task-list" class="task-list"></div>
+        </article>
+
+        <aside class="panel side-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">المساحات</p>
+              <h2>تنظيم يومك</h2>
+            </div>
+          </div>
+          <form id="space-form" class="stack">
+            <input id="space-name" type="text" placeholder="اسم مساحة جديدة" required>
+            <button class="button secondary" type="submit">إضافة مساحة</button>
+          </form>
+          <div id="space-list" class="space-list"></div>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    /*
+      إعداد اختياري عند تشغيل الملف مباشرة:
+      window.DAILY_TASKS_CONFIG = {
+        clerkPublishableKey: "pk_...",
+        apiBase: "https://your-api.example.com/api"
+      };
+    */
+    window.DAILY_TASKS_CONFIG = window.DAILY_TASKS_CONFIG || {};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+  <script>
+    (() => {
+      const config = window.DAILY_TASKS_CONFIG || {};
+      const state = {
+        clerk: null,
+        tasks: [],
+        spaces: [],
+        date: new Date().toISOString().slice(0, 10)
+      };
+      const $ = (selector) => document.querySelector(selector);
+      const apiBase = String(config.apiBase || window.location.origin + '/api').replace(/\/$/, '');
+
+      function show(selector, visible) {
+        const element = $(selector);
+        if (element) element.hidden = !visible;
+      }
+
+      async function api(path, options = {}) {
+        const token = await state.clerk?.session?.getToken?.();
+        const headers = {
+          Accept: 'application/json',
+          ...(options.body ? { 'Content-Type': 'application/json' } : {})
+        };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch(`${apiBase}${path}`, {
+          ...options,
+          headers: { ...headers, ...(options.headers || {}) }
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.message || payload.error || `تعذر تنفيذ الطلب (${response.status})`);
+        }
+        return response.status === 204 ? null : response.json();
+      }
+
+      function priorityLabel(priority) {
+        return ({
+          high: 'أولوية عالية',
+          medium: 'أولوية متوسطة',
+          low: 'أولوية منخفضة'
+        })[priority] || 'أولوية متوسطة';
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[char]));
+      }
+
+      function renderTasks() {
+        const list = $('#task-list');
+        const remaining = state.tasks.filter((task) => !task.completed).length;
+        $('#task-count').textContent = `${state.tasks.length} ${state.tasks.length === 1 ? 'مهمة' : 'مهام'} اليوم`;
+        $('#task-summary').textContent = `${remaining} متبقية`;
+        list.replaceChildren();
+        if (!state.tasks.length) {
+          list.innerHTML = '<div class="empty">لا توجد مهام لهذا اليوم بعد.</div>';
+          return;
+        }
+        state.tasks.forEach((task) => {
+          const card = document.createElement('article');
+          card.className = `task-card${task.completed ? ' done' : ''}`;
+          card.innerHTML = `
+            <input class="check" type="checkbox" ${task.completed ? 'checked' : ''} aria-label="تحديد المهمة كمكتملة">
+            <div>
+              <div class="task-title"></div>
+              <div class="task-meta">
+                <span>${escapeHtml(task.category)}</span>
+                <span class="priority-${escapeHtml(task.priority || 'medium')}">${priorityLabel(task.priority)}</span>
+                ${task.startTime ? `<span>${escapeHtml(task.startTime)}</span>` : ''}
+              </div>
+            </div>
+            <div class="task-actions">
+              <button class="icon-button delete" type="button" aria-label="حذف المهمة">حذف</button>
+            </div>
+          `;
+          card.querySelector('.task-title').textContent = task.title;
+          card.querySelector('.check').addEventListener('change', () => {
+            updateTask(task.id, { completed: card.querySelector('.check').checked });
+          });
+          card.querySelector('.delete').addEventListener('click', () => deleteTask(task.id));
+          list.append(card);
+        });
+      }
+
+      function renderSpaces() {
+        const list = $('#space-list');
+        const category = $('#task-category');
+        list.replaceChildren();
+        category.replaceChildren();
+        if (!state.spaces.length) {
+          list.innerHTML = '<div class="empty">أضف أول مساحة لتنظيم مهامك.</div>';
+          category.append(new Option('مساحة عامة', 'عام'));
+          return;
+        }
+        state.spaces.forEach((space) => {
+          const item = document.createElement('div');
+          item.className = 'space-item';
+          item.innerHTML = `<span><i class="space-dot"></i>${escapeHtml(space.name)}</span>`;
+          list.append(item);
+          category.append(new Option(space.name, space.name));
+        });
+      }
+
+      async function load() {
+        try {
+          [state.spaces, state.tasks] = await Promise.all([
+            api('/spaces'),
+            api(`/tasks?date=${encodeURIComponent(state.date)}`)
+          ]);
+          renderSpaces();
+          renderTasks();
+          $('#task-error').hidden = true;
+        } catch (error) {
+          $('#task-error').textContent = error.message;
+          $('#task-error').hidden = false;
+        }
+      }
+
+      async function updateTask(id, patch) {
+        try {
+          await api(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+          await load();
+        } catch (error) {
+          $('#task-error').textContent = error.message;
+          $('#task-error').hidden = false;
+        }
+      }
+
+      async function deleteTask(id) {
+        if (!window.confirm('هل تريد حذف هذه المهمة؟')) return;
+        try {
+          await api(`/tasks/${id}`, { method: 'DELETE' });
+          await load();
+        } catch (error) {
+          $('#task-error').textContent = error.message;
+          $('#task-error').hidden = false;
+        }
+      }
+
+      function renderSession(signedIn) {
+        show('#auth-message', !signedIn);
+        show('#app-content', signedIn);
+        show('#sign-in', !signedIn);
+        show('#sign-out', signedIn);
+        $('#account-name').textContent = signedIn
+          ? (state.clerk.user?.firstName || 'الحساب')
+          : 'غير مسجل';
+        if (signedIn) load();
+      }
+
+      async function start() {
+        const key = config.clerkPublishableKey || document.querySelector('meta[name="clerk-publishable-key"]')?.content;
+        if (!key || key === 'YOUR_CLERK_PUBLISHABLE_KEY' || !window.Clerk) {
+          $('#account-name').textContent = 'تحتاج إعداد Clerk';
+          show('#auth-message', true);
+          show('#config-help', true);
+          return;
+        }
+        state.clerk = new window.Clerk(key);
+        await state.clerk.load();
+        state.clerk.addListener(({ session }) => renderSession(Boolean(session)));
+        renderSession(Boolean(state.clerk.session));
+      }
+
+      $('#task-date').value = state.date;
+      $('#task-date').addEventListener('change', (event) => {
+        state.date = event.target.value;
+        load();
+      });
+      $('#refresh').addEventListener('click', load);
+      $('#sign-in').addEventListener('click', () => state.clerk?.openSignIn());
+      $('#sign-out').addEventListener('click', () => state.clerk?.signOut());
+      $('#task-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = $('#task-title').value.trim();
+        if (!title) return;
+        try {
+          await api('/tasks', {
+            method: 'POST',
+            body: JSON.stringify({
+              taskDate: state.date,
+              title,
+              category: $('#task-category').value || 'عام',
+              priority: $('#task-priority').value
+            })
+          });
+          event.target.reset();
+          await load();
+        } catch (error) {
+          $('#task-error').textContent = error.message;
+          $('#task-error').hidden = false;
+        }
+      });
+      $('#space-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const name = $('#space-name').value.trim();
+        if (!name) return;
+        try {
+          await api('/spaces', { method: 'POST', body: JSON.stringify({ name }) });
+          event.target.reset();
+          await load();
+        } catch (error) {
+          $('#task-error').textContent = error.message;
+          $('#task-error').hidden = false;
+        }
+      });
+      start().catch((error) => {
+        $('#account-name').textContent = error.message;
+        show('#auth-message', true);
+      });
+    })();
+  </script>
+</body>
+</html>

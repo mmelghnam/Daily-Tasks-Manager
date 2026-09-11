@@ -28,3 +28,17 @@ mtime_ms = 1788987290380
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/0dec9d63-4267-49ca-ab0a-87950823e54d/9c79f01e-8695-44fe-8000-f15f30e07471"
 storage_version_token = "1788987412019690"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "Vg-1G5buWSKvOcaQBU0V2"
+uri = "file://daily-tasks-app.html"
+type = "text"
+title = "تطبيق إنجازك اليومي - HTML"
+description = "نسخة HTML واحدة من واجهة التطبيق، تشمل التصميم والسكريبت داخليًا. تحتاج إعداد Clerk وواجهة API عند تشغيلها خارج Laravel."
+logical_id = "b4ea78ec-ca4b-40c3-b463-fd4b04246928"
+content_hash = "sha256:6aaaf3978e998f0134e5c6a7730e2f965abf1327c890a9309be94b73fce0d0bd"
+size = 16962
+mtime_ms = 1789145105885
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/b4ea78ec-ca4b-40c3-b463-fd4b04246928/835667f0-1427-410f-911f-77bf58fc8080"
+storage_version_token = "1789145117015321"
+content_type = "text/html"
