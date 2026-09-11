@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إنجازك اليومي — معاينة التطبيق الكاملة</title>
+  <style>
+    :root {
+      --bg: #f5f7f3;
+      --surface: #fff;
+      --surface-2: #eef5ef;
+      --text: #17231f;
+      --muted: #71817a;
+      --line: #dfe8e0;
+      --primary: #2e8d77;
+      --primary-2: #226c5b;
+      --gold: #d29a2e;
+      --danger: #bb5d59;
+      --shadow: 0 18px 50px rgba(36, 79, 60, .09);
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    [data-theme="dark"] {
+      --bg: #151c19;
+      --surface: #202b26;
+      --surface-2: #293932;
+      --text: #edf7f0;
+      --muted: #a4b8ac;
+      --line: #385046;
+      --primary: #66c2a4;
+      --primary-2: #91dfbd;
+      --gold: #e4b557;
+      --danger: #ee8780;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .2);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background: var(--bg);
+      transition: background .2s, color .2s;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app-shell { display: grid; grid-template-columns: 246px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 22px 15px;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 5px 9px 26px; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 13px;
+      color: #fff;
+      background: var(--primary);
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .brand strong { display: block; font-size: 16px; }
+    .brand small { color: var(--muted); font-size: 11px; }
+    .nav-label { padding: 15px 11px 7px; color: var(--muted); font-size: 11px; font-weight: 800; }
+    .nav { display: grid; gap: 4px; }
+    .nav button {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      border: 0;
+      border-radius: 11px;
+      padding: 11px 12px;
+      color: var(--muted);
+      background: transparent;
+      text-align: right;
+    }
+    .nav button:hover, .nav button.active { color: var(--primary-2); background: var(--surface-2); }
+    .nav-icon { width: 21px; text-align: center; font-size: 17px; }
+    .sidebar-footer {
+      position: absolute;
+      right: 15px;
+      bottom: 18px;
+      left: 15px;
+      display: grid;
+      gap: 9px;
+    }
+    .user-chip { display: flex; align-items: center; gap: 9px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
+    .avatar { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; color: #fff; background: #956fbd; font-weight: 800; }
+    .user-chip strong { display: block; font-size: 12px; }
+    .user-chip small { color: var(--muted); font-size: 10px; }
+    .main { min-width: 0; padding: 26px clamp(16px, 4vw, 50px) 60px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+    .topbar h1 { margin: 0 0 5px; font-size: clamp(24px, 3vw, 34px); }
+    .topbar p { margin: 0; color: var(--muted); font-size: 13px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .icon-btn, .button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 13px;
+      color: var(--text);
+      background: var(--surface);
+    }
+    .icon-btn { min-width: 39px; padding: 9px; }
+    .button { font-weight: 800; }
+    .button.primary { border-color: var(--primary); color: #fff; background: var(--primary); }
+    .button.primary:hover { background: var(--primary-2); }
+    .button.soft { border-color: transparent; color: var(--primary-2); background: var(--surface-2); }
+    .button.danger { border-color: transparent; color: var(--danger); background: #fff0ee; }
+    .page { display: none; animation: appear .18s ease-out; }
+    .page.active { display: block; }
+    @keyframes appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+      padding: 25px;
+      border: 1px solid #bfe2d3;
+      border-radius: 18px;
+      background: linear-gradient(105deg, #dff3e7, #f7fbf7);
+      color: #204d3e;
+    }
+    [data-theme="dark"] .hero { border-color: #385e4e; background: linear-gradient(105deg, #213d31, #25362e); color: #d9f5e7; }
+    .hero h2 { margin: 0 0 8px; font-size: 24px; }
+    .hero p { margin: 0; color: inherit; opacity: .78; font-size: 13px; }
+    .hero-emoji { font-size: 54px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; margin-bottom: 18px; }
+    .stat, .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .stat { padding: 17px; }
+    .stat-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; }
+    .stat strong { display: block; margin-top: 11px; font-size: 28px; }
+    .stat small { color: var(--primary); font-size: 11px; }
+    .two-col { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr); gap: 16px; }
+    .card { padding: 19px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .card-head h3 { margin: 0; font-size: 17px; }
+    .card-head p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .link-button { border: 0; color: var(--primary-2); background: transparent; font-size: 12px; }
+    .task-list { display: grid; gap: 9px; }
+    .task-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+    .task-row.done { opacity: .55; }
+    .task-row.done .task-name { text-decoration: line-through; }
+    .check { width: 19px; height: 19px; accent-color: var(--primary); }
+    .task-name { font-weight: 800; font-size: 13px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 5px; color: var(--muted); font-size: 11px; }
+    .tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 8px; color: var(--primary-2); background: var(--surface-2); font-size: 11px; }
+    .priority-high { color: #b74e4e; }
+    .priority-medium { color: #a17417; }
+    .priority-low { color: var(--primary-2); }
+    .progress { height: 8px; overflow: hidden; border-radius: 99px; background: var(--surface-2); }
+    .progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+    .goal-row { display: grid; gap: 9px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .goal-row:last-child { border-bottom: 0; }
+    .goal-info { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 800; }
+    .goal-info span { color: var(--muted); font-weight: 400; }
+    .event-list { display: grid; gap: 10px; }
+    .event { display: flex; align-items: center; gap: 12px; padding: 11px; border-radius: 12px; background: var(--surface-2); }
+    .event-date { min-width: 43px; text-align: center; color: var(--primary-2); font-weight: 900; }
+    .event-date b { display: block; font-size: 20px; }
+    .event-date small { font-size: 10px; }
+    .event strong { display: block; font-size: 12px; }
+    .event span { color: var(--muted); font-size: 11px; }
+    .page-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+    .page-title h2 { margin: 0 0 5px; font-size: 25px; }
+    .page-title p { margin: 0; color: var(--muted); font-size: 13px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 15px; }
+    .search { min-width: 230px; flex: 1; }
+    input, select, textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); background: var(--surface); outline: 0; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px #2e8d7720; }
+    .filter { width: 155px; }
+    .table { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); }
+    .table-row { display: grid; grid-template-columns: 1.6fr .8fr .7fr .7fr auto; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .table-row:last-child { border-bottom: 0; }
+    .table-head { color: var(--muted); background: var(--surface-2); font-size: 11px; font-weight: 800; }
+    .table-title { font-weight: 800; }
+    .row-actions { display: flex; gap: 5px; }
+    .mini-btn { border: 0; border-radius: 7px; padding: 6px 8px; color: var(--muted); background: var(--surface-2); font-size: 11px; }
+    .mini-btn.delete { color: var(--danger); }
+    .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .space-card { position: relative; overflow: hidden; padding: 18px; }
+    .space-color { position: absolute; top: 0; right: 0; left: 0; height: 5px; background: var(--primary); }
+    .space-card h3 { margin: 8px 0 5px; font-size: 17px; }
+    .space-card p { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
+    .space-card footer { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; }
+    .form-card { margin-bottom: 16px; padding: 17px; }
+    .inline-form { display: grid; grid-template-columns: 1.4fr .75fr .7fr auto; gap: 8px; }
+    .goal-card { padding: 18px; }
+    .goal-card h3 { margin: 0 0 7px; font-size: 16px; }
+    .goal-card p { margin: 0 0 15px; color: var(--muted); font-size: 12px; }
+    .goal-foot { display: flex; justify-content: space-between; margin-top: 9px; color: var(--muted); font-size: 11px; }
+    .habit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; }
+    .habit-card { padding: 16px; text-align: center; }
+    .habit-icon { display: grid; width: 42px; height: 42px; margin: 0 auto 9px; place-items: center; border-radius: 13px; background: var(--surface-2); font-size: 20px; }
+    .habit-card h3 { margin: 0 0 6px; font-size: 14px; }
+    .habit-card p { margin: 0 0 13px; color: var(--muted); font-size: 11px; }
+    .streak { color: var(--gold); font-size: 12px; font-weight: 800; }
+    .study-list { display: grid; gap: 10px; }
+    .study-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; }
+    .study-type { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 10px; color: var(--primary-2); background: var(--surface-2); }
+    .study-item h3 { margin: 0 0 5px; font-size: 13px; }
+    .study-item p { margin: 0; color: var(--muted); font-size: 11px; }
+    .notice-list { display: grid; gap: 12px; }
+    .notice-card { padding: 16px; border-right: 4px solid var(--primary); border-radius: 12px; background: var(--surface-2); }
+    .notice-card h3 { margin: 0 0 6px; font-size: 14px; }
+    .notice-card p { margin: 0 0 7px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .notice-card small { color: var(--muted); font-size: 10px; }
+    .link-list { display: grid; gap: 11px; }
+    .link-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+    .link-card strong { display: block; margin-bottom: 5px; font-size: 13px; }
+    .link-card span { color: var(--muted); font-size: 11px; direction: ltr; display: block; text-align: right; }
+    .settings { display: grid; grid-template-columns: .8fr 1.2fr; gap: 16px; }
+    .setting-list { display: grid; gap: 9px; }
+    .setting { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px; border-bottom: 1px solid var(--line); }
+    .setting:last-child { border-bottom: 0; }
+    .setting strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .setting span { color: var(--muted); font-size: 11px; }
+    .switch { position: relative; width: 40px; height: 22px; border: 0; border-radius: 99px; background: var(--line); }
+    .switch i { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: .2s; }
+    .switch.on { background: var(--primary); }
+    .switch.on i { right: 21px; }
+    .empty { padding: 30px; color: var(--muted); text-align: center; }
+    .toast { position: fixed; right: 25px; bottom: 25px; z-index: 20; display: none; max-width: 320px; padding: 13px 16px; border-radius: 11px; color: #fff; background: #243b31; box-shadow: var(--shadow); font-size: 12px; }
+    .toast.show { display: block; animation: appear .2s; }
+    @media (max-width: 1060px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .habit-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 780px) {
+      .app-shell { display: block; }
+      .sidebar { position: sticky; z-index: 10; top: 0; width: 100%; height: auto; padding: 9px 11px; border-left: 0; border-bottom: 1px solid var(--line); }
+      .brand { padding: 2px 4px 8px; }
+      .brand-mark { width: 31px; height: 31px; border-radius: 10px; font-size: 16px; }
+      .brand strong { font-size: 13px; }
+      .brand small, .sidebar-footer, .nav-label { display: none; }
+      .nav { display: flex; overflow-x: auto; gap: 5px; padding-bottom: 2px; }
+      .nav button { min-width: max-content; padding: 8px 10px; font-size: 11px; }
+      .nav-icon { width: auto; font-size: 14px; }
+      .main { padding: 20px 12px 40px; }
+      .topbar { align-items: flex-start; flex-direction: column; margin-bottom: 20px; }
+      .top-actions { width: 100%; justify-content: flex-end; }
+      .two-col, .settings { grid-template-columns: 1fr; }
+      .hero { align-items: flex-start; padding: 19px; }
+      .hero-emoji { display: none; }
+      .table { overflow-x: auto; }
+      .table-row { min-width: 650px; }
+      .inline-form { grid-template-columns: 1fr 1fr; }
+      .inline-form button { grid-column: span 2; }
+    }
+    @media (max-width: 480px) {
+      .stats, .cards-grid, .habit-grid { grid-template-columns: 1fr; }
+      .page-title { align-items: flex-start; flex-direction: column; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .search, .filter { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">✓</div>
+        <div><strong>إنجازك اليومي</strong><small>مساحتك للإنتاجية</small></div>
+      </div>
+      <div class="nav-label">الرئيسية</div>
+      <nav class="nav">
+        <button class="active" data-view="dashboard"><span class="nav-icon">⌂</span>نظرة عامة</button>
+        <button data-view="tasks"><span class="nav-icon">✓</span>المهام اليومية</button>
+        <button data-view="spaces"><span class="nav-icon">▦</span>المساحات</button>
+      </nav>
+      <div class="nav-label">الإنتاجية</div>
+      <nav class="nav">
+        <button data-view="goals"><span class="nav-icon">◎</span>الأهداف</button>
+        <button data-view="habits"><span class="nav-icon">↻</span>العادات</button>
+        <button data-view="study"><span class="nav-icon">▤</span>خطة الدراسة</button>
+        <button data-view="events"><span class="nav-icon">◷</span>الأحداث</button>
+      </nav>
+      <div class="nav-label">المحتوى</div>
+      <nav class="nav">
+        <button data-view="links"><span class="nav-icon">↗</span>الروابط</button>
+        <button data-view="notifications"><span class="nav-icon">◉</span>الإعلانات</button>
+      </nav>
+      <div class="nav-label">النظام</div>
+      <nav class="nav">
+        <button data-view="settings"><span class="nav-icon">⚙</span>التخصيص</button>
+        <button data-view="admin"><span class="nav-icon">▣</span>الإدارة</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip"><span class="avatar">م</span><div><strong>محمد أحمد</strong><small>حساب شخصي</small></div></div>
+        <button class="button soft" id="switch-account">تجربة تبديل الحساب</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="view-title">نظرة عامة</h1>
+          <p id="today-label">الجمعة، 11 سبتمبر 2026 — خطتك في مكان واحد</p>
+        </div>
+        <div class="top-actions">
+          <input class="search" id="global-search" type="search" placeholder="بحث في التطبيق..." aria-label="بحث">
+          <button class="icon-btn" id="theme-toggle" title="تبديل السمة">☾</button>
+          <button class="icon-btn" id="quick-add" title="إضافة مهمة">＋</button>
+        </div>
+      </header>
+
+      <section class="page active" data-page="dashboard">
+        <div class="hero">
+          <div><h2>صباح الإنجاز يا محمد</h2><p>لديك 6 مهام اليوم. ابدأ بالأهم، والباقي سيأتي خطوة بخطوة.</p></div>
+          <div class="hero-emoji">☀️</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-top"><span>مهام اليوم</span><span>✓</span></div><strong id="stat-total">8</strong><small>+2 عن أمس</small></div>
+          <div class="stat"><div class="stat-top"><span>تم الإنجاز</span><span>◉</span></div><strong id="stat-done">3</strong><small>37.5% من اليوم</small></div>
+          <div class="stat"><div class="stat-top"><span>الأهداف النشطة</span><span>◎</span></div><strong>4</strong><small>هدفان يقتربان</small></div>
+          <div class="stat"><div class="stat-top"><span>استمرارية العادات</span><span>↻</span></div><strong>12</strong><small>يومًا متواصلًا</small></div>
+        </div>
+        <div class="two-col">
+          <article class="card">
+            <div class="card-head"><div><h3>خطة اليوم</h3><p>المهام مرتبة حسب الأولوية والوقت</p></div><button class="link-button" data-go="tasks">عرض الكل ←</button></div>
+            <div class="task-list" id="dashboard-tasks"></div>
+          </article>
+          <article class="card">
+            <div class="card-head"><div><h3>الأهداف الحالية</h3><p>تابع تقدمك في أهم ما تريد</p></div><button class="link-button" data-go="goals">كل الأهداف ←</button></div>
+            <div class="goal-row"><div class="goal-info">إطلاق النسخة الأولى <span>72%</span></div><div class="progress"><i style="width:72%"></i></div></div>
+            <div class="goal-row"><div class="goal-info">قراءة 12 كتابًا <span>50%</span></div><div class="progress"><i style="width:50%"></i></div></div>
+            <div class="goal-row"><div class="goal-info">تعلم الإنجليزية <span>36%</span></div><div class="progress"><i style="width:36%"></i></div></div>
+          </article>
+        </div>
+        <div class="two-col" style="margin-top:16px">
+          <article class="card"><div class="card-head"><div><h3>الأحداث القادمة</h3><p>لا تفوّت مواعيدك المهمة</p></div><button class="link-button" data-go="events">التقويم ←</button></div><div class="event-list"><div class="event"><div class="event-date"><b>14</b><small>سبتمبر</small></div><div><strong>تسليم خطة المشروع</strong><span>بعد 3 أيام · مساحة INV</span></div></div><div class="event"><div class="event-date"><b>20</b><small>سبتمبر</small></div><div><strong>اختبار اللغة الإنجليزية</strong><span>بعد 9 أيام · الدراسة</span></div></div></div></article>
+          <article class="card"><div class="card-head"><div><h3>توزيع يومك</h3><p>حسب المساحات</p></div><span class="tag">8 مهام</span></div><div class="goal-row"><div class="goal-info">INV <span>4 مهام</span></div><div class="progress"><i style="width:50%"></i></div></div><div class="goal-row"><div class="goal-info">BR <span>2 مهمتان</span></div><div class="progress"><i style="width:25%;background:#d29a2e"></i></div></div><div class="goal-row"><div class="goal-info">Self <span>2 مهمتان</span></div><div class="progress"><i style="width:25%;background:#956fbd"></i></div></div></div>
+        </div>
+      </section>
+
+      <section class="page" data-page="tasks">
+        <div class="page-title"><div><h2>المهام اليومية</h2><p>أنشئ مهامك، حدد أولوياتك، ونفّذ يومك بوضوح.</p></div><button class="button primary" id="add-task-btn">＋ إضافة مهمة</button></div>
+        <div class="card form-card" id="task-form-card" hidden><form class="inline-form" id="task-form"><input id="new-task-title" placeholder="عنوان المهمة" required><select id="new-task-space"><option>INV</option><option>BR</option><option>Qaff</option><option>Wootz</option><option>Self</option></select><select id="new-task-priority"><option value="high">أولوية عالية</option><option value="medium" selected>متوسطة</option><option value="low">منخفضة</option></select><button class="button primary">حفظ المهمة</button></form></div>
+        <div class="toolbar"><input class="search" id="task-search" placeholder="ابحث في مهام اليوم..."><select class="filter" id="task-filter"><option value="all">كل الحالات</option><option value="open">المتبقية</option><option value="done">المكتملة</option></select><button class="button soft" id="today-btn">اليوم 11 سبتمبر</button></div>
+        <div class="table"><div class="table-row table-head"><span>المهمة</span><span>المساحة</span><span>الأولوية</span><span>الوقت</span><span>إجراء</span></div><div id="full-task-list"></div></div>
+      </section>
+
+      <section class="page" data-page="spaces">
+        <div class="page-title"><div><h2>المساحات</h2><p>قسّم مسؤولياتك بين العمل، المشاريع، وحياتك الشخصية.</p></div><button class="button primary" id="add-space-btn">＋ مساحة جديدة</button></div>
+        <div class="cards-grid" id="spaces-grid"></div>
+      </section>
+
+      <section class="page" data-page="goals">
+        <div class="page-title"><div><h2>الأهداف</h2><p>حوّل ما تريده إلى تقدم يمكن رؤيته وقياسه.</p></div><button class="button primary" id="goal-btn">＋ هدف جديد</button></div>
+        <div class="cards-grid">
+          <article class="card goal-card"><h3>إطلاق النسخة الأولى</h3><p>إنهاء المنتج وتجهيزه لأول مستخدمين.</p><div class="progress"><i style="width:72%"></i></div><div class="goal-foot"><span>72% مكتمل</span><span>30 سبتمبر 2026</span></div></article>
+          <article class="card goal-card"><h3>قراءة 12 كتابًا</h3><p>بناء عادة قراءة منتظمة خلال السنة.</p><div class="progress"><i style="width:50%;background:#d29a2e"></i></div><div class="goal-foot"><span>6 من 12 كتابًا</span><span>31 ديسمبر 2026</span></div></article>
+          <article class="card goal-card"><h3>تعلم الإنجليزية</h3><p>الوصول إلى مستوى محادثة أفضل.</p><div class="progress"><i style="width:36%;background:#956fbd"></i></div><div class="goal-foot"><span>36% مكتمل</span><span>15 نوفمبر 2026</span></div></article>
+          <article class="card goal-card"><h3>الرياضة 3 مرات أسبوعيًا</h3><p>الحفاظ على نشاط ثابت وصحي.</p><div class="progress"><i style="width:64%;background:#4c9cc0"></i></div><div class="goal-foot"><span>8 أسابيع</span><span>مستمر</span></div></article>
+        </div>
+      </section>
+
+      <section class="page" data-page="habits">
+        <div class="page-title"><div><h2>العادات</h2><p>النتائج الكبيرة تبدأ بأفعال صغيرة تتكرر.</p></div><button class="button primary" id="habit-btn">＋ عادة جديدة</button></div>
+        <div class="habit-grid"><article class="card habit-card"><div class="habit-icon">💧</div><h3>شرب الماء</h3><p>كل يوم · آخر إنجاز اليوم</p><div class="streak">🔥 12 يومًا متواصلًا</div></article><article class="card habit-card"><div class="habit-icon">📖</div><h3>قراءة 20 دقيقة</h3><p>كل يوم · آخر إنجاز أمس</p><div class="streak">🔥 7 أيام متواصلة</div></article><article class="card habit-card"><div class="habit-icon">🏃</div><h3>المشي والرياضة</h3><p>أسبوعيًا · 3 مرات</p><div class="streak">🔥 4 أسابيع</div></article><article class="card habit-card"><div class="habit-icon">🧘</div><h3>التأمل</h3><p>كل يوم · آخر إنجاز اليوم</p><div class="streak">🔥 5 أيام متواصلة</div></article></div>
+      </section>
+
+      <section class="page" data-page="study">
+        <div class="page-title"><div><h2>خطة الدراسة</h2><p>المواد والواجبات والاختبارات في مكان واحد.</p></div><button class="button primary" id="study-btn">＋ عنصر دراسي</button></div>
+        <div class="card"><div class="card-head"><div><h3>الأسبوع الحالي</h3><p>11 — 17 سبتمبر 2026</p></div><span class="tag">4 عناصر</span></div><div class="study-list"><div class="study-item"><div class="study-type">📚</div><div><h3>مراجعة قواعد اللغة</h3><p>اللغة الإنجليزية · اليوم</p></div><span class="tag">مراجعة</span></div><div class="study-item"><div class="study-type">📝</div><div><h3>تسليم البحث النهائي</h3><p>مهارات البحث · 13 سبتمبر</p></div><span class="tag">واجب</span></div><div class="study-item"><div class="study-type">🎓</div><div><h3>اختبار الوحدة الثالثة</h3><p>اللغة الإنجليزية · 20 سبتمبر</p></div><span class="tag">اختبار</span></div><div class="study-item"><div class="study-type">📘</div><div><h3>قراءة الفصل الرابع</h3><p>إدارة الأعمال · 16 سبتمبر</p></div><span class="tag">مادة</span></div></div></div>
+      </section>
+
+      <section class="page" data-page="events">
+        <div class="page-title"><div><h2>الأحداث والتواريخ</h2><p>تذكّر المواعيد المهمة مع عدّ تنازلي واضح.</p></div><button class="button primary" id="event-btn">＋ حدث جديد</button></div>
+        <div class="two-col"><article class="card"><div class="card-head"><div><h3>الأحداث القادمة</h3><p>مرتبة حسب الموعد</p></div></div><div class="event-list"><div class="event"><div class="event-date"><b>14</b><small>سبتمبر</small></div><div><strong>تسليم خطة المشروع</strong><span>متبقي 3 أيام · INV</span></div><span class="tag">قريبًا</span></div><div class="event"><div class="event-date"><b>20</b><small>سبتمبر</small></div><div><strong>اختبار اللغة الإنجليزية</strong><span>متبقي 9 أيام · الدراسة</span></div></div><div class="event"><div class="event-date"><b>30</b><small>سبتمبر</small></div><div><strong>موعد إطلاق النسخة الأولى</strong><span>متبقي 19 يومًا · الهدف</span></div></div></div></article><article class="card"><div class="card-head"><div><h3>هذا الشهر</h3><p>ملخص زمني</p></div></div><div class="goal-row"><div class="goal-info">أحداث مكتملة <span>2</span></div><div class="progress"><i style="width:40%"></i></div></div><div class="goal-row"><div class="goal-info">أحداث قادمة <span>5</span></div><div class="progress"><i style="width:70%;background:#d29a2e"></i></div></div></article></div>
+      </section>
+
+      <section class="page" data-page="links">
+        <div class="page-title"><div><h2>الروابط</h2><p>احتفظ بالمصادر المهمة بجانب مساحاتك ومهامك.</p></div><button class="button primary" id="link-btn">＋ رابط جديد</button></div>
+        <div class="card"><div class="card-head"><div><h3>روابط مساحاتك</h3><p>الوصول السريع إلى أدواتك وملفاتك</p></div><select class="filter"><option>كل المساحات</option><option>INV</option><option>BR</option><option>Self</option></select></div><div class="link-list"><div class="link-card"><div><strong>لوحة المشروع</strong><span>https://workspace.example.com/inv</span></div><span class="tag">INV</span></div><div class="link-card"><div><strong>ملف الميزانية</strong><span>https://drive.example.com/budget</span></div><span class="tag">BR</span></div><div class="link-card"><div><strong>خطة التعلم</strong><span>https://notes.example.com/study</span></div><span class="tag">Self</span></div></div></div>
+      </section>
+
+      <section class="page" data-page="notifications">
+        <div class="page-title"><div><h2>الإعلانات</h2><p>آخر الأخبار والتنبيهات داخل التطبيق.</p></div><span class="tag">3 إعلانات جديدة</span></div>
+        <div class="notice-list"><article class="notice-card"><h3>مرحبًا بك في إنجازك اليومي</h3><p>ابدأ بتقسيم يومك إلى مهام صغيرة، وحدد وقتًا واقعيًا لكل مهمة. يمكنك تخصيص لوحة التحكم من قسم التخصيص.</p><small>منذ يومين · إدارة التطبيق</small></article><article class="notice-card"><h3>تحسينات جديدة في خطة اليوم</h3><p>أصبحت الأولوية ووقت البداية والمدة ظاهرة مباشرة داخل بطاقات المهام، مع دعم أفضل للسحب والإفلات.</p><small>منذ 5 أيام · إدارة التطبيق</small></article><article class="notice-card"><h3>نصيحة اليوم</h3><p>ابدأ بمهمة واحدة مدتها 15 دقيقة. إنجاز البداية يساعدك على الاستمرار لبقية اليوم.</p><small>منذ أسبوع · إنجازك اليومي</small></article></div>
+      </section>
+
+      <section class="page" data-page="settings">
+        <div class="page-title"><div><h2>التخصيص والإعدادات</h2><p>اجعل تجربة إنجازك اليومي مناسبة لطريقتك.</p></div><button class="button primary" id="save-settings">حفظ التغييرات</button></div>
+        <div class="settings"><article class="card"><div class="card-head"><div><h3>لوحة الألوان</h3><p>اختر السمة التي تناسبك</p></div></div><div class="cards-grid" style="grid-template-columns:repeat(2,1fr)"><button class="button soft" data-palette="green">أخضر هادئ</button><button class="button" data-palette="blue">أزرق عملي</button><button class="button" data-palette="violet">بنفسجي</button><button class="button" data-palette="gold">ذهبي</button></div></article><article class="card"><div class="card-head"><div><h3>تفضيلات التطبيق</h3><p>إعدادات العرض والإشعارات</p></div></div><div class="setting-list"><div class="setting"><div><strong>إظهار المهام المكتملة</strong><span>اعرض المهام بعد إنجازها في القائمة</span></div><button class="switch on"><i></i></button></div><div class="setting"><div><strong>تذكير المهام المتأخرة</strong><span>تنبيه داخل التطبيق عند تجاوز الموعد</span></div><button class="switch on"><i></i></button></div><div class="setting"><div><strong>عرض الأقسام في لوحة البداية</strong><span>الأهداف والأحداث والإحصائيات</span></div><button class="switch on"><i></i></button></div></div></article></div>
+      </section>
+
+      <section class="page" data-page="admin">
+        <div class="page-title"><div><h2>لوحة الإدارة</h2><p>ملخص استخدام التطبيق وإدارة الإعلانات العامة.</p></div><span class="tag">المدير الأساسي</span></div>
+        <div class="stats"><div class="stat"><div class="stat-top"><span>المستخدمون</span><span>●</span></div><strong>128</strong><small>+14 هذا الشهر</small></div><div class="stat"><div class="stat-top"><span>إجمالي المهام</span><span>✓</span></div><strong>4,862</strong><small>68% مكتملة</small></div><div class="stat"><div class="stat-top"><span>المساحات</span><span>▦</span></div><strong>356</strong><small>متوسط 2.8 لكل مستخدم</small></div><div class="stat"><div class="stat-top"><span>نشطون خلال 30 يومًا</span><span>↗</span></div><strong>91</strong><small>71% من الحسابات</small></div></div>
+        <article class="card"><div class="card-head"><div><h3>توزيع أنواع الحسابات</h3><p>حسب اختيار onboarding</p></div></div><div class="goal-row"><div class="goal-info">موظف <span>52 مستخدمًا</span></div><div class="progress"><i style="width:41%"></i></div></div><div class="goal-row"><div class="goal-info">طالب <span>38 مستخدمًا</span></div><div class="progress"><i style="width:30%;background:#d29a2e"></i></div></div><div class="goal-row"><div class="goal-info">مستقل <span>24 مستخدمًا</span></div><div class="progress"><i style="width:19%;background:#956fbd"></i></div></div><div class="goal-row"><div class="goal-info">شخصي <span>14 مستخدمًا</span></div><div class="progress"><i style="width:11%;background:#4c9cc0"></i></div></div></article>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const taskData = [
+      { id: 1, title: 'مراجعة خطة المشروع وإرسال الملاحظات', space: 'INV', priority: 'high', time: '09:00', done: true },
+      { id: 2, title: 'متابعة طلب العميل', space: 'BR', priority: 'high', time: '10:30', done: false },
+      { id: 3, title: 'إنهاء عرض المنتج', space: 'INV', priority: 'medium', time: '12:00', done: false },
+      { id: 4, title: 'قراءة 20 صفحة من الكتاب', space: 'Self', priority: 'low', time: '18:00', done: true },
+      { id: 5, title: 'مراجعة قواعد اللغة الإنجليزية', space: 'Qaff', priority: 'medium', time: '20:00', done: false },
+      { id: 6, title: 'تحديث قائمة المصروفات', space: 'Wootz', priority: 'low', time: '21:00', done: false }
+    ];
+    const priorityNames = { high: 'عالية', medium: 'متوسطة', low: 'منخفضة' };
+    const viewNames = { dashboard: 'نظرة عامة', tasks: 'المهام اليومية', spaces: 'المساحات', goals: 'الأهداف', habits: 'العادات', study: 'خطة الدراسة', events: 'الأحداث والتواريخ', links: 'الروابط', notifications: 'الإعلانات', settings: 'التخصيص والإعدادات', admin: 'لوحة الإدارة' };
+    let nextId = 7;
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+    function toast(message) {
+      const element = $('#toast');
+      element.textContent = message;
+      element.classList.add('show');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => element.classList.remove('show'), 2600);
+    }
+    function taskMarkup(task, compact = false) {
+      return `<div class="${compact ? 'task-row' : 'table-row'} ${task.done ? 'done' : ''}" data-task-id="${task.id}">
+        ${compact ? `<input class="check" type="checkbox" ${task.done ? 'checked' : ''} aria-label="إكمال المهمة">` : `<span><input class="check" type="checkbox" ${task.done ? 'checked' : ''} aria-label="إكمال المهمة"></span>`}
+        <span class="${compact ? '' : 'table-title'} task-name">${task.title}<small class="meta">${compact ? `<span class="tag">${task.space}</span>` : ''}</small></span>
+        ${compact ? `<span class="meta"><span class="tag">${task.space}</span><span class="priority-${task.priority}">${priorityNames[task.priority]}</span><span>${task.time}</span></span>` : `<span class="tag">${task.space}</span><span class="priority-${task.priority}">${priorityNames[task.priority]}</span><span>${task.time}</span><span class="row-actions"><button class="mini-btn delete" data-delete="${task.id}">حذف</button></span>`}
+      </div>`;
+    }
+    function renderTasks() {
+      const search = ($('#task-search')?.value || '').toLowerCase();
+      const filter = $('#task-filter')?.value || 'all';
+      const filtered = taskData.filter((task) => {
+        const matchesText = task.title.toLowerCase().includes(search) || task.space.toLowerCase().includes(search);
+        const matchesFilter = filter === 'all' || (filter === 'done' ? task.done : !task.done);
+        return matchesText && matchesFilter;
+      });
+      $('#dashboard-tasks').innerHTML = taskData.slice(0, 4).map((task) => taskMarkup(task, true)).join('');
+      $('#full-task-list').innerHTML = filtered.length ? filtered.map((task) => taskMarkup(task)).join('') : '<div class="empty">لا توجد مهام مطابقة.</div>';
+      $('#stat-total').textContent = taskData.length + 2;
+      $('#stat-done').textContent = taskData.filter((task) => task.done).length;
+      $$('.check').forEach((checkbox) => checkbox.addEventListener('change', (event) => {
+        const row = event.target.closest('[data-task-id]');
+        const task = taskData.find((item) => item.id === Number(row.dataset.taskId));
+        if (task) { task.done = event.target.checked; renderTasks(); toast(task.done ? 'تم إنجاز المهمة' : 'أعيدت المهمة إلى القائمة'); }
+      }));
+      $$('[data-delete]').forEach((button) => button.addEventListener('click', () => {
+        const index = taskData.findIndex((task) => task.id === Number(button.dataset.delete));
+        if (index >= 0) { taskData.splice(index, 1); renderTasks(); toast('تم حذف المهمة'); }
+      }));
+    }
+    function showView(view) {
+      $$('.page').forEach((page) => page.classList.toggle('active', page.dataset.page === view));
+      $$('.nav button').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+      $('#view-title').textContent = viewNames[view];
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderTasks();
+    }
+    function buildSpaces() {
+      const spaces = [
+        ['INV', 'المشاريع والمهام الرئيسية', '4 مهام اليوم', '#2e8d77'],
+        ['BR', 'العملاء والعلاقات', '2 مهمتان اليوم', '#d29a2e'],
+        ['Qaff', 'التعلم والدراسة', '1 مهمة اليوم', '#956fbd'],
+        ['Wootz', 'الإدارة والمصروفات', '1 مهمة اليوم', '#4c9cc0'],
+        ['Self', 'الحياة الشخصية', '2 مهمتان اليوم', '#bd6f68']
+      ];
+      $('#spaces-grid').innerHTML = spaces.map(([name, description, count, color]) => `<article class="card space-card"><i class="space-color" style="background:${color}"></i><h3>${name}</h3><p>${description}</p><footer><span>${count}</span><button class="link-button" onclick="toast('تم فتح مساحة ${name}')">فتح المساحة ←</button></footer></article>`).join('');
+    }
+    $$('.nav button').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
+    $$('[data-go]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.go)));
+    $('#task-search').addEventListener('input', renderTasks);
+    $('#task-filter').addEventListener('change', renderTasks);
+    $('#add-task-btn').addEventListener('click', () => { $('#task-form-card').hidden = !$('#task-form-card').hidden; $('#new-task-title').focus(); });
+    $('#quick-add').addEventListener('click', () => { showView('tasks'); $('#task-form-card').hidden = false; $('#new-task-title').focus(); });
+    $('#task-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const title = $('#new-task-title').value.trim();
+      if (!title) return;
+      taskData.push({ id: nextId++, title, space: $('#new-task-space').value, priority: $('#new-task-priority').value, time: 'لاحقًا', done: false });
+      event.target.reset();
+      $('#task-form-card').hidden = true;
+      renderTasks();
+      toast('تمت إضافة المهمة إلى خطة اليوم');
+    });
+    $('#theme-toggle').addEventListener('click', () => {
+      const dark = document.documentElement.dataset.theme === 'dark';
+      document.documentElement.dataset.theme = dark ? '' : 'dark';
+      $('#theme-toggle').textContent = dark ? '☾' : '☀';
+    });
+    $('#global-search').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && event.target.value.trim()) { showView('tasks'); $('#task-search').value = event.target.value.trim(); renderTasks(); }
+    });
+    $('#switch-account').addEventListener('click', () => toast('تجربة انتقال آمنة بين الحسابات — لا تظهر بيانات الحساب السابق'));
+    ['goal-btn', 'habit-btn', 'study-btn', 'event-btn', 'link-btn', 'add-space-btn'].forEach((id) => $('#' + id)?.addEventListener('click', () => toast('هذه نافذة إضافة جديدة في التطبيق الكامل')));
+    $('#save-settings').addEventListener('click', () => toast('تم حفظ إعدادات العرض'));
+    $$('.switch').forEach((button) => button.addEventListener('click', () => button.classList.toggle('on')));
+    $$('[data-palette]').forEach((button) => button.addEventListener('click', () => {
+      const palette = button.dataset.palette;
+      const colors = { green: ['#2e8d77', '#226c5b'], blue: ['#3478b9', '#245783'], violet: ['#956fbd', '#684b88'], gold: ['#b7862d', '#80621f'] }[palette];
+      document.documentElement.style.setProperty('--primary', colors[0]);
+      document.documentElement.style.setProperty('--primary-2', colors[1]);
+      toast('تم تغيير لوحة الألوان');
+    }));
+    buildSpaces();
+    renderTasks();
+  </script>
+</body>
+</html>

@@ -42,3 +42,17 @@ mtime_ms = 1789145105885
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/b4ea78ec-ca4b-40c3-b463-fd4b04246928/c35b6092-4577-4513-b34b-86121aa1cc41"
 storage_version_token = "1789145312318659"
 content_type = "text/html"
+
+[[outputs]]
+id = "iEugLmLmOSeeTsYuVBY7T"
+uri = "file://daily-tasks-full-preview.html"
+type = "text"
+title = "تحميل معاينة التطبيق الكاملة HTML"
+description = "ملف HTML واحد يفتح مباشرة ويعرض جميع أقسام إنجازك اليومي بشكل تفاعلي وبدون الحاجة إلى Laravel أو تسجيل دخول."
+logical_id = "c2c78011-86e3-4bbd-ac90-37ba6554fdd0"
+content_hash = "sha256:e2442ab731e12d61057ff8d437408df7ec739396b9a914d4806c565230fa7cb6"
+size = 43264
+mtime_ms = 1789145472950
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/c2c78011-86e3-4bbd-ac90-37ba6554fdd0/37f740a0-fbd8-4dbd-a595-0946e13a009f"
+storage_version_token = "1789145484980847"
+content_type = "text/html"
