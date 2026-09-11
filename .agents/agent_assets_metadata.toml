@@ -70,3 +70,17 @@ mtime_ms = 1789145735171
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/afaa38f1-3520-41a5-b52a-9e4fb875a279/1f31a352-11d7-4af7-93ef-9a7eb98b7e2a"
 storage_version_token = "1789145739890383"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "cjo7tfzcq2s3C0guZSVcM"
+uri = "file://daily-tasks-manager-current.zip"
+type = "unspecified"
+title = "تحميل التطبيق الحالي الفعلي"
+description = "نسخة البناء الأصلية من تطبيق إنجازك اليومي الحالي. فك الضغط ثم افتح مجلد daily-tasks-manager-current وافتح index.html."
+logical_id = "5016b266-4229-4b3f-b733-99b38f82c03f"
+content_hash = "sha256:5f19fd516eb6bacf8e01e4167cb98c33e473449860283ed48ef1a1020be30d8f"
+size = 224799
+mtime_ms = 1789145876387
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/5016b266-4229-4b3f-b733-99b38f82c03f/c54a853d-06b1-4de7-b281-fd747a83caee"
+storage_version_token = "1789145881817251"
+content_type = "application/octet-stream"
