@@ -89,6 +89,15 @@ function stripBase(path: string): string {
 }
 
 function HomeRedirect() {
+  const { isLoaded } = useUser();
+
+  // The public landing page does not need an authenticated Clerk session.
+  // Render it while Clerk initializes so a slow/blocked auth request does not
+  // look like a broken blank page.
+  if (!isLoaded) {
+    return <Landing />;
+  }
+
   return (
     <>
       <Show when="signed-in"><Redirect to="/app" /></Show>
@@ -98,6 +107,12 @@ function HomeRedirect() {
 }
 
 function AppRoute() {
+  const { isLoaded } = useUser();
+
+  if (!isLoaded) {
+    return <AccountLoadingScreen />;
+  }
+
   return (
     <>
       <Show when="signed-in">
@@ -132,10 +147,18 @@ function SignUpPage() {
 function AccountLoadingScreen() {
   return (
     <div
-      className="min-h-[100dvh] task-shell noise-overlay"
+      className="min-h-[100dvh] task-shell noise-overlay flex items-center justify-center px-6"
       dir="rtl"
       data-testid="status-account-loading"
-    />
+    >
+      <div className="rounded-3xl border border-border bg-card/85 px-8 py-7 text-center shadow-xl shadow-primary/10 backdrop-blur">
+        <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        <p className="text-base font-extrabold text-foreground">جارٍ تجهيز مساحتك</p>
+        <p className="mt-2 text-sm font-semibold text-muted-foreground">
+          يتم التحقق من جلسة الحساب، انتظر لحظات.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -143,10 +166,6 @@ function AccountQueryClientProvider({ children }: { children: ReactNode }) {
   const { isLoaded, user } = useUser();
   const accountId = isLoaded ? user?.id ?? 'signed-out' : 'loading';
   const accountQueryClient = useMemo(createAccountQueryClient, [accountId]);
-
-  if (!isLoaded) {
-    return <AccountLoadingScreen />;
-  }
 
   return (
     <QueryClientProvider key={accountId} client={accountQueryClient}>
