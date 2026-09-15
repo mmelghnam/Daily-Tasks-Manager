@@ -84,3 +84,31 @@ mtime_ms = 1789145876387
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/5016b266-4229-4b3f-b733-99b38f82c03f/c54a853d-06b1-4de7-b281-fd747a83caee"
 storage_version_token = "1789145881817251"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "awQaxHUfMbM4jxroBgkVA"
+uri = "file://artifacts/daily-tasks-manager/public/favicon.svg"
+type = "image"
+title = "Favicon — إنجازك اليومي"
+description = "أيقونة الموقع الحالية بصيغة SVG، مقاس 180×180."
+logical_id = "c73a5b0b-0ba1-4a31-8965-1e37ec8cd2f2"
+content_hash = "sha256:c928f90d24264ff005a63389663db34864cf3b634674392dad80783547ddea0c"
+size = 480
+mtime_ms = 1788859599365
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/c73a5b0b-0ba1-4a31-8965-1e37ec8cd2f2/034f0a31-4f75-4dfa-a7bb-decded98a35a"
+storage_version_token = "1789485463799346"
+content_type = "image/svg+xml"
+
+[[outputs]]
+id = "PBLkPYDyus1RrRoqjAUPH"
+uri = "file://artifacts/daily-tasks-manager/public/logo.svg"
+type = "image"
+title = "Logo — إنجازك اليومي"
+description = "الشعار الحالي بصيغة SVG، مقاس 96×96."
+logical_id = "60635bee-abc1-43fb-bfad-24c01ed76490"
+content_hash = "sha256:d8a156c54e073ed111cc1e4eb1d44525dbcc3f2153c8ef5637277d5be45ef91b"
+size = 308
+mtime_ms = 1788862688483
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:7a2d9eae-6502-42dc-b2c3-5ea429d86722/60635bee-abc1-43fb-bfad-24c01ed76490/9b833bac-e806-4691-bc67-5d157e79135b"
+storage_version_token = "1789485464361411"
+content_type = "image/svg+xml"
