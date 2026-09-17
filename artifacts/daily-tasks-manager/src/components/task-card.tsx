@@ -6,6 +6,7 @@ import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
   copyTask,
+  useCreateTask,
   useDeleteTask,
   useUpdateTask,
 } from '@workspace/api-client-react';
@@ -13,6 +14,8 @@ import type { Task } from '@workspace/api-client-react';
 import { TaskForm } from '@/components/task-form';
 import { FollowUpList } from '@/components/follow-up-list';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ToastAction } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 
 interface TaskCardProps {
   task: Task;
@@ -112,6 +115,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
   const updatedTime = formatUpdatedTime(task.updatedAt);
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
+  const createTask = useCreateTask();
   const deleteTask = useDeleteTask();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -258,11 +262,44 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
     setDeleteOpen(true);
   };
 
+  const restoreDeletedTask = () => {
+    createTask.mutate({
+      data: {
+        taskDate: normalizedTaskDate,
+        category: task.category,
+        title: task.title,
+        notes: task.notes ?? undefined,
+        priority: task.priority,
+        startTime: task.startTime ?? undefined,
+        durationMinutes: task.durationMinutes ?? undefined,
+        recurrence: task.recurrence ?? undefined,
+        dueDate: task.dueDate ?? undefined,
+        subtasks,
+        completed: task.completed,
+        links,
+        followUps,
+      },
+    }, {
+      onSuccess: () => {
+        refresh();
+        toast({ title: 'تم استرجاع المهمة', description: `عادت «${task.title}» إلى يومك.` });
+      },
+      onError: () => {
+        toast({ variant: 'destructive', title: 'تعذر الاسترجاع', description: 'لم نتمكن من إعادة المهمة. حاول مرة أخرى.' });
+      },
+    });
+  };
+
   const confirmRemove = () => {
     deleteTask.mutate({ id: task.id }, {
       onSuccess: () => {
         refresh();
         setDeleteOpen(false);
+        toast({
+          title: 'تم حذف المهمة',
+          description: `تم حذف «${task.title}». يمكنك التراجع الآن.`,
+          action: <ToastAction altText="استرجاع المهمة" onClick={restoreDeletedTask}>تراجع</ToastAction>,
+        });
       },
     });
   };
@@ -342,7 +379,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
           <DialogHeader className="text-right">
             <DialogTitle className="flex items-center gap-2 text-xl text-destructive"><Trash2 size={19} /> حذف المهمة</DialogTitle>
             <DialogDescription className="leading-6">
-              هل تريد حذف «{task.title}» نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.
+              هل تريد حذف «{task.title}»؟ بعد الحذف سيظهر لك خيار تراجع سريع.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-start">
