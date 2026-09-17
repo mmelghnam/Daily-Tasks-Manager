@@ -128,7 +128,7 @@ export default function HomeOptimized() {
       <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px] lg:items-end">
         <div className="text-right">
           <div className="mb-2 flex items-center justify-start gap-2 text-xs font-extrabold text-muted-foreground"><CalendarDays size={15} className="text-primary"/><span>اليوم</span><span>/</span><span dir="ltr">{selectedDate}</span></div>
-          <h1 className="text-[clamp(2.35rem,5vw,4.4rem)] font-black leading-[1.05] tracking-[-0.045em]">{headlineDate(selectedDate)}</h1>
+          <h1 className="text-[clamp(2rem,4vw,3.5rem)] font-black leading-[1.08] tracking-[-0.035em]">{headlineDate(selectedDate)}</h1>
           <p className="mt-3 text-sm font-medium text-muted-foreground sm:text-base">{getDailyMessage(selectedDate)}</p>
         </div>
         <div className="flex h-[58px] items-center rounded-2xl border border-border bg-card/80 p-2 shadow-sm" dir="ltr">
@@ -138,13 +138,6 @@ export default function HomeOptimized() {
           <button onClick={() => setSelectedDate(shiftDate(selectedDate,1))} className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted"><ChevronRight size={18}/></button>
         </div>
       </section>
-
-      <div className="mb-5 grid h-[58px] grid-cols-4 items-center rounded-2xl border border-border bg-card/75 p-2 text-sm font-black shadow-sm sm:text-base">
-        <div className="flex h-full items-center justify-center rounded-xl text-muted-foreground">عرض المهام</div>
-        <div className="flex h-full items-center justify-center rounded-xl text-muted-foreground">يومي</div>
-        <div className="flex h-full items-center justify-center rounded-xl text-muted-foreground">أسبوعي</div>
-        <div className="flex h-full items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">شهري</div>
-      </div>
 
       <div className="flex flex-col">
         {visibleSet.has('summary') && <section className="mb-6 grid gap-3 lg:grid-cols-[1.15fr_0.85fr_0.85fr]" style={sectionStyle('summary')}>

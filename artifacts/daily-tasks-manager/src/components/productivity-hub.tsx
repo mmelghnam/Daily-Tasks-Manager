@@ -57,16 +57,22 @@ function recentDays(today: string, count = 7) {
 
 export function ProductivityHub() {
   const queryClient = useQueryClient();
-  const habits = useListHabits({ query: { queryKey: getListHabitsQueryKey(), staleTime: 30_000, refetchOnWindowFocus: true } });
+  const today = useLiveToday();
+  const habits = useListHabits({ query: { queryKey: [...getListHabitsQueryKey(), today], staleTime: 0, refetchOnWindowFocus: true } });
   const createHabit = useCreateHabit();
   const checkHabit = useCheckHabit();
   const deleteHabit = useDeleteHabit();
   const [habitName, setHabitName] = useState('');
   const [habitError, setHabitError] = useState('');
-  const today = useLiveToday();
+  const [checkingHabitId, setCheckingHabitId] = useState<number | null>(null);
   const week = useMemo(() => recentDays(today), [today]);
   const items = Array.isArray(habits.data) ? habits.data : [];
   const refresh = () => void queryClient.invalidateQueries({ queryKey: getListHabitsQueryKey() });
+
+  useEffect(() => {
+    setCheckingHabitId(null);
+    void habits.refetch();
+  }, [today]);
 
   const doneCount = items.filter((habit) => {
     const dates = Array.isArray(habit.completedDates) ? habit.completedDates : [];
@@ -84,8 +90,16 @@ export function ProductivityHub() {
   };
 
   const toggleToday = (habit: Habit, doneToday: boolean) => {
+    if (checkingHabitId === habit.id) return;
     if (!doneToday) playHabitSound();
-    checkHabit.mutate({ id: habit.id, data: { date: today } }, { onSuccess: refresh });
+    setCheckingHabitId(habit.id);
+    checkHabit.mutate(
+      { id: habit.id, data: { date: today } },
+      {
+        onSuccess: refresh,
+        onSettled: () => setCheckingHabitId((current) => current === habit.id ? null : current),
+      },
+    );
   };
 
   return <section className="mb-5 rounded-3xl border border-card-border bg-card/70 p-4" dir="rtl">
@@ -105,10 +119,11 @@ export function ProductivityHub() {
         const doneToday = completedSet.has(today);
         const streak = calculateCurrentHabitStreak(normalized, today);
         const weekDone = week.filter((day) => completedSet.has(day)).length;
+        const isChecking = checkingHabitId === habit.id;
         return <div key={habit.id} className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 transition ${doneToday ? 'border-secondary/50 bg-secondary/[0.08]' : 'border-border bg-background/70'}`}>
-          <button type="button" disabled={checkHabit.isPending} onClick={() => toggleToday(habit, doneToday)} className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 transition ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-card hover:border-secondary/60'}`} aria-label={doneToday ? 'إلغاء إنجاز اليوم' : 'إنجاز عادة اليوم'} data-testid={`button-check-habit-${habit.id}`}><Check size={15}/></button>
+          <button type="button" disabled={isChecking} onClick={() => toggleToday(habit, doneToday)} className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 transition disabled:opacity-60 ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-card hover:border-secondary/60'}`} aria-label={doneToday ? 'إلغاء إنجاز اليوم' : 'إنجاز عادة اليوم'} data-testid={`button-check-habit-${habit.id}`}><Check size={15}/></button>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-extrabold">{habit.name}</span><span className="inline-flex shrink-0 items-center gap-1 text-xs font-black text-primary"><Flame size={12}/>{streak}</span></div>
+            <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-extrabold">{habit.name}</span><span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-black text-foreground"><Flame size={12} className="text-secondary"/>{streak}</span></div>
             <div className="mt-1 flex items-center gap-2">
               <div className="flex gap-1" aria-label="آخر سبعة أيام">{week.map((day) => <span key={day} title={day} className={`h-2 w-2 rounded-full ${completedSet.has(day) ? 'bg-secondary' : day === today ? 'bg-primary/35 ring-1 ring-primary/30' : 'bg-muted'}`}/>)}</div>
               <span className="text-[10px] font-bold text-muted-foreground">{weekDone}/7</span>
