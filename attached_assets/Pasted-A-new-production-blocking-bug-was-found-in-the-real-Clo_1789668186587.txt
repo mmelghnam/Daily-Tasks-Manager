@@ -1,0 +1,97 @@
+A new production-blocking bug was found in the real Cloudflare app.
+
+Reproduction:
+1. Sign in successfully.
+2. Use the application.
+3. Sign out.
+4. Sign in again with the same Clerk account.
+5. The app crashes and the global error boundary shows:
+
+TypeError: Cannot read properties of undefined (reading 'length')
+
+Do NOT patch only the visible line.
+
+Diagnose the complete logout -> login -> application hydration lifecycle.
+
+Requirements:
+
+1. Reproduce the bug locally/in automated tests.
+2. Use the real frontend flow and inspect the stack trace to find the exact `.length` access.
+3. Identify which value becomes undefined and WHY it is undefined after re-login.
+4. Fix the root cause at the data/API/state layer where appropriate.
+
+Audit all app initialization data including:
+- tasks
+- spaces
+- dashboard preferences
+- goals
+- habits
+- events
+- study plan
+- links
+- onboarding state
+- account/settings
+- any other collections loaded after authentication
+
+Any collection expected by the UI must have a stable contract.
+Do not allow undefined collection values where the UI expects arrays.
+
+Normalize API/client state safely, for example empty collections should resolve to [] where that is the correct semantic value.
+
+Do not blindly add optional chaining everywhere to hide backend/data-contract bugs.
+
+Also verify:
+- stale React Query/cache state after logout
+- cache clearing on logout
+- Clerk session changes
+- queries enabled before auth/session is ready
+- race conditions during login
+- user A data must not remain cached for user B
+- fresh page load while authenticated
+- hard refresh on /app
+- logout and login with the same user
+- logout and login with a different test user
+- expired/restored session behavior
+
+Add automated E2E coverage for at minimum:
+
+A. New user:
+sign in -> onboarding -> dashboard
+
+B. Existing user:
+sign in -> dashboard -> logout -> sign in again -> dashboard
+
+C. Session reload:
+sign in -> refresh browser -> application continues normally
+
+D. User switching:
+user A -> logout -> user B -> verify no stale data from user A
+
+E. Empty database/default collections:
+the UI must not crash because an optional collection is missing.
+
+The global error boundary must NOT expose raw JavaScript exceptions to the user in production.
+Show a clean Arabic error message to the user, while logging the technical stack safely for diagnostics.
+
+Run:
+- full typecheck
+- API/integration tests
+- D1 tests
+- E2E tests
+- Cloudflare production build
+- Wrangler deploy dry-run
+
+Do not deploy.
+
+Do not stop after fixing this one error.
+Rerun the full production-hardening test suite and fix any newly discovered failures.
+
+At the end report:
+1. Exact root cause of the `.length` crash
+2. Exact file and code path that caused it
+3. Fix made
+4. Tests added for logout/login/session restore
+5. Total passing tests
+6. Any remaining failing test
+7. Final commit hash
+8. READY FOR PRODUCTION DEPLOY or NOT READY FOR PRODUCTION DEPLOY
