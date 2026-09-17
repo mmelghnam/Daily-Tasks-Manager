@@ -9,19 +9,52 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+const currentDashboardSections = [
+  "dateHeader",
+  "viewMode",
+  "summary",
+  "dailyPlan",
+  "productivity",
+  "focusTools",
+  "links",
+  "taskMap",
+  "tasks",
+] as const;
+
+const currentOnlySections = new Set<string>([
+  "dateHeader",
+  "viewMode",
+  "focusTools",
+  "tasks",
+]);
+const allowedSections = new Set<string>([
+  ...defaultDashboardSections,
+  ...currentDashboardSections,
+]);
+
 function normalizeSections(value: unknown) {
-  const allowed = new Set<string>(defaultDashboardSections);
-  return Array.from(new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && allowed.has(item)) : []));
+  return Array.from(new Set(
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string" && allowedSections.has(item))
+      : [],
+  ));
+}
+
+function usesCurrentLayout(order: string[]) {
+  return order.some((section) => currentOnlySections.has(section));
 }
 
 function normalizePreferences(row?: { visibleSections: string[]; sectionOrder: string[] }, migrateLegacyVisible = false) {
   const order = normalizeSections(row?.sectionOrder);
   const visible = normalizeSections(row?.visibleSections);
-  const mergedOrder = [...order, ...defaultDashboardSections.filter((section) => !order.includes(section))];
+  const defaults = usesCurrentLayout(order)
+    ? [...currentDashboardSections]
+    : [...defaultDashboardSections];
+  const mergedOrder = [...order, ...defaults.filter((section) => !order.includes(section))];
   const isLegacyPreferences = migrateLegacyVisible && Boolean(row && !order.includes("dailyPlan"));
   return {
     visibleSections: row && Array.isArray(row.visibleSections)
-      ? (isLegacyPreferences ? [...visible, "dailyPlan"] : visible)
+      ? (isLegacyPreferences ? Array.from(new Set([...visible, "dailyPlan"])) : visible)
       : [...defaultDashboardSections],
     sectionOrder: row && Array.isArray(row.sectionOrder) ? mergedOrder : [...defaultDashboardSections],
   };
