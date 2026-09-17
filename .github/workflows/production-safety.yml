@@ -1,0 +1,54 @@
+name: Production safety
+
+on:
+  push:
+    branches:
+      - main
+      - chatgpt/session-hardening
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, tests, and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck workspace
+        run: pnpm run typecheck
+
+      - name: Run API regression tests
+        run: pnpm --filter @workspace/api-server test
+
+      - name: Run account-switch regression test
+        run: pnpm --filter @workspace/daily-tasks-manager test:account-switch
+
+      - name: Build Cloudflare production bundle
+        run: pnpm --filter @workspace/daily-tasks-manager run build:cloudflare
+
+      - name: Verify Wrangler deployment config
+        working-directory: artifacts/daily-tasks-manager
+        run: pnpm exec wrangler deploy --dry-run
