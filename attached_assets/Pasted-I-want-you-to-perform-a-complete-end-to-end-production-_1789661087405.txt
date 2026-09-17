@@ -1,0 +1,65 @@
+I want you to perform a complete end-to-end production audit of this project on Cloudflare and fix all issues you can find.
+
+Production URL:
+https://daily-tasks-manager.mm-elghnam.workers.dev
+
+The application has already been migrated from Replit hosting to:
+
+Cloudflare Workers
+Cloudflare D1
+Cloudflare Static Assets
+Clerk authentication
+
+The old PostgreSQL data is intentionally NOT being migrated. The D1 database should work as a completely fresh database.
+
+Current known issue:
+After Clerk login succeeds and the user reaches /app, the application sometimes shows:
+حدث خطأ أثناء تحميل إعدادات الحساب
+
+I do NOT want you to fix only this error. I want a full production readiness test.
+
+Please:
+
+Test the public production URL and all important routes.
+Test /, /sign-in, /app, and SPA page refreshes.
+Test Clerk authentication integration.
+Inspect all frontend → API requests after login.
+Test every API endpoint used by the current UI.
+Verify Cloudflare Worker routing and /api/* routing.
+Verify the D1 binding DB.
+Verify the D1 schema and migrations contain every table and column the app expects.
+Make the application work correctly with a completely empty D1 database.
+Existing Clerk users who have no D1 records must be automatically initialized with all required default rows/settings.
+Test creating, reading, updating, completing and deleting tasks.
+Test account/settings loading and saving.
+Check whether ADMIN_USER_ID or any other missing environment variable is required in Cloudflare production.
+Check Clerk publishable key / secret key usage and make sure no secret is exposed to the frontend.
+Check for PostgreSQL-only code that was missed during the D1 migration.
+Check for any remaining Replit-specific runtime dependencies.
+Check browser console errors, Worker/runtime errors and failed network requests.
+Check loading states and error handling.
+Run typechecks.
+Run the Cloudflare production build.
+Run Wrangler deploy dry-run using the Cloudflare Vite generated deployment config.
+
+Fix the problems you find while preserving the current UI, features and design.
+
+Do NOT migrate old data.
+Do NOT deploy to Cloudflare yourself.
+Do NOT change my existing Cloudflare database ID.
+Do NOT expose or commit secrets.
+
+Commit all necessary fixes to the existing Git repository.
+
+At the end give me a clear report containing:
+
+What you tested
+Every issue you found
+Every issue you fixed
+Files changed
+Any remaining issue you could not test
+Any Cloudflare environment variable or secret I need to add/change manually
+Exact Build command
+Exact Deploy command
+Whether D1 migrations need to be run again
+The final Git commit hash
