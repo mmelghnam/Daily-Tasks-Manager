@@ -1,16 +1,19 @@
 import { createInsertSchema } from "drizzle-zod";
-import { pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
 
-export const spacesTable = pgTable(
+export const spacesTable = sqliteTable(
   "task_spaces",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     ownerId: text("owner_id"),
     name: text("name").notNull(),
     color: text("color").notNull().default("#2e8d77"),
     description: text("description"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
   },
   (table) => ({
     ownerNameIdx: uniqueIndex("task_spaces_owner_name_idx").on(table.ownerId, table.name),

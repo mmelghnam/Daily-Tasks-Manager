@@ -1,16 +1,20 @@
-import { date, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { sqliteDateOnly } from "../sqlite-types";
 
-export const eventsTable = pgTable("countdown_events", {
-  id: serial("id").primaryKey(),
+export const eventsTable = sqliteTable("countdown_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id"),
   title: text("title").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
+  startDate: sqliteDateOnly("start_date").notNull(),
+  endDate: sqliteDateOnly("end_date").notNull(),
   color: text("color").notNull().default("#d39a2f"),
   imageUrl: text("image_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 });
 
 export const insertEventSchema = createInsertSchema(eventsTable).omit({

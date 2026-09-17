@@ -1,4 +1,6 @@
-import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { sqliteJson } from "../sqlite-types";
 
 export const defaultDashboardSections = [
   "summary",
@@ -11,9 +13,11 @@ export const defaultDashboardSections = [
 
 export type DashboardSection = (typeof defaultDashboardSections)[number];
 
-export const dashboardPreferencesTable = pgTable("dashboard_preferences", {
+export const dashboardPreferencesTable = sqliteTable("dashboard_preferences", {
   ownerId: text("owner_id").primaryKey(),
-  visibleSections: jsonb("visible_sections").$type<string[]>().notNull().default([...defaultDashboardSections]),
-  sectionOrder: jsonb("section_order").$type<string[]>().notNull().default([...defaultDashboardSections]),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  visibleSections: sqliteJson<string[]>()("visible_sections").notNull().default([...defaultDashboardSections]),
+  sectionOrder: sqliteJson<string[]>()("section_order").notNull().default([...defaultDashboardSections]),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 });

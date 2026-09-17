@@ -1,41 +1,51 @@
-import { boolean, date, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { sqliteDateOnly } from "../sqlite-types";
 
-export const goalsTable = pgTable("goals", {
-  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+export const goalsTable = sqliteTable("goals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id").notNull(),
   title: text("title").notNull(),
   target: integer("target").notNull().default(1),
   current: integer("current").notNull().default(0),
-  deadline: date("deadline", { mode: "string" }),
-  completed: boolean("completed").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deadline: sqliteDateOnly("deadline"),
+  completed: integer("completed", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 }, (table) => ({
   ownerIdx: index("goals_owner_idx").on(table.ownerId),
 }));
 
-export const habitsTable = pgTable("habits", {
-  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+export const habitsTable = sqliteTable("habits", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id").notNull(),
   name: text("name").notNull(),
   frequency: text("frequency").notNull().default("daily"),
   streak: integer("streak").notNull().default(0),
-  lastCompleted: date("last_completed", { mode: "string" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastCompleted: sqliteDateOnly("last_completed"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 }, (table) => ({
   ownerIdx: index("habits_owner_idx").on(table.ownerId),
 }));
 
-export const studyItemsTable = pgTable("study_items", {
-  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+export const studyItemsTable = sqliteTable("study_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id").notNull(),
   kind: text("kind").notNull().default("subject"),
   title: text("title").notNull(),
   subject: text("subject"),
-  itemDate: date("item_date", { mode: "string" }),
-  completed: boolean("completed").notNull().default(false),
+  itemDate: sqliteDateOnly("item_date"),
+  completed: integer("completed", { mode: "boolean" }).notNull().default(false),
   notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 }, (table) => ({
   ownerDateIdx: index("study_items_owner_date_idx").on(table.ownerId, table.itemDate),
 }));

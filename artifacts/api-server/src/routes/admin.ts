@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   CreateAdminNotificationBody,
@@ -15,12 +14,15 @@ import {
   spacesTable,
   tasksTable,
 } from "@workspace/db";
+import { getRuntimeEnv } from "@workspace/db";
 import { and, asc, count, eq, gte, isNotNull } from "drizzle-orm";
 
 const router: IRouter = Router();
 
 async function isPrimaryAdmin(userId: string) {
-  const configuredAdminId = process.env.ADMIN_USER_ID?.trim();
+  const configuredAdminId = (
+    getRuntimeEnv()?.ADMIN_USER_ID ?? process.env.ADMIN_USER_ID
+  )?.trim();
   if (configuredAdminId) return configuredAdminId === userId;
 
   const [firstUser] = await db
@@ -95,7 +97,7 @@ router.post("/admin/notifications", async (req, res, next) => {
     const [notification] = await db
       .insert(broadcastNotificationsTable)
       .values({
-        id: randomUUID(),
+        id: crypto.randomUUID(),
         title: input.title.trim(),
         body: input.body.trim(),
         createdBy: req.userId!,

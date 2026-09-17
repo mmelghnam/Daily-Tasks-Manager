@@ -13,8 +13,8 @@ import { and, asc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-function toDateOnly(value: Date) {
-  return value.toISOString().slice(0, 10);
+function dateOnly(value: Date) {
+  return new Date(`${value.toISOString().slice(0, 10)}T00:00:00.000Z`);
 }
 
 function hasInvalidDateRange(startDate: Date, endDate: Date) {
@@ -47,8 +47,8 @@ router.post("/events", async (req, res, next) => {
       .values({
         ownerId: req.userId!,
         title: input.title.trim(),
-        startDate: toDateOnly(input.startDate),
-        endDate: toDateOnly(input.endDate),
+        startDate: dateOnly(input.startDate),
+        endDate: dateOnly(input.endDate),
         color: input.color ?? "#d39a2f",
         imageUrl: input.imageUrl?.trim() || null,
       })
@@ -67,8 +67,8 @@ router.patch("/events/:id", async (req, res, next) => {
     const updates: Partial<typeof eventsTable.$inferInsert> = {};
 
     if (input.title !== undefined) updates.title = input.title.trim();
-    if (input.startDate !== undefined) updates.startDate = toDateOnly(input.startDate);
-    if (input.endDate !== undefined) updates.endDate = toDateOnly(input.endDate);
+    if (input.startDate !== undefined) updates.startDate = dateOnly(input.startDate);
+    if (input.endDate !== undefined) updates.endDate = dateOnly(input.endDate);
     if (input.color !== undefined) updates.color = input.color;
     if (input.imageUrl !== undefined) updates.imageUrl = input.imageUrl.trim() || null;
 

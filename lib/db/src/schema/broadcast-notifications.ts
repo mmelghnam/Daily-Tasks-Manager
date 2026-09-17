@@ -1,11 +1,14 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-export const broadcastNotificationsTable = pgTable("broadcast_notifications", {
+export const broadcastNotificationsTable = sqliteTable("broadcast_notifications", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   body: text("body").notNull(),
   createdBy: text("created_by").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 });
 
 export type BroadcastNotification = typeof broadcastNotificationsTable.$inferSelect;

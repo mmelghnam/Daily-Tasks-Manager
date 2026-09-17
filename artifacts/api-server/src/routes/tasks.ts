@@ -20,7 +20,7 @@ import { and, asc, desc, eq, gte, lte, max } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-function parseDateQuery(value: unknown) {
+function parseDateQuery(value: unknown): Date | undefined {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return undefined;
   }
@@ -29,6 +29,10 @@ function parseDateQuery(value: unknown) {
 
 function toDateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
+}
+
+function dateValue(value: Date) {
+  return new Date(`${toDateOnly(value)}T00:00:00.000Z`);
 }
 
 function toTaskJson(task: {
@@ -47,14 +51,14 @@ function toTaskJson(task: {
   };
 }
 
-function nextRecurringDate(date: string, recurrence: string | null) {
+function nextRecurringDate(date: Date, recurrence: string | null) {
   if (!recurrence) return null;
-  const next = new Date(`${date}T12:00:00.000Z`);
+  const next = new Date(`${toDateOnly(date)}T12:00:00.000Z`);
   if (recurrence === "daily") next.setUTCDate(next.getUTCDate() + 1);
   else if (recurrence === "weekly") next.setUTCDate(next.getUTCDate() + 7);
   else if (recurrence === "monthly") next.setUTCMonth(next.getUTCMonth() + 1);
   else return null;
-  return toDateOnly(next);
+  return dateValue(next);
 }
 
 function parseDateRangeQuery(value: unknown) {
@@ -73,9 +77,9 @@ router.get("/tasks", async (req, res, next) => {
       .from(tasksTable)
       .where(and(
         eq(tasksTable.ownerId, req.userId!),
-        query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined,
-        !query.date && query.dateFrom ? gte(tasksTable.taskDate, toDateOnly(query.dateFrom)) : undefined,
-        !query.date && query.dateTo ? lte(tasksTable.taskDate, toDateOnly(query.dateTo)) : undefined,
+        query.date ? eq(tasksTable.taskDate, query.date) : undefined,
+        !query.date && query.dateFrom ? gte(tasksTable.taskDate, query.dateFrom) : undefined,
+        !query.date && query.dateTo ? lte(tasksTable.taskDate, query.dateTo) : undefined,
       ))
       .orderBy(asc(tasksTable.taskDate), asc(tasksTable.category), asc(tasksTable.sortOrder), asc(tasksTable.createdAt), asc(tasksTable.id));
 
@@ -91,18 +95,18 @@ router.post("/tasks", async (req, res, next) => {
     const [lastTask] = await db
       .select({ sortOrder: max(tasksTable.sortOrder) })
       .from(tasksTable)
-      .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, toDateOnly(input.taskDate)), eq(tasksTable.category, input.category)));
+        .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, input.taskDate), eq(tasksTable.category, input.category)));
     const [task] = await db
       .insert(tasksTable)
       .values({
         ownerId: req.userId!,
-        taskDate: toDateOnly(input.taskDate),
+        taskDate: input.taskDate,
         category: input.category,
         title: input.title.trim(),
         notes: input.notes?.trim() || null,
         priority: input.priority ?? "medium",
         recurrence: input.recurrence?.trim() || null,
-        dueDate: input.dueDate ? toDateOnly(input.dueDate) : null,
+        dueDate: input.dueDate,
         startTime: input.startTime ?? null,
         durationMinutes: input.durationMinutes ?? null,
         subtasks: input.subtasks ?? [],
@@ -127,7 +131,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
       updatedAt: new Date(),
     };
 
-    if (input.taskDate !== undefined) updates.taskDate = toDateOnly(input.taskDate);
+    if (input.taskDate !== undefined) updates.taskDate = input.taskDate;
     if (input.category !== undefined) updates.category = input.category;
     if (input.title !== undefined) updates.title = input.title.trim();
     if (input.notes !== undefined) updates.notes = input.notes.trim() || null;
@@ -135,7 +139,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (input.startTime !== undefined) updates.startTime = input.startTime || null;
     if (input.durationMinutes !== undefined) updates.durationMinutes = input.durationMinutes || null;
     if (input.recurrence !== undefined) updates.recurrence = input.recurrence.trim() || null;
-    if (input.dueDate !== undefined) updates.dueDate = input.dueDate ? toDateOnly(input.dueDate) : null;
+    if (input.dueDate !== undefined) updates.dueDate = input.dueDate;
     if (input.subtasks !== undefined) updates.subtasks = input.subtasks;
     if (input.completed !== undefined) updates.completed = input.completed;
     if (input.links !== undefined) updates.links = input.links;
@@ -221,7 +225,7 @@ router.post("/tasks/:id/copy", async (req, res, next) => {
         .from(tasksTable)
         .where(and(
           eq(tasksTable.ownerId, req.userId!),
-          eq(tasksTable.taskDate, taskDate),
+          eq(tasksTable.taskDate, dateValue(new Date(`${taskDate}T00:00:00.000Z`))),
           eq(tasksTable.category, source.category),
           eq(tasksTable.title, source.title),
         ))
@@ -232,12 +236,12 @@ router.post("/tasks/:id/copy", async (req, res, next) => {
       const [lastTask] = await db
         .select({ sortOrder: max(tasksTable.sortOrder) })
         .from(tasksTable)
-        .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, taskDate), eq(tasksTable.category, source.category)));
+        .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, dateValue(new Date(`${taskDate}T00:00:00.000Z`))), eq(tasksTable.category, source.category)));
       const [copy] = await db
         .insert(tasksTable)
         .values({
           ownerId: req.userId!,
-          taskDate,
+          taskDate: dateValue(new Date(`${taskDate}T00:00:00.000Z`)),
           category: source.category,
           title: source.title,
           notes: source.notes,
@@ -296,9 +300,9 @@ router.get("/tasks/summary", async (req, res, next) => {
       .from(tasksTable)
       .where(and(
         eq(tasksTable.ownerId, req.userId!),
-        query.date ? eq(tasksTable.taskDate, toDateOnly(query.date)) : undefined,
-        !query.date && query.dateFrom ? gte(tasksTable.taskDate, toDateOnly(query.dateFrom)) : undefined,
-        !query.date && query.dateTo ? lte(tasksTable.taskDate, toDateOnly(query.dateTo)) : undefined,
+        query.date ? eq(tasksTable.taskDate, query.date) : undefined,
+        !query.date && query.dateFrom ? gte(tasksTable.taskDate, query.dateFrom) : undefined,
+        !query.date && query.dateTo ? lte(tasksTable.taskDate, query.dateTo) : undefined,
       ));
 
     const spaces = await db

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { getAuth } from "@clerk/express";
+import { verifyToken } from "@clerk/backend";
 import {
   appSettingsTable,
   appUsersTable,
@@ -10,6 +10,7 @@ import {
   spacesTable,
   tasksTable,
 } from "@workspace/db";
+import { getRuntimeEnv } from "@workspace/db";
 import { isNull } from "drizzle-orm";
 
 declare global {
@@ -49,9 +50,24 @@ export async function provisionUserAndClaimLegacyData(
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const auth = getAuth(req);
-    const claimedUserId = auth?.sessionClaims?.userId;
-    const userId = auth?.userId ?? (typeof claimedUserId === "string" ? claimedUserId : null);
+    const authorization = req.header("authorization");
+    const bearerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+    const cookieToken = req.headers.cookie
+      ?.split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith("__session="))
+      ?.slice("__session=".length);
+    const token = bearerToken ?? cookieToken;
+    const secretKey =
+      getRuntimeEnv()?.CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY;
+
+    if (!token || !secretKey) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const claims = await verifyToken(token, { secretKey });
+    const userId = typeof claims.sub === "string" ? claims.sub : null;
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;

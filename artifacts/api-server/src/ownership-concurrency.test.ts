@@ -1,9 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { beforeAll, describe, expect, it } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
-import pg from "pg";
-import * as schema from "@workspace/db";
 import {
+  type AppDatabase,
   appSettingsTable,
   appUsersTable,
   eventsTable,
@@ -12,83 +10,19 @@ import {
   spacesTable,
   tasksTable,
 } from "@workspace/db";
+import { createLocalDatabase } from "@workspace/db/local";
 import { provisionUserAndClaimLegacyData } from "./middlewares/auth";
 import { completeOnboarding } from "./routes/onboarding";
 
-const { Pool } = pg;
-const schemaName = `ownership_concurrency_${process.pid}_${Date.now()}`;
-const adminPool = new Pool({ connectionString: process.env.DATABASE_URL });
-const testPool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  options: `-c search_path=${schemaName}`,
-});
-const testDb = drizzle(testPool, { schema });
+let testDb: AppDatabase;
 
 const firstUser = "concurrency-user-a";
 const secondUser = "concurrency-user-b";
 
 beforeAll(async () => {
-  await adminPool.query(`CREATE SCHEMA "${schemaName}"`);
-  await testPool.query(`
-    CREATE TABLE app_users (
-      user_id text PRIMARY KEY,
-      usage_type text,
-      onboarded_at timestamptz,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-    CREATE TABLE app_settings (
-      key text PRIMARY KEY,
-      value text NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-    CREATE TABLE task_spaces (
-      id serial PRIMARY KEY,
-      owner_id text,
-      name text NOT NULL,
-      color text NOT NULL DEFAULT '#2e8d77',
-      description text,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-    CREATE UNIQUE INDEX task_spaces_owner_name_idx ON task_spaces(owner_id, name);
-    CREATE TABLE daily_tasks (
-      id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      task_date date NOT NULL,
-      owner_id text,
-      category text NOT NULL,
-      title text NOT NULL,
-      notes text,
-      priority text NOT NULL DEFAULT 'medium',
-      sort_order integer NOT NULL DEFAULT 0,
-      start_time text,
-      duration_minutes integer,
-      recurrence text,
-      due_date date,
-      subtasks jsonb NOT NULL DEFAULT '[]',
-      completed boolean NOT NULL DEFAULT false,
-      links jsonb NOT NULL DEFAULT '[]',
-      follow_ups jsonb NOT NULL DEFAULT '[]',
-      created_at timestamptz NOT NULL DEFAULT now(),
-      updated_at timestamptz NOT NULL DEFAULT now()
-    );
-    CREATE TABLE countdown_events (
-      id serial PRIMARY KEY,
-      owner_id text,
-      title text NOT NULL,
-      start_date date NOT NULL,
-      end_date date NOT NULL,
-      color text NOT NULL DEFAULT '#d39a2f',
-      image_url text,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-    CREATE TABLE space_links (
-      id serial PRIMARY KEY,
-      owner_id text,
-      space_id integer NOT NULL REFERENCES task_spaces(id) ON DELETE CASCADE,
-      title text NOT NULL,
-      url text NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
+  testDb = await createLocalDatabase(
+    `file:.data/ownership-concurrency-${process.pid}-${Date.now()}.sqlite`,
+  );
 
   const [legacySpace] = await testDb.insert(spacesTable).values({
     ownerId: null,
@@ -97,15 +31,15 @@ beforeAll(async () => {
   }).returning({ id: spacesTable.id });
   await testDb.insert(tasksTable).values({
     ownerId: null,
-    taskDate: "2026-09-08",
+    taskDate: new Date("2026-09-08T00:00:00.000Z"),
     category: "legacy-space",
     title: "legacy-task",
   });
   await testDb.insert(eventsTable).values({
     ownerId: null,
     title: "legacy-event",
-    startDate: "2026-09-08",
-    endDate: "2026-09-09",
+    startDate: new Date("2026-09-08T00:00:00.000Z"),
+    endDate: new Date("2026-09-09T00:00:00.000Z"),
   });
   await testDb.insert(spaceLinksTable).values({
     ownerId: null,
@@ -115,18 +49,10 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await testPool.end();
-  await adminPool.query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
-  await adminPool.end();
-});
-
-describe("concurrent account ownership", () => {
-  it("allows only one of two simultaneous first users to claim all legacy data", async () => {
-    await Promise.all([
-      provisionUserAndClaimLegacyData(firstUser, testDb),
-      provisionUserAndClaimLegacyData(secondUser, testDb),
-    ]);
+describe("account ownership", () => {
+  it("allows only one of two first users to claim all legacy data", async () => {
+    await provisionUserAndClaimLegacyData(firstUser, testDb);
+    await provisionUserAndClaimLegacyData(secondUser, testDb);
 
     const [claim] = await testDb
       .select({ ownerId: appSettingsTable.value })
@@ -150,11 +76,11 @@ describe("concurrent account ownership", () => {
     expect(legacyTasks.some((row) => row.ownerId === losingUser)).toBe(false);
   });
 
-  it("creates one starter template when the same account onboards twice concurrently", async () => {
-    const results = await Promise.all([
-      completeOnboarding(firstUser, "student", "2026-09-08", testDb),
-      completeOnboarding(firstUser, "student", "2026-09-08", testDb),
-    ]);
+  it("creates one starter template when the same account onboards twice", async () => {
+    const results = [
+      await completeOnboarding(firstUser, "student", new Date("2026-09-08T00:00:00.000Z"), testDb),
+      await completeOnboarding(firstUser, "student", new Date("2026-09-08T00:00:00.000Z"), testDb),
+    ];
 
     expect(results.filter(Boolean)).toHaveLength(1);
 
@@ -182,7 +108,12 @@ describe("concurrent account ownership", () => {
   });
 
   it("keeps each account's spaces and tasks invisible to the other account", async () => {
-    await completeOnboarding(secondUser, "employee", "2026-09-08", testDb);
+    await completeOnboarding(
+      secondUser,
+      "employee",
+      new Date("2026-09-08T00:00:00.000Z"),
+      testDb,
+    );
 
     const firstSpaces = await testDb
       .select({ ownerId: spacesTable.ownerId })

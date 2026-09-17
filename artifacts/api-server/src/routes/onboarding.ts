@@ -65,7 +65,7 @@ const templates = {
 export async function completeOnboarding(
   userId: string,
   usageType: keyof typeof templates,
-  taskDate: string,
+  taskDate: Date,
   database: typeof db = db,
 ) {
   return database.transaction(async (tx) => {
@@ -121,7 +121,7 @@ router.post("/onboarding", async (req, res, next) => {
   try {
     const input = CompleteOnboardingBody.parse(req.body);
     const usageType = input.usageType;
-    const taskDate = input.taskDate.toISOString().slice(0, 10);
+    const taskDate = input.taskDate;
 
     const completed = await completeOnboarding(req.userId!, usageType, taskDate);
 

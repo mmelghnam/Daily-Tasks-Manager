@@ -1,15 +1,18 @@
 import { createInsertSchema } from "drizzle-zod";
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { spacesTable } from "./spaces";
 
-export const spaceLinksTable = pgTable("space_links", {
-  id: serial("id").primaryKey(),
+export const spaceLinksTable = sqliteTable("space_links", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id"),
   spaceId: integer("space_id").notNull().references(() => spacesTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   url: text("url").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
 });
 
 export const insertSpaceLinkSchema = createInsertSchema(spaceLinksTable).omit({
