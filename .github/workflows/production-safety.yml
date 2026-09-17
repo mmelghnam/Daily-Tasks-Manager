@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - chatgpt/production-safety-current
+      - chatgpt/productivity-speed-habits
   pull_request:
     branches:
       - main
@@ -53,6 +54,9 @@ jobs:
 
       - name: Run hard-refresh hydration regression test
         run: pnpm --filter @workspace/daily-tasks-manager test:hard-refresh
+
+      - name: Run habit daily-reset regression tests
+        run: pnpm --filter @workspace/daily-tasks-manager test:habits
 
       - name: Validate D1 migrations locally
         run: pnpm exec wrangler d1 migrations apply daily-tasks-manager --local --config artifacts/daily-tasks-manager/wrangler.jsonc
