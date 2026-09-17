@@ -1,0 +1,20 @@
+{
+  "name": "إنجازك اليومي",
+  "short_name": "إنجازك",
+  "description": "إدارة عربية للمهام والأهداف والعادات اليومية.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f3d38",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
