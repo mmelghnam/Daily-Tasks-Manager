@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateCurrentHabitStreak, normalizeHabitDate } from './habit-utils';
+import { calculateCurrentHabitStreak, normalizeHabitDate } from './habit-utils.ts';
 
 test('habit is not treated as completed on a new day', () => {
   assert.equal(normalizeHabitDate('2026-09-17T00:00:00.000Z'), '2026-09-17');
