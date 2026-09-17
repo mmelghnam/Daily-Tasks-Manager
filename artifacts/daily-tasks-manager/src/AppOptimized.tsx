@@ -7,7 +7,6 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { OnboardingGuard } from '@/components/onboarding-guard';
-import { DashboardHydrationGuard } from '@/components/dashboard-hydration-guard';
 import { CommandCenterLoader } from '@/components/command-center-loader';
 import { createAccountQueryClient } from '@/account-query-client';
 import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
@@ -79,7 +78,7 @@ function RouteLoadingScreen() {
 function AppRoute() {
   const { isLoaded } = useUser();
   if (!isLoaded) return <AccountLoadingScreen />;
-  return <><Show when="signed-in"><OnboardingGuard><DashboardHydrationGuard><><Home /><CommandCenterLoader /></></DashboardHydrationGuard></OnboardingGuard></Show><Show when="signed-out"><Redirect to="/" /></Show></>;
+  return <><Show when="signed-in"><OnboardingGuard><><Home /><CommandCenterLoader /></></OnboardingGuard></Show><Show when="signed-out"><Redirect to="/" /></Show></>;
 }
 
 function AuthShell({ children }: { children: ReactNode }) {

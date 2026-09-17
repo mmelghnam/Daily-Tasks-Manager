@@ -48,6 +48,7 @@ export function DashboardCustomizer() {
   const [open, setOpen] = useState(false);
   const [visibleSections, setVisibleSections] = useState<string[]>(defaultDashboardSections);
   const [sectionOrder, setSectionOrder] = useState<string[]>(defaultDashboardSections);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     const normalized = normalizeDashboardSections(
@@ -74,14 +75,28 @@ export function DashboardCustomizer() {
   };
 
   const save = () => {
+    const queryKey = getGetDashboardPreferencesQueryKey();
+    const previous = queryClient.getQueryData(queryKey);
+    const optimistic = { visibleSections: [...visibleSections], sectionOrder: [...sectionOrder] };
+    setSaveError('');
+    queryClient.setQueryData(queryKey, optimistic);
     updatePreferences.mutate(
-      { data: { visibleSections, sectionOrder } },
-      { onSuccess: (data) => { queryClient.setQueryData(getGetDashboardPreferencesQueryKey(), data); setOpen(false); } },
+      { data: optimistic },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(queryKey, data);
+          setOpen(false);
+        },
+        onError: () => {
+          queryClient.setQueryData(queryKey, previous);
+          setSaveError('تعذر حفظ التخصيص. حاول مرة أخرى.');
+        },
+      },
     );
   };
 
   return <>
-    <button type="button" onClick={() => setOpen(true)} aria-label="تخصيص الواجهة" data-testid="button-customize-dashboard" className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card/70 px-3 text-xs font-bold text-muted-foreground transition hover:border-primary/40 hover:text-primary"><LayoutDashboard size={16}/><span className="hidden sm:inline">تخصيص الواجهة</span></button>
+    <button type="button" onClick={() => { setSaveError(''); setOpen(true); }} aria-label="تخصيص الواجهة" data-testid="button-customize-dashboard" className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card/70 px-3 text-xs font-bold text-muted-foreground transition hover:border-primary/40 hover:text-primary"><LayoutDashboard size={16}/><span className="hidden sm:inline">تخصيص الواجهة</span></button>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent dir="rtl" className="max-w-lg rounded-3xl">
         <DialogHeader className="text-right"><DialogTitle className="flex items-center gap-2 text-xl"><LayoutDashboard className="text-primary"/> خصص واجهتك</DialogTitle><DialogDescription>كل أجزاء لوحة يومك قابلة للإخفاء وإعادة الترتيب. أدوات الحساب والألوان تظل متاحة دائمًا.</DialogDescription></DialogHeader>
@@ -98,6 +113,7 @@ export function DashboardCustomizer() {
             </div>;
           })}
         </div>
+        {saveError && <p className="text-xs font-bold text-destructive">{saveError}</p>}
         <div className="flex gap-2 pt-2"><button type="button" onClick={save} disabled={updatePreferences.isPending} data-testid="button-save-dashboard-preferences" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Save size={16}/>{updatePreferences.isPending ? 'جارٍ الحفظ...' : 'حفظ التخصيص'}</button><button type="button" onClick={() => { setVisibleSections([...defaultDashboardSections]); setSectionOrder([...defaultDashboardSections]); }} className="h-11 rounded-xl border border-border px-4 text-sm font-bold text-muted-foreground hover:bg-muted">إعادة الضبط</button></div>
       </DialogContent>
     </Dialog>
