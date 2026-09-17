@@ -9,7 +9,7 @@ import {
   getGetAdminAccessQueryKey, getGetDashboardPreferencesQueryKey, getGetTaskSummaryQueryKey,
   getListSpacesQueryKey, getListTasksQueryKey,
   useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences,
-  useGetTaskSummary, useListSpaces, useListTasks,
+  useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask,
 } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
@@ -97,6 +97,7 @@ export default function HomeOptimized() {
   const [showSpaceForm, setShowSpaceForm] = useState(false);
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
   const preferences = useGetDashboardPreferences({ query: { queryKey: getGetDashboardPreferencesQueryKey(), staleTime: 5 * 60_000, refetchOnWindowFocus: false } });
   const layout = normalizeDashboardSections(preferences.data?.visibleSections, preferences.data?.sectionOrder);
@@ -106,6 +107,7 @@ export default function HomeOptimized() {
   const taskQuery = useListTasks(range, { query: { queryKey: getListTasksQueryKey(range), staleTime: 30_000, refetchOnWindowFocus: false } });
   const summaryQuery = useGetTaskSummary(range, { query: { queryKey: getGetTaskSummaryQueryKey(range), staleTime: 30_000, refetchOnWindowFocus: false } });
   const deleteSpace = useDeleteSpace();
+  const updateTask = useUpdateTask();
 
   const tasks = Array.isArray(taskQuery.data) ? taskQuery.data : [];
   const realSpaces = Array.isArray(spacesQuery.data) ? spacesQuery.data : [];
@@ -123,6 +125,30 @@ export default function HomeOptimized() {
   const sectionStyle = (key: string) => ({ order: layout.sectionOrder.indexOf(key) < 0 ? 99 : layout.sectionOrder.indexOf(key) });
   const openNew = (category?: Category) => { setFormCategory(category); setShowForm(true); };
   const removeSpace = (space: Space) => deleteSpace.mutate({ id: space.id }, { onSuccess: () => { if (activeCategory === space.name) setActiveCategory('all'); void queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() }); } });
+
+  const reorderTasks = async (category: Category, draggedId: number, targetId: number) => {
+    if (draggedId === targetId || updateTask.isPending) return;
+    const categoryTasks = tasks.filter((item) => item.category === category);
+    const fromIndex = categoryTasks.findIndex((item) => item.id === draggedId);
+    const toIndex = categoryTasks.findIndex((item) => item.id === targetId);
+    if (fromIndex < 0 || toIndex < 0) return;
+
+    const reordered = [...categoryTasks];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    const orderById = new Map(reordered.map((item, index) => [item.id, index]));
+    const queryKey = getListTasksQueryKey(range);
+    const previous = queryClient.getQueryData<Task[]>(queryKey);
+    queryClient.setQueryData<Task[]>(queryKey, (current) => current?.map((item) => item.category === category ? { ...item, sortOrder: orderById.get(item.id) ?? item.sortOrder } : item));
+    setDraggedTaskId(null);
+
+    try {
+      await Promise.all(reordered.map((item, index) => updateTask.mutateAsync({ id: item.id, data: { sortOrder: index } })));
+      await queryClient.invalidateQueries({ queryKey });
+    } catch {
+      queryClient.setQueryData(queryKey, previous);
+    }
+  };
 
   return <div className="noise-overlay task-shell min-h-[100dvh]" dir="rtl">
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 backdrop-blur">
@@ -151,7 +177,7 @@ export default function HomeOptimized() {
         </section>}
 
         {visibleSet.has('tasks') && <section className="mt-1" style={sectionStyle('tasks')}>
-          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-2xl bg-muted"/><div className="h-32 animate-pulse rounded-2xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-3xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-3xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-3xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:4}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-xl border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames}/>)}</div></div>;})}</div>}
+          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-2xl bg-muted"/><div className="h-32 animate-pulse rounded-2xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-3xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-3xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-3xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:4}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-xl border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
         </section>}
       </div>
     </main>
