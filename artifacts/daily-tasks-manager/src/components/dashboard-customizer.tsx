@@ -9,16 +9,37 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export const DASHBOARD_SECTIONS = [
+  { key: 'dateHeader', label: 'التاريخ والتنقل' },
+  { key: 'viewMode', label: 'نوع عرض المهام' },
   { key: 'summary', label: 'ملخص الإنجاز' },
   { key: 'dailyPlan', label: 'خطة اليوم والوقت' },
-  { key: 'events', label: 'الأحداث والمواعيد' },
-  { key: 'productivity', label: 'الأهداف والعادات والتركيز' },
+  { key: 'productivity', label: 'الأهداف والعادات' },
+  { key: 'focusTools', label: 'المتأخرات ووضع التركيز' },
   { key: 'links', label: 'روابط المساحات' },
-  { key: 'notifications', label: 'تنبيهات اليوم' },
-  { key: 'taskMap', label: 'خريطة اليوم والمساحات' },
+  { key: 'taskMap', label: 'المساحات والفلاتر' },
+  { key: 'tasks', label: 'قائمة المهام' },
 ] as const;
 
 export const defaultDashboardSections = DASHBOARD_SECTIONS.map((section) => section.key);
+const validKeys = new Set<string>(defaultDashboardSections);
+
+export function normalizeDashboardSections(visibleSections: unknown, sectionOrder: unknown) {
+  const savedOrder = Array.isArray(sectionOrder)
+    ? sectionOrder.filter((key): key is string => typeof key === 'string' && validKeys.has(key))
+    : [];
+  const order = [...savedOrder, ...defaultDashboardSections.filter((key) => !savedOrder.includes(key))];
+  if (!Array.isArray(visibleSections)) {
+    return { visibleSections: [...defaultDashboardSections], sectionOrder: order };
+  }
+  const savedVisible = visibleSections.filter(
+    (key): key is string => typeof key === 'string' && validKeys.has(key),
+  );
+  const newlyAdded = defaultDashboardSections.filter((key) => !savedOrder.includes(key));
+  return {
+    visibleSections: Array.from(new Set([...savedVisible, ...newlyAdded])),
+    sectionOrder: order,
+  };
+}
 
 export function DashboardCustomizer() {
   const queryClient = useQueryClient();
@@ -29,17 +50,12 @@ export function DashboardCustomizer() {
   const [sectionOrder, setSectionOrder] = useState<string[]>(defaultDashboardSections);
 
   useEffect(() => {
-    if (!preferences.data) return;
-    setVisibleSections(
-      Array.isArray(preferences.data.visibleSections)
-        ? preferences.data.visibleSections
-        : defaultDashboardSections,
+    const normalized = normalizeDashboardSections(
+      preferences.data?.visibleSections,
+      preferences.data?.sectionOrder,
     );
-    setSectionOrder(
-      Array.isArray(preferences.data.sectionOrder)
-        ? preferences.data.sectionOrder
-        : defaultDashboardSections,
-    );
+    setVisibleSections(normalized.visibleSections);
+    setSectionOrder(normalized.sectionOrder);
   }, [preferences.data]);
 
   const toggleSection = (key: string) => {
@@ -60,46 +76,30 @@ export function DashboardCustomizer() {
   const save = () => {
     updatePreferences.mutate(
       { data: { visibleSections, sectionOrder } },
-      {
-        onSuccess: (data) => {
-          queryClient.setQueryData(getGetDashboardPreferencesQueryKey(), data);
-          setOpen(false);
-        },
-      },
+      { onSuccess: (data) => { queryClient.setQueryData(getGetDashboardPreferencesQueryKey(), data); setOpen(false); } },
     );
   };
 
-  return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} aria-label="تخصيص الواجهة" data-testid="button-customize-dashboard" className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card/70 px-3 text-xs font-bold text-muted-foreground transition hover:border-primary/40 hover:text-primary">
-        <LayoutDashboard size={16} />
-        <span className="hidden sm:inline">تخصيص الواجهة</span>
-      </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent dir="rtl" className="max-w-lg rounded-3xl">
-          <DialogHeader className="text-right">
-            <DialogTitle className="flex items-center gap-2 text-xl"><LayoutDashboard className="text-primary" /> خصص واجهتك</DialogTitle>
-            <DialogDescription>اختر الأقسام التي تريد رؤيتها ورتبها بما يناسب طريقة عملك.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            {sectionOrder.map((key, index) => {
-              const section = DASHBOARD_SECTIONS.find((item) => item.key === key);
-              if (!section) return null;
-              const visible = visibleSections.includes(key);
-              return <div key={key} className={`flex items-center gap-2 rounded-2xl border p-3 ${visible ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/30 opacity-70'}`}>
-                <button type="button" onClick={() => toggleSection(key)} aria-label={visible ? `إخفاء ${section.label}` : `إظهار ${section.label}`} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${visible ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{visible ? <Eye size={16} /> : <EyeOff size={16} />}</button>
-                <span className="min-w-0 flex-1 text-sm font-extrabold">{section.label}</span>
-                <button type="button" onClick={() => moveSection(key, -1)} disabled={index === 0} aria-label="تقديم القسم" className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"><ChevronUp size={16} /></button>
-                <button type="button" onClick={() => moveSection(key, 1)} disabled={index === sectionOrder.length - 1} aria-label="تأخير القسم" className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"><ChevronDown size={16} /></button>
-              </div>;
-            })}
-          </div>
-          <div className="flex gap-2 pt-2">
-            <button type="button" onClick={save} disabled={updatePreferences.isPending} data-testid="button-save-dashboard-preferences" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Save size={16} /> {updatePreferences.isPending ? 'جارٍ الحفظ...' : 'حفظ التخصيص'}</button>
-            <button type="button" onClick={() => { setVisibleSections(defaultDashboardSections); setSectionOrder(defaultDashboardSections); }} className="h-11 rounded-xl border border-border px-4 text-sm font-bold text-muted-foreground hover:bg-muted">إعادة الضبط</button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+  return <>
+    <button type="button" onClick={() => setOpen(true)} aria-label="تخصيص الواجهة" data-testid="button-customize-dashboard" className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card/70 px-3 text-xs font-bold text-muted-foreground transition hover:border-primary/40 hover:text-primary"><LayoutDashboard size={16}/><span className="hidden sm:inline">تخصيص الواجهة</span></button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent dir="rtl" className="max-w-lg rounded-3xl">
+        <DialogHeader className="text-right"><DialogTitle className="flex items-center gap-2 text-xl"><LayoutDashboard className="text-primary"/> خصص واجهتك</DialogTitle><DialogDescription>كل أجزاء لوحة يومك قابلة للإخفاء وإعادة الترتيب. أدوات الحساب والألوان تظل متاحة دائمًا.</DialogDescription></DialogHeader>
+        <div className="max-h-[55vh] space-y-2 overflow-y-auto pl-1">
+          {sectionOrder.map((key, index) => {
+            const section = DASHBOARD_SECTIONS.find((item) => item.key === key);
+            if (!section) return null;
+            const visible = visibleSections.includes(key);
+            return <div key={key} className={`flex items-center gap-2 rounded-2xl border p-3 ${visible ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/30 opacity-70'}`}>
+              <button type="button" onClick={() => toggleSection(key)} aria-label={visible ? `إخفاء ${section.label}` : `إظهار ${section.label}`} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${visible ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{visible ? <Eye size={16}/> : <EyeOff size={16}/>}</button>
+              <span className="min-w-0 flex-1 text-sm font-extrabold">{section.label}</span>
+              <button type="button" onClick={() => moveSection(key, -1)} disabled={index === 0} aria-label="تقديم القسم" className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"><ChevronUp size={16}/></button>
+              <button type="button" onClick={() => moveSection(key, 1)} disabled={index === sectionOrder.length - 1} aria-label="تأخير القسم" className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-30"><ChevronDown size={16}/></button>
+            </div>;
+          })}
+        </div>
+        <div className="flex gap-2 pt-2"><button type="button" onClick={save} disabled={updatePreferences.isPending} data-testid="button-save-dashboard-preferences" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Save size={16}/>{updatePreferences.isPending ? 'جارٍ الحفظ...' : 'حفظ التخصيص'}</button><button type="button" onClick={() => { setVisibleSections([...defaultDashboardSections]); setSectionOrder([...defaultDashboardSections]); }} className="h-11 rounded-xl border border-border px-4 text-sm font-bold text-muted-foreground hover:bg-muted">إعادة الضبط</button></div>
+      </DialogContent>
+    </Dialog>
+  </>;
 }
