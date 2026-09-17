@@ -3,15 +3,13 @@ import { sql } from "drizzle-orm";
 import { sqliteJsonArray } from "../sqlite-types";
 
 export const defaultDashboardSections = [
-  "dateHeader",
-  "viewMode",
   "summary",
   "dailyPlan",
+  "events",
   "productivity",
-  "focusTools",
   "links",
+  "notifications",
   "taskMap",
-  "tasks",
 ] as const;
 
 export type DashboardSection = (typeof defaultDashboardSections)[number];
