@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { QueryClientProvider, useIsFetching } from '@tanstack/react-query';
 import { ClerkProvider, Show, SignIn, SignUp, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -6,13 +6,8 @@ import { arSA } from '@clerk/localizations';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
-import Home from '@/pages/home';
-import Landing from '@/pages/landing';
-import Admin from '@/pages/admin';
 import { OnboardingGuard } from '@/components/onboarding-guard';
 import { DashboardHydrationGuard } from '@/components/dashboard-hydration-guard';
-import { ProductivityCommandCenter } from '@/components/productivity-command-center';
 import { createAccountQueryClient } from '@/account-query-client';
 import {
   Redirect,
@@ -21,6 +16,14 @@ import {
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+
+const Home = lazy(() => import('@/pages/home'));
+const Landing = lazy(() => import('@/pages/landing'));
+const Admin = lazy(() => import('@/pages/admin'));
+const NotFound = lazy(() => import('@/pages/not-found'));
+const ProductivityCommandCenter = lazy(() =>
+  import('@/components/productivity-command-center').then((module) => ({ default: module.ProductivityCommandCenter })),
+);
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -166,6 +169,17 @@ function AccountLoadingScreen() {
   );
 }
 
+function RouteLoadingScreen() {
+  return (
+    <div className="task-shell flex min-h-[100dvh] items-center justify-center" dir="rtl">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/80 px-5 py-4 text-sm font-extrabold shadow-sm">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+        جارٍ تحميل الجزء المطلوب...
+      </div>
+    </div>
+  );
+}
+
 function AccountQueryClientProvider({ children }: { children: ReactNode }) {
   const { isLoaded, user } = useUser();
   const accountId = isLoaded ? user?.id ?? 'signed-out' : 'loading';
@@ -188,14 +202,16 @@ function AccountQueryClientProvider({ children }: { children: ReactNode }) {
 function Router() {
   return (
     <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={HomeRedirect} />
-        <Route path="/app" component={AppRoute} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/sign-up/*?" component={SignUpPage} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={<RouteLoadingScreen />}>
+        <Switch>
+          <Route path="/" component={HomeRedirect} />
+          <Route path="/app" component={AppRoute} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/sign-in/*?" component={SignInPage} />
+          <Route path="/sign-up/*?" component={SignUpPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </RoutedErrorBoundary>
   );
 }
