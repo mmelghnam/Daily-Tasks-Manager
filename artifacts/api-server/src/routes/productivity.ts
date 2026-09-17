@@ -122,7 +122,18 @@ router.get("/habits", async (req, res, next) => {
 router.post("/habits", async (req, res, next) => {
   try {
     const input = CreateHabitBody.parse(req.body);
-    const [row] = await db.insert(habitsTable).values({ ownerId: req.userId!, name: input.name.trim(), frequency: input.frequency ?? "daily" }).returning();
+    const [row] = await db.insert(habitsTable).values({
+      ownerId: req.userId!,
+      name: input.name.trim(),
+      frequency: input.frequency ?? "daily",
+      streak: 0,
+      lastCompleted: null,
+      completedDates: [],
+    }).returning();
+    if (!row) {
+      res.status(500).json({ error: "Habit creation failed" });
+      return;
+    }
     res.status(201).json(CreateHabitResponse.parse(serializeHabit(row)));
   } catch (error) { next(error); }
 });
