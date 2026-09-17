@@ -1,7 +1,7 @@
 import { lazy, Suspense, type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, Loader2, Pencil, Plus, RefreshCw, ShieldCheck, Sparkles, Target, Trash2, UserRound } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, ShieldCheck, Sparkles, Target, Trash2, UserRound } from 'lucide-react';
 import { getGetAdminAccessQueryKey, getGetDashboardPreferencesQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences, useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
@@ -30,8 +30,12 @@ function dateKey(date: Date) {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
-function dateLabel(date: string) {
-  return new Intl.DateTimeFormat('ar', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
+function headlineDate(date: string) {
+  return new Intl.DateTimeFormat('ar', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${date}T12:00:00`));
+}
+function displayDate(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  return `${String(parsed.getDate()).padStart(2, '0')}/${String(parsed.getMonth() + 1).padStart(2, '0')}/${parsed.getFullYear()}`;
 }
 function shiftDate(date: string, amount: number) {
   const next = new Date(`${date}T12:00:00`);
@@ -43,7 +47,7 @@ function getSpaceMeta(name: string, spaces: Array<{ name: string; color?: string
   const fallback = fallbackSpaces.find((space) => space.name === name);
   return { color: spaces[index]?.color ?? fallback?.color ?? fallbackColors[Math.max(index, 0) % fallbackColors.length], description: spaces[index]?.description ?? fallback?.description ?? 'مساحة مخصصة' };
 }
-function SectionFallback() { return <div className="mb-6 h-24 animate-pulse rounded-xl bg-muted/60" />; }
+function SectionFallback() { return <div className="mb-6 h-24 animate-pulse rounded-2xl bg-muted/60" />; }
 
 function AccountControl() {
   const { signOut } = useClerk();
@@ -120,51 +124,56 @@ export default function HomeOptimized() {
   return <div className="noise-overlay task-shell min-h-[100dvh]" dir="rtl">
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 backdrop-blur"><div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-8 lg:px-12"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-secondary"><Target size={21}/></div><div><p className="text-lg font-black">إنجازك اليومي</p><p className="text-[11px] font-semibold text-muted-foreground">اليوم أولاً</p></div></div><div className="flex flex-wrap items-center justify-end gap-2"><PersistentSpaceLinks spaces={realSpaces}/><DashboardCustomizer/><PalettePicker/><AccountControl/></div></div></header>
 
-    <main className="mx-auto max-w-[1480px] px-5 pb-12 pt-5 sm:px-8 lg:px-12">
+    <main className="mx-auto max-w-[1480px] px-5 pb-12 pt-6 sm:px-8 lg:px-12">
+      <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px] lg:items-end">
+        <div className="text-right">
+          <div className="mb-2 flex items-center justify-start gap-2 text-xs font-extrabold text-muted-foreground"><CalendarDays size={15} className="text-primary"/><span>اليوم</span><span>/</span><span dir="ltr">{selectedDate}</span></div>
+          <h1 className="text-[clamp(2.35rem,5vw,4.4rem)] font-black leading-[1.05] tracking-[-0.045em]">{headlineDate(selectedDate)}</h1>
+          <p className="mt-3 text-sm font-medium text-muted-foreground sm:text-base">{getDailyMessage(selectedDate)}</p>
+        </div>
+        <div className="flex h-[58px] items-center rounded-2xl border border-border bg-card/80 p-2 shadow-sm" dir="ltr">
+          <button onClick={() => setSelectedDate(shiftDate(selectedDate,-1))} className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted"><ChevronLeft size={18}/></button>
+          <div className="flex h-10 min-w-0 flex-1 items-center justify-between rounded-xl bg-muted/40 px-3 text-sm font-black"><span>{displayDate(selectedDate)}</span><CalendarDays size={15}/></div>
+          <button onClick={() => setSelectedDate(dateKey(new Date()))} className="mx-1 h-10 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground">اليوم</button>
+          <button onClick={() => setSelectedDate(shiftDate(selectedDate,1))} className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted"><ChevronRight size={18}/></button>
+        </div>
+      </section>
+
+      <div className="mb-5 grid h-[58px] grid-cols-4 items-center rounded-2xl border border-border bg-card/75 p-2 text-sm font-black shadow-sm sm:text-base">
+        <div className="flex h-full items-center justify-center rounded-xl text-muted-foreground">عرض المهام</div>
+        <div className="flex h-full items-center justify-center rounded-xl text-muted-foreground">يومي</div>
+        <div className="flex h-full items-center justify-center rounded-xl text-muted-foreground">أسبوعي</div>
+        <div className="flex h-full items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">شهري</div>
+      </div>
+
       <div className="flex flex-col">
-        {visibleSet.has('summary') && <section className="mb-5 rounded-xl border bg-card/70 p-4" style={sectionStyle('summary')}><div className="flex flex-wrap items-center gap-4"><div className="min-w-[120px]"><p className="text-xs font-bold text-muted-foreground">إنجاز اليوم</p><p className="mt-1 text-3xl font-extrabold text-primary">{completion}%</p></div><div className="min-w-[110px]"><p className="text-xs text-muted-foreground">مكتمل</p><p className="text-xl font-extrabold">{summary?.completed ?? 0}</p></div><div className="min-w-[110px]"><p className="text-xs text-muted-foreground">متبقي</p><p className="text-xl font-extrabold">{summary?.remaining ?? 0}</p></div><div className="min-w-[110px]"><p className="text-xs text-muted-foreground">الإجمالي</p><p className="text-xl font-extrabold">{summary?.total ?? 0}</p></div><div className="min-w-[180px] flex-1"><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${completion}%` }}/></div></div></div></section>}
+        {visibleSet.has('summary') && <section className="mb-6 grid gap-3 lg:grid-cols-[1.15fr_0.85fr_0.85fr]" style={sectionStyle('summary')}>
+          <article className="relative min-h-[132px] overflow-hidden rounded-2xl border border-primary/30 bg-primary px-5 py-4 text-primary-foreground shadow-sm">
+            <div className="absolute left-6 top-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary-foreground/10"><Target size={27} className="text-secondary"/></div>
+            <div className="relative z-10 mr-auto max-w-[75%] text-right"><p className="text-sm font-black text-primary-foreground/80">إيقاع اليوم</p><p className="mt-1 text-[34px] font-black leading-none">{completion}<span className="mr-1 text-lg text-secondary">%</span></p></div>
+            <div className="absolute inset-x-5 bottom-4"><div className="h-1.5 overflow-hidden rounded-full bg-primary-foreground/15"><div className="h-full rounded-full bg-secondary transition-all" style={{width:`${completion}%`}}/></div><p className="mt-2 text-[11px] font-bold text-primary-foreground/70">{summary?.completed ?? 0} من {summary?.total ?? 0} مهام اكتملت — حافظ على الإيقاع</p></div>
+          </article>
+          <article className="min-h-[132px] rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"><div className="flex items-start justify-between"><div className="text-right"><p className="text-sm font-black text-muted-foreground">المتبقي</p><p className="mt-2 text-3xl font-black">{summary?.remaining ?? 0}</p><p className="mt-2 text-xs font-bold text-muted-foreground">مهمة تنتظر قرارك</p></div><ClipboardList size={20} className="text-pink-400"/></div></article>
+          <article className="min-h-[132px] rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"><div className="flex items-start justify-between"><div className="text-right"><p className="text-sm font-black text-muted-foreground">كل المهام</p><p className="mt-2 text-3xl font-black">{summary?.total ?? 0}</p><p className="mt-2 text-xs font-bold text-muted-foreground">عبر {categories.length} مساحات</p></div><LayoutGrid size={20} className="text-primary"/></div></article>
+        </section>}
 
         {visibleSet.has('productivity') && <div style={sectionStyle('productivity')}><Suspense fallback={<SectionFallback/>}><ProductivityHub/></Suspense></div>}
 
-        {visibleSet.has('taskMap') && <section className="mb-6 rounded-[22px] border border-border/70 bg-card px-5 py-5 shadow-sm sm:px-6" style={sectionStyle('taskMap')}>
-          <div className="mb-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="order-2 flex flex-wrap items-center gap-2 lg:order-1">
-              <button onClick={() => setSelectedDate(dateKey(new Date()))} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-extrabold shadow-sm"><CalendarDays size={17}/>اليوم</button>
-              <button onClick={() => setSelectedDate(shiftDate(selectedDate,-1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background shadow-sm"><ChevronRight size={18}/></button>
-              <button onClick={() => setSelectedDate(shiftDate(selectedDate,1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background shadow-sm"><ChevronLeft size={18}/></button>
-              <span className="px-2 text-sm font-extrabold sm:text-base">{dateLabel(selectedDate)}</span>
-            </div>
-            <div className="order-1 text-right lg:order-2">
-              <div className="flex items-center justify-end gap-2"><CalendarDays size={24} className="text-primary"/><h2 className="text-2xl font-black">خريطة اليوم</h2></div>
-              <p className="mt-1 text-sm font-medium text-muted-foreground">كل مهامك في مكان واحد، ليوم أكثر إنجازًا.</p>
-            </div>
+        {visibleSet.has('taskMap') && <section className="mb-7 rounded-[24px] border border-border/70 bg-card px-4 py-4 shadow-sm sm:px-5" style={sectionStyle('taskMap')}>
+          <div className="mb-4 flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-right"><h2 className="text-2xl font-black">خريطة اليوم</h2><p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">اختر مساحة لتصفية تركيزك، أو ابدأ من الصورة الكاملة</p></div>
+            <div className="flex flex-wrap gap-2"><button onClick={()=>openNew()} className="inline-flex h-11 items-center gap-2 rounded-xl bg-secondary px-4 text-sm font-black text-secondary-foreground shadow-sm"><Plus size={16}/>مهمة جديدة</button><button onClick={()=>setShowSpaceForm(true)} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-black"><Plus size={16}/>مساحة جديدة</button></div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <button onClick={()=>setActiveCategory('all')} className={`relative flex h-[146px] items-center rounded-[14px] border px-5 py-4 text-right transition ${activeCategory==='all'?'border-primary bg-primary text-primary-foreground shadow-md':'border-border bg-background hover:border-primary/35 hover:shadow-sm'}`}>
-              <div className="flex w-full items-center justify-between gap-4">
-                <div className="flex items-center gap-4"><span className={`flex h-9 w-9 items-center justify-center rounded-[8px] ${activeCategory==='all'?'bg-primary-foreground/15':'bg-primary/10'}`}><Target size={18}/></span><div><div className="text-base font-black">الكل</div><div className="mt-1 text-[34px] font-black leading-none">{tasks.length}</div><div className={`mt-2 text-sm font-medium ${activeCategory==='all'?'text-primary-foreground/75':'text-muted-foreground'}`}>مهمة</div></div></div>
-                <ChevronLeft size={28} className={activeCategory==='all'?'text-primary-foreground/90':'text-foreground/80'}/>
-              </div>
-            </button>
-
-            {categories.slice(0,3).map((category)=>{const meta=getSpaceMeta(category,spaces);const editable=realSpaces.find((s)=>s.name===category);const count=taskCounts[category]??0;return <div key={category} className="group relative">
-              <button onClick={()=>setActiveCategory(category)} className={`flex h-[146px] w-full items-center rounded-[14px] border px-5 py-4 text-right transition ${activeCategory===category?'border-primary bg-primary text-primary-foreground shadow-md':'border-border bg-background hover:border-primary/35 hover:shadow-sm'}`}>
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="flex items-start gap-4"><span className="mt-1 h-7 w-7 rounded-[7px]" style={{backgroundColor:meta.color}}/><div><div className="max-w-[150px] truncate text-base font-black">{category}</div><div className="mt-1 text-[34px] font-black leading-none">{count}</div><div className={`mt-2 text-sm font-medium ${activeCategory===category?'text-primary-foreground/75':'text-muted-foreground'}`}>{count===1?'مهمة':'مهام'}</div></div></div>
-                  <ChevronLeft size={28} className={activeCategory===category?'text-primary-foreground/90':'text-foreground/80'}/>
-                </div>
-              </button>
-              {editable&&<div className="absolute left-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100"><button onClick={()=>setEditingSpace(editable)} className="rounded-md bg-background/90 p-1.5 text-muted-foreground shadow-sm"><Pencil size={11}/></button><button onClick={()=>removeSpace(editable)} className="rounded-md bg-background/90 p-1.5 text-destructive shadow-sm"><Trash2 size={11}/></button></div>}
-            </div>;})}
+          <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
+            <button onClick={()=>setActiveCategory('all')} className={`flex h-[52px] items-center justify-between rounded-[14px] border px-4 text-sm font-black transition ${activeCategory==='all'?'border-primary bg-primary text-primary-foreground shadow-sm':'border-border bg-background hover:border-primary/35'}`}><span>كل المساحات</span><span className={activeCategory==='all'?'text-secondary':'text-muted-foreground'}>{tasks.length}</span></button>
+            {categories.slice(0,5).map((category)=>{const meta=getSpaceMeta(category,spaces);const editable=realSpaces.find((s)=>s.name===category);const count=taskCounts[category]??0;return <div key={category} className="group relative"><button onClick={()=>setActiveCategory(category)} className={`flex h-[52px] w-full items-center justify-between rounded-[14px] border px-3 text-sm font-black transition ${activeCategory===category?'border-primary bg-primary text-primary-foreground shadow-sm':'border-border bg-background hover:border-primary/35'}`}><span className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{backgroundColor:meta.color}}/><span className="truncate">{category}</span></span><span className="ml-12 text-[11px] font-bold opacity-70">{count}</span></button>{editable&&<div className="absolute left-2 top-1/2 flex -translate-y-1/2 gap-1 opacity-70 transition group-hover:opacity-100"><button onClick={(event)=>{event.stopPropagation();setEditingSpace(editable);}} className="rounded-md p-1 text-muted-foreground hover:bg-muted"><Pencil size={11}/></button><button onClick={(event)=>{event.stopPropagation();removeSpace(editable);}} className="rounded-md p-1 text-destructive hover:bg-destructive/10"><Trash2 size={11}/></button></div>}</div>;})}
           </div>
-
-          {categories.length>3 && <div className="mt-3 flex flex-wrap gap-2">{categories.slice(3).map((category)=>{const meta=getSpaceMeta(category,spaces);return <button key={category} onClick={()=>setActiveCategory(category)} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-extrabold ${activeCategory===category?'border-primary bg-primary text-primary-foreground':'border-border bg-background'}`}><span className="h-2.5 w-2.5 rounded-sm" style={{backgroundColor:meta.color}}/>{category}<span className="text-[10px] opacity-70">{taskCounts[category]??0}</span></button>})}</div>}
-          <div className="mt-4 flex justify-end gap-2"><button onClick={()=>setShowSpaceForm(true)} className="rounded-lg border px-3 py-2 text-xs font-extrabold"><Plus size={14} className="ml-1 inline"/>مساحة</button><button onClick={()=>openNew()} className="rounded-lg bg-secondary px-3 py-2 text-xs font-extrabold"><Plus size={14} className="ml-1 inline"/>مهمة</button></div>
+          {categories.length>5 && <div className="mt-2 flex flex-wrap gap-2">{categories.slice(5).map((category)=>{const meta=getSpaceMeta(category,spaces);return <button key={category} onClick={()=>setActiveCategory(category)} className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-extrabold ${activeCategory===category?'border-primary bg-primary text-primary-foreground':'border-border bg-background'}`}><span className="h-2 w-2 rounded-full" style={{backgroundColor:meta.color}}/>{category}<span className="opacity-70">{taskCounts[category]??0}</span></button>})}</div>}
         </section>}
 
         {visibleSet.has('tasks') && <section className="mt-1" style={sectionStyle('tasks')}>
-          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-xl bg-muted"/><div className="h-32 animate-pulse rounded-xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:4}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-lg border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
+          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-xl bg-muted"/><div className="h-32 animate-pulse rounded-xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-2xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:3}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-lg border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
         </section>}
       </div>
     </main>
