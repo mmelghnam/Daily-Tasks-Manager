@@ -12,6 +12,7 @@
     "cloudflare:d1:migrate": "wrangler d1 migrations apply daily-tasks-manager --remote --config wrangler.jsonc",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "test:account-switch": "node --experimental-strip-types --test src/account-query-client.test.ts",
+    "test:hard-refresh": "node --experimental-strip-types --test src/dashboard-hydration.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
