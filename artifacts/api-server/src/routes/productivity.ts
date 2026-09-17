@@ -9,7 +9,7 @@ import {
   ListStudyItemsResponse, UpdateStudyItemBody, UpdateStudyItemParams, UpdateStudyItemResponse,
 } from "@workspace/api-zod";
 import { db, goalsTable, habitsTable, studyItemsTable } from "@workspace/db";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { assertDateOnlyInput } from "../utils/request-validation";
 
 const router: IRouter = Router();
@@ -27,6 +27,22 @@ const dateOnly = (value: string | Date | null | undefined): Date | null => {
 
 function dateKey(value: Date) {
   return value.toISOString().slice(0, 10);
+}
+
+async function ensureHabitCompletionSchema() {
+  const columns = await db.all(sql`PRAGMA table_info(habits)`);
+  const hasCompletedDates = columns.some((column) => {
+    if (!column || typeof column !== "object") return false;
+    return "name" in column && column.name === "completed_dates";
+  });
+  if (hasCompletedDates) return;
+
+  try {
+    await db.run(sql.raw("ALTER TABLE habits ADD COLUMN completed_dates TEXT NOT NULL DEFAULT '[]'"));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/duplicate column name|already exists/i.test(message)) throw error;
+  }
 }
 
 function normalizeCompletionDates(row: typeof habitsTable.$inferSelect) {
@@ -114,6 +130,7 @@ router.delete("/goals/:id", async (req, res, next) => {
 
 router.get("/habits", async (req, res, next) => {
   try {
+    await ensureHabitCompletionSchema();
     const rows = await db.select().from(habitsTable).where(eq(habitsTable.ownerId, req.userId!)).orderBy(asc(habitsTable.createdAt));
     res.json(ListHabitsResponse.parse(rows.map(serializeHabit)));
   } catch (error) { next(error); }
@@ -121,6 +138,7 @@ router.get("/habits", async (req, res, next) => {
 
 router.post("/habits", async (req, res, next) => {
   try {
+    await ensureHabitCompletionSchema();
     const input = CreateHabitBody.parse(req.body);
     const [row] = await db.insert(habitsTable).values({
       ownerId: req.userId!,
@@ -140,6 +158,7 @@ router.post("/habits", async (req, res, next) => {
 
 router.patch("/habits/:id", async (req, res, next) => {
   try {
+    await ensureHabitCompletionSchema();
     assertDateOnlyInput(req.body?.lastCompleted, "lastCompleted", { optional: true, nullable: true });
     const params = UpdateHabitParams.parse({ id: Number(req.params.id) });
     const input = UpdateHabitBody.parse(req.body);
@@ -160,6 +179,7 @@ router.patch("/habits/:id", async (req, res, next) => {
 
 router.post("/habits/:id/check", async (req, res, next) => {
   try {
+    await ensureHabitCompletionSchema();
     assertDateOnlyInput(req.body?.date, "date");
     const params = CheckHabitParams.parse({ id: Number(req.params.id) });
     const input = CheckHabitBody.parse(req.body);
@@ -198,6 +218,7 @@ router.post("/habits/:id/check", async (req, res, next) => {
 
 router.delete("/habits/:id", async (req, res, next) => {
   try {
+    await ensureHabitCompletionSchema();
     const params = DeleteHabitParams.parse({ id: Number(req.params.id) });
     const rows = await db.delete(habitsTable).where(and(eq(habitsTable.id, params.id), eq(habitsTable.ownerId, req.userId!))).returning({ id: habitsTable.id });
     if (!rows.length) {
