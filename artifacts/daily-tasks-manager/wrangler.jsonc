@@ -7,6 +7,7 @@
     "nodejs_compat",
     "enable_nodejs_http_server_modules"
   ],
+  "keep_vars": true,
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
@@ -18,8 +19,5 @@
       "database_id": "05dbac29-3ca6-47d1-aff0-d26604c6c593",
       "migrations_dir": "../../lib/db/migrations"
     }
-  ],
-  "vars": {
-    "ADMIN_USER_ID": ""
-  }
+  ]
 }
