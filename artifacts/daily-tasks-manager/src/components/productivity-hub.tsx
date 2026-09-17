@@ -12,11 +12,6 @@ import { calculateCurrentHabitStreak, localDateKey, normalizeHabitDate } from '@
 
 type UsageType = 'student' | 'employee' | 'freelancer' | 'personal' | null | undefined;
 
-const queryOptions = {
-  staleTime: 60_000,
-  refetchOnWindowFocus: false,
-} as const;
-
 function playHabitSound() {
   type WindowWithWebkitAudio = Window & {
     webkitAudioContext?: typeof AudioContext;
@@ -50,9 +45,9 @@ function playHabitSound() {
 
 export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; tasks: Task[]; date: string }) {
   const queryClient = useQueryClient();
-  const goals = useListGoals({ query: queryOptions });
-  const habits = useListHabits({ query: queryOptions });
-  const studyItems = useListStudyItems({ query: queryOptions });
+  const goals = useListGoals({ query: { queryKey: getListGoalsQueryKey(), staleTime: 60_000, refetchOnWindowFocus: false } });
+  const habits = useListHabits({ query: { queryKey: getListHabitsQueryKey(), staleTime: 60_000, refetchOnWindowFocus: false } });
+  const studyItems = useListStudyItems({ query: { queryKey: getListStudyItemsQueryKey(), staleTime: 60_000, refetchOnWindowFocus: false } });
   const [goalTitle, setGoalTitle] = useState('');
   const [goalTarget, setGoalTarget] = useState('1');
   const [habitName, setHabitName] = useState('');
