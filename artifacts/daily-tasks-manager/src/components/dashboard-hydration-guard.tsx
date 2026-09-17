@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import {
   useGetDashboardPreferences,
-  useGetTaskSummary,
   useListSpaces,
   useListTasks,
 } from '@workspace/api-client-react';
@@ -19,15 +18,13 @@ function todayKey() {
 export function DashboardHydrationGuard({ children }: { children: ReactNode }) {
   const today = todayKey();
 
-  // Only block on data required for the first visible dashboard frame.
-  // Secondary widgets (goals, habits, links, focus tools, etc.) load lazily
-  // inside their own sections instead of delaying the whole application.
+  // Block only on the minimum data needed to safely render the first frame.
+  // Summary and secondary widgets render progressively after the dashboard appears.
   const spaces = useListSpaces();
   const tasks = useListTasks({ date: today });
-  const summary = useGetTaskSummary({ date: today });
   const preferences = useGetDashboardPreferences();
 
-  const initialQueries = [spaces, tasks, summary, preferences] as const;
+  const initialQueries = [spaces, tasks, preferences] as const;
 
   if (shouldHoldDashboardHydration(initialQueries)) {
     return (
