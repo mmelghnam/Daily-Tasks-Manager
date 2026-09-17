@@ -10,6 +10,7 @@ import { requireAuth } from "../middlewares/auth";
 import notificationsRouter from "./notifications";
 import adminRouter from "./admin";
 import preferencesRouter from "./preferences";
+import inboxRouter from "./inbox";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,7 @@ router.use(adminRouter);
 router.use(preferencesRouter);
 router.use(onboardingRouter);
 router.use(productivityRouter);
+router.use(inboxRouter);
 router.use(tasksRouter);
 router.use(spacesRouter);
 router.use(eventsRouter);
