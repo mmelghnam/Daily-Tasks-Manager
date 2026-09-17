@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createAccountQueryClient } from './account-query-client';
+import { createAccountQueryClient } from './account-query-client.ts';
 
 describe('account-scoped query cache', () => {
   it('never exposes the previous account onboarding or daily data', () => {
