@@ -5,7 +5,7 @@ export function createAccountQueryClient() {
     defaultOptions: {
       queries: {
         staleTime: 30_000,
-        gcTime: 10 * 60_000,
+        gcTime: typeof window === 'undefined' ? Infinity : 10 * 60_000,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         retry: 1,
