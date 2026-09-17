@@ -9,37 +9,61 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export const DASHBOARD_SECTIONS = [
+  { key: 'dateHeader', label: 'التاريخ والتنقل' },
+  { key: 'viewMode', label: 'نوع عرض المهام' },
   { key: 'summary', label: 'ملخص الإنجاز' },
   { key: 'dailyPlan', label: 'خطة اليوم والوقت' },
-  { key: 'events', label: 'الأحداث والمواعيد' },
-  { key: 'productivity', label: 'الأهداف والعادات والتركيز' },
+  { key: 'productivity', label: 'الأهداف والعادات' },
+  { key: 'focusTools', label: 'المتأخرات ووضع التركيز' },
   { key: 'links', label: 'روابط المساحات' },
-  { key: 'notifications', label: 'تنبيهات اليوم' },
-  { key: 'taskMap', label: 'خريطة اليوم والمساحات' },
+  { key: 'taskMap', label: 'المساحات والفلاتر' },
+  { key: 'tasks', label: 'قائمة المهام' },
 ] as const;
 
 export const defaultDashboardSections = DASHBOARD_SECTIONS.map((section) => section.key);
 
+const validKeys = new Set<string>(defaultDashboardSections);
+
+export function normalizeDashboardSections(
+  visibleSections: unknown,
+  sectionOrder: unknown,
+) {
+  const savedOrder = Array.isArray(sectionOrder)
+    ? sectionOrder.filter((key): key is string => typeof key === 'string' && validKeys.has(key))
+    : [];
+  const order = [...savedOrder, ...defaultDashboardSections.filter((key) => !savedOrder.includes(key))];
+
+  if (!Array.isArray(visibleSections)) {
+    return { visibleSections: [...defaultDashboardSections], sectionOrder: order };
+  }
+
+  const savedVisible = visibleSections.filter(
+    (key): key is string => typeof key === 'string' && validKeys.has(key),
+  );
+  const newlyAdded = defaultDashboardSections.filter((key) => !savedOrder.includes(key));
+  return {
+    visibleSections: Array.from(new Set([...savedVisible, ...newlyAdded])),
+    sectionOrder: order,
+  };
+}
+
 export function DashboardCustomizer() {
   const queryClient = useQueryClient();
-  const preferences = useGetDashboardPreferences();
+  const preferences = useGetDashboardPreferences({
+    query: { staleTime: 5 * 60_000, refetchOnWindowFocus: false },
+  });
   const updatePreferences = useUpdateDashboardPreferences();
   const [open, setOpen] = useState(false);
   const [visibleSections, setVisibleSections] = useState<string[]>(defaultDashboardSections);
   const [sectionOrder, setSectionOrder] = useState<string[]>(defaultDashboardSections);
 
   useEffect(() => {
-    if (!preferences.data) return;
-    setVisibleSections(
-      Array.isArray(preferences.data.visibleSections)
-        ? preferences.data.visibleSections
-        : defaultDashboardSections,
+    const normalized = normalizeDashboardSections(
+      preferences.data?.visibleSections,
+      preferences.data?.sectionOrder,
     );
-    setSectionOrder(
-      Array.isArray(preferences.data.sectionOrder)
-        ? preferences.data.sectionOrder
-        : defaultDashboardSections,
-    );
+    setVisibleSections(normalized.visibleSections);
+    setSectionOrder(normalized.sectionOrder);
   }, [preferences.data]);
 
   const toggleSection = (key: string) => {
@@ -79,9 +103,9 @@ export function DashboardCustomizer() {
         <DialogContent dir="rtl" className="max-w-lg rounded-3xl">
           <DialogHeader className="text-right">
             <DialogTitle className="flex items-center gap-2 text-xl"><LayoutDashboard className="text-primary" /> خصص واجهتك</DialogTitle>
-            <DialogDescription>اختر الأقسام التي تريد رؤيتها ورتبها بما يناسب طريقة عملك.</DialogDescription>
+            <DialogDescription>كل أجزاء لوحة يومك قابلة للإخفاء وإعادة الترتيب. أدوات الحساب والألوان تظل متاحة دائمًا.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
+          <div className="max-h-[55vh] space-y-2 overflow-y-auto pl-1">
             {sectionOrder.map((key, index) => {
               const section = DASHBOARD_SECTIONS.find((item) => item.key === key);
               if (!section) return null;
@@ -96,7 +120,7 @@ export function DashboardCustomizer() {
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={save} disabled={updatePreferences.isPending} data-testid="button-save-dashboard-preferences" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Save size={16} /> {updatePreferences.isPending ? 'جارٍ الحفظ...' : 'حفظ التخصيص'}</button>
-            <button type="button" onClick={() => { setVisibleSections(defaultDashboardSections); setSectionOrder(defaultDashboardSections); }} className="h-11 rounded-xl border border-border px-4 text-sm font-bold text-muted-foreground hover:bg-muted">إعادة الضبط</button>
+            <button type="button" onClick={() => { setVisibleSections([...defaultDashboardSections]); setSectionOrder([...defaultDashboardSections]); }} className="h-11 rounded-xl border border-border px-4 text-sm font-bold text-muted-foreground hover:bg-muted">إعادة الضبط</button>
           </div>
         </DialogContent>
       </Dialog>
