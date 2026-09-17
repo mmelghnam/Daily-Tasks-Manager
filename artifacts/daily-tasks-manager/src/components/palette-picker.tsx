@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Palette } from 'lucide-react';
 import { applyPalette, getStoredPalette, themePalettes, type PaletteId } from '@/theme-palette';
 
-const QUICK_PALETTES: PaletteId[] = ['orbit', 'sea', 'violet', 'dusk', 'noirGold'];
+const QUICK_PALETTES: PaletteId[] = ['orbit', 'sea', 'violet', 'blush', 'noirGold'];
 
 export function PalettePicker() {
   const [selected, setSelected] = useState<PaletteId>(() => getStoredPalette());
