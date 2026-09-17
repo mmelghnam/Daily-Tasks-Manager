@@ -97,7 +97,17 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    const claims = await verifyToken(token, { secretKey });
+    let claims: Awaited<ReturnType<typeof verifyToken>>;
+    try {
+      claims = await verifyToken(token, { secretKey });
+    } catch {
+      // Invalid, expired, malformed, or otherwise unverifiable sessions are an
+      // authentication failure, not an application error. Do not leak Clerk
+      // verification details to the client or logs.
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const userId = typeof claims.sub === "string" ? claims.sub : null;
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
