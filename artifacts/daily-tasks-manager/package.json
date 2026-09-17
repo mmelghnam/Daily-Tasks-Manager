@@ -11,7 +11,7 @@
     "cloudflare:deploy": "pnpm run build:cloudflare && wrangler deploy",
     "cloudflare:d1:migrate": "wrangler d1 migrations apply daily-tasks-manager --remote --config wrangler.jsonc",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
-    "test:account-switch": "tsx --test src/account-query-client.test.ts",
+    "test:account-switch": "node --experimental-strip-types --test src/account-query-client.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
