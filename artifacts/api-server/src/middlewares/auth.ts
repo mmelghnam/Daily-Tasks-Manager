@@ -3,6 +3,8 @@ import { verifyToken } from "@clerk/backend";
 import {
   appSettingsTable,
   appUsersTable,
+  dashboardPreferencesTable,
+  defaultDashboardSections,
   db,
   eventsTable,
   legacyOwnershipSettingKey,
@@ -29,6 +31,14 @@ export async function provisionUserAndClaimLegacyData(
     await tx
       .insert(appUsersTable)
       .values({ userId })
+      .onConflictDoNothing();
+    await tx
+      .insert(dashboardPreferencesTable)
+      .values({
+        ownerId: userId,
+        visibleSections: [...defaultDashboardSections],
+        sectionOrder: [...defaultDashboardSections],
+      })
       .onConflictDoNothing();
 
     // The primary-key insert acts as the one-time, cross-request claim lock.
