@@ -524,6 +524,7 @@ export const ListHabitsResponseItem = zod.object({
   "frequency": zod.enum(['daily', 'weekly']),
   "streak": zod.number().int(),
   "lastCompleted": zod.coerce.date().nullable(),
+  "completedDates": zod.array(zod.coerce.date()),
   "createdAt": zod.coerce.date()
 })
 export const ListHabitsResponse = zod.array(ListHabitsResponseItem)
@@ -546,6 +547,7 @@ export const CreateHabitResponse = zod.object({
   "frequency": zod.enum(['daily', 'weekly']),
   "streak": zod.number().int(),
   "lastCompleted": zod.coerce.date().nullable(),
+  "completedDates": zod.array(zod.coerce.date()),
   "createdAt": zod.coerce.date()
 })
 
@@ -572,6 +574,7 @@ export const UpdateHabitResponse = zod.object({
   "frequency": zod.enum(['daily', 'weekly']),
   "streak": zod.number().int(),
   "lastCompleted": zod.coerce.date().nullable(),
+  "completedDates": zod.array(zod.coerce.date()),
   "createdAt": zod.coerce.date()
 })
 
@@ -581,6 +584,28 @@ export const DeleteHabitParams = zod.object({
 })
 
 export const DeleteHabitResponse = zod.void()
+
+
+/**
+ * @summary Toggle a habit completion for a calendar day
+ */
+export const CheckHabitParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const CheckHabitBody = zod.object({
+  "date": zod.coerce.date()
+})
+
+export const CheckHabitResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "frequency": zod.enum(['daily', 'weekly']),
+  "streak": zod.number().int(),
+  "lastCompleted": zod.coerce.date().nullable(),
+  "completedDates": zod.array(zod.coerce.date()),
+  "createdAt": zod.coerce.date()
+})
 
 
 /**

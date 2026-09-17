@@ -4,6 +4,7 @@ import {
   ListGoalsResponse, UpdateGoalBody, UpdateGoalParams, UpdateGoalResponse,
   CreateHabitBody, CreateHabitResponse, DeleteHabitParams, DeleteHabitResponse,
   ListHabitsResponse, UpdateHabitBody, UpdateHabitParams, UpdateHabitResponse,
+  CheckHabitBody, CheckHabitParams, CheckHabitResponse,
   CreateStudyItemBody, CreateStudyItemResponse, DeleteStudyItemParams, DeleteStudyItemResponse,
   ListStudyItemsResponse, UpdateStudyItemBody, UpdateStudyItemParams, UpdateStudyItemResponse,
 } from "@workspace/api-zod";
@@ -23,6 +24,45 @@ const dateOnly = (value: string | Date | null | undefined): Date | null => {
     ? null
     : new Date(`${parsed.toISOString().slice(0, 10)}T00:00:00.000Z`);
 };
+
+function dateKey(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function normalizeCompletionDates(row: typeof habitsTable.$inferSelect) {
+  const storedDates = Array.isArray(row.completedDates)
+    ? row.completedDates.filter((value): value is string => /^\d{4}-\d{2}-\d{2}$/.test(value))
+    : [];
+  if (storedDates.length > 0) return Array.from(new Set(storedDates)).sort();
+  return row.lastCompleted ? [dateKey(row.lastCompleted)] : [];
+}
+
+function calculateStreak(dates: string[]) {
+  if (!dates.length) return 0;
+  const completed = new Set(dates);
+  let cursor = new Date(`${dates[dates.length - 1]}T00:00:00.000Z`);
+  let streak = 0;
+  while (completed.has(dateKey(cursor))) {
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
+}
+
+function serializeHabit(row: typeof habitsTable.$inferSelect) {
+  const completedDates = normalizeCompletionDates(row);
+  const hasStoredDates = Array.isArray(row.completedDates) && row.completedDates.length > 0;
+  const latest = completedDates.at(-1);
+  return {
+    id: row.id,
+    name: row.name,
+    frequency: row.frequency,
+    streak: hasStoredDates ? calculateStreak(completedDates) : Math.max(row.streak, 0),
+    lastCompleted: latest ? new Date(`${latest}T00:00:00.000Z`) : null,
+    completedDates: completedDates.map((value) => new Date(`${value}T00:00:00.000Z`)),
+    createdAt: row.createdAt,
+  };
+}
 
 router.get("/goals", async (req, res, next) => {
   try {
@@ -75,7 +115,7 @@ router.delete("/goals/:id", async (req, res, next) => {
 router.get("/habits", async (req, res, next) => {
   try {
     const rows = await db.select().from(habitsTable).where(eq(habitsTable.ownerId, req.userId!)).orderBy(asc(habitsTable.createdAt));
-    res.json(ListHabitsResponse.parse(rows));
+    res.json(ListHabitsResponse.parse(rows.map(serializeHabit)));
   } catch (error) { next(error); }
 });
 
@@ -83,7 +123,7 @@ router.post("/habits", async (req, res, next) => {
   try {
     const input = CreateHabitBody.parse(req.body);
     const [row] = await db.insert(habitsTable).values({ ownerId: req.userId!, name: input.name.trim(), frequency: input.frequency ?? "daily" }).returning();
-    res.status(201).json(CreateHabitResponse.parse(row));
+    res.status(201).json(CreateHabitResponse.parse(serializeHabit(row)));
   } catch (error) { next(error); }
 });
 
@@ -97,12 +137,51 @@ router.patch("/habits/:id", async (req, res, next) => {
     if (input.frequency !== undefined) updates.frequency = input.frequency;
     if (input.streak !== undefined) updates.streak = input.streak;
     if (input.lastCompleted !== undefined) updates.lastCompleted = input.lastCompleted ? dateOnly(input.lastCompleted) : null;
+    if (input.lastCompleted === null && input.streak === undefined) updates.streak = 0;
     const [row] = await db.update(habitsTable).set(updates).where(and(eq(habitsTable.id, params.id), eq(habitsTable.ownerId, req.userId!))).returning();
     if (!row) {
       res.status(404).json({ error: "Habit not found" });
       return;
     }
-    res.json(UpdateHabitResponse.parse(row));
+    res.json(UpdateHabitResponse.parse(serializeHabit(row)));
+  } catch (error) { next(error); }
+});
+
+router.post("/habits/:id/check", async (req, res, next) => {
+  try {
+    assertDateOnlyInput(req.body?.date, "date");
+    const params = CheckHabitParams.parse({ id: Number(req.params.id) });
+    const input = CheckHabitBody.parse(req.body);
+    const selectedDate = dateOnly(input.date);
+    if (!selectedDate) {
+      res.status(400).json({ error: "Invalid habit date" });
+      return;
+    }
+    const [existing] = await db
+      .select()
+      .from(habitsTable)
+      .where(and(eq(habitsTable.id, params.id), eq(habitsTable.ownerId, req.userId!)))
+      .limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Habit not found" });
+      return;
+    }
+
+    const selectedKey = dateKey(selectedDate);
+    const completedDates = normalizeCompletionDates(existing);
+    const nextDates = completedDates.includes(selectedKey)
+      ? completedDates.filter((value) => value !== selectedKey)
+      : [...completedDates, selectedKey].sort();
+    const [row] = await db
+      .update(habitsTable)
+      .set({
+        completedDates: nextDates,
+        streak: calculateStreak(nextDates),
+        lastCompleted: nextDates.length ? dateOnly(nextDates[nextDates.length - 1]) : null,
+      })
+      .where(and(eq(habitsTable.id, params.id), eq(habitsTable.ownerId, req.userId!)))
+      .returning();
+    res.json(CheckHabitResponse.parse(serializeHabit(row)));
   } catch (error) { next(error); }
 });
 

@@ -14,5 +14,6 @@ export interface Habit {
   streak: number;
   /** @nullable */
   lastCompleted: Date | null;
+  completedDates: Date[];
   createdAt: Date;
 }

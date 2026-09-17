@@ -6,6 +6,7 @@
 - [Palette completeness](palette-completeness.md) — every theme must define popover colors or a previous dark palette can leak into light menus.
 - [Task scheduling fields](task-scheduling-fields.md) — task start times and durations are optional; clearing them must persist explicit nulls.
 - [Task menu positioning](task-menu-positioning.md) — RTL task menus need viewport anchoring and should flip to the button’s right side near the left edge.
+- [Habit completion history](habit-completion-history.md) — daily streaks need date-level completion history and local calendar dates, not only lastCompleted.
 - [Account-scoped permission caches](account-scoped-permission-caches.md) — auth-dependent permissions must use account-specific query keys and refetch after account changes.
 - [Artifact deployment health](artifact-deployment-health.md) — each runnable artifact needs an unauthenticated 200 health path, with the probe path scoped to its artifact service.
 - [Laravel migration runtime](laravel-migration-runtime.md) — the new Laravel app must not rely on scaffold database sessions/cache while SQLite is intentionally absent; use MySQL env settings or file drivers.

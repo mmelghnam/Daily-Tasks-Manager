@@ -450,6 +450,29 @@ paths:
           schema: { type: integer }
       responses:
         "204": { description: Deleted }
+  /habits/{id}/check:
+    post:
+      operationId: checkHabit
+      tags: [productivity]
+      summary: Toggle a habit completion for a calendar day
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitCheckInput"
+      responses:
+        "200":
+          description: Updated habit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Habit"
   /study-items:
     get:
       operationId: listStudyItems
@@ -1008,8 +1031,13 @@ components:
         frequency: { type: string, enum: [daily, weekly] }
         streak: { type: integer }
         lastCompleted: { type: ["string", "null"], format: date }
+        completedDates:
+          type: array
+          items:
+            type: string
+            format: date
         createdAt: { type: string, format: date-time }
-      required: [id, name, frequency, streak, lastCompleted, createdAt]
+      required: [id, name, frequency, streak, lastCompleted, completedDates, createdAt]
     HabitInput:
       type: object
       properties:
@@ -1023,6 +1051,13 @@ components:
         frequency: { type: string, enum: [daily, weekly] }
         streak: { type: integer, minimum: 0 }
         lastCompleted: { type: ["string", "null"], format: date }
+    HabitCheckInput:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+      required: [date]
     StudyItem:
       type: object
       properties:

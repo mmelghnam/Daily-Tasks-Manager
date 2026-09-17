@@ -389,10 +389,10 @@ export default function Home() {
           </div>
         </section>}
 
-          {viewMode === 'day' && <DailyPlan tasks={tasks} />}
+          {viewMode === 'day' && showSection('dailyPlan') && <div style={sectionRank('dailyPlan')}><DailyPlan tasks={tasks} /></div>}
 
           {showSection('events') && <div style={sectionRank('events')}><EventsSection /></div>}
-          {showSection('productivity') && <div style={sectionRank('productivity')}><ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} /></div>}
+          {showSection('productivity') && <div style={sectionRank('productivity')}><ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} date={selectedDate} /></div>}
           {showSection('links') && <div style={sectionRank('links')}><SpaceLinksSection spaces={spacesQuery.data ?? []} /></div>}
           {showSection('notifications') && <div style={sectionRank('notifications')}><NotificationCenter tasks={tasks} /></div>}
 

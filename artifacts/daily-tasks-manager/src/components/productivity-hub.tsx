@@ -2,20 +2,14 @@ import { useState } from 'react';
 import { Check, GraduationCap, HeartPulse, ListChecks, Minus, Plus, Target, Trash2, Volume2 } from 'lucide-react';
 import {
   getListGoalsQueryKey, getListHabitsQueryKey, getListStudyItemsQueryKey,
+  useCheckHabit,
   useCreateGoal, useCreateHabit, useCreateStudyItem, useDeleteGoal, useDeleteHabit,
-  useListGoals, useListHabits, useListStudyItems, useUpdateGoal, useUpdateHabit, useUpdateStudyItem,
+  useListGoals, useListHabits, useListStudyItems, useUpdateGoal, useUpdateStudyItem,
 } from '@workspace/api-client-react';
 import type { Goal, Habit, StudyItem, Task } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 type UsageType = 'student' | 'employee' | 'freelancer' | 'personal' | null | undefined;
-
-function dateOnly(value: string | Date | null | undefined) {
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
-  }
-  return typeof value === 'string' ? value.slice(0, 10) : '';
-}
 
 function playHabitSound() {
   type WindowWithWebkitAudio = Window & {
@@ -48,7 +42,7 @@ function playHabitSound() {
   }
 }
 
-export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; tasks: Task[] }) {
+export function ProductivityHub({ usageType, tasks, date }: { usageType: UsageType; tasks: Task[]; date: string }) {
   const queryClient = useQueryClient();
   const goals = useListGoals();
   const habits = useListHabits();
@@ -61,7 +55,7 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
   const createHabit = useCreateHabit();
   const createStudy = useCreateStudyItem();
   const updateGoal = useUpdateGoal();
-  const updateHabit = useUpdateHabit();
+  const checkHabit = useCheckHabit();
   const updateStudy = useUpdateStudyItem();
   const deleteGoal = useDeleteGoal();
   const deleteHabit = useDeleteHabit();
@@ -116,9 +110,9 @@ export function ProductivityHub({ usageType, tasks }: { usageType: UsageType; ta
         </form>
         <div className="space-y-2">
           {(habits.data ?? []).map((habit: Habit) => {
-            const doneToday = dateOnly(habit.lastCompleted) === new Date().toISOString().slice(0, 10);
+            const doneToday = habit.completedDates.includes(date);
             return <div key={habit.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
-              <button type="button" onClick={() => { if (!doneToday) playHabitSound(); const today = new Date().toISOString().slice(0, 10); const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); const nextStreak = doneToday ? Math.max(0, habit.streak - 1) : (dateOnly(habit.lastCompleted) === yesterday ? habit.streak + 1 : 1); updateHabit.mutate({ id: habit.id, data: { streak: nextStreak, lastCompleted: doneToday ? null : today } }, { onSuccess: () => refresh(getListHabitsQueryKey()) }); }} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
+              <button type="button" disabled={checkHabit.isPending} onClick={() => { if (!doneToday) playHabitSound(); checkHabit.mutate({ id: habit.id, data: { date } }, { onSuccess: () => refresh(getListHabitsQueryKey()) }); }} className={`flex h-6 w-6 items-center justify-center rounded-lg border disabled:opacity-60 ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`} aria-label={doneToday ? 'إلغاء تسجيل العادة لهذا اليوم' : 'تسجيل العادة لهذا اليوم'}><Check size={14} /></button>
               <span className="min-w-0 flex-1 text-sm font-bold">{habit.name}</span><span className="inline-flex items-center gap-1 text-xs font-extrabold text-primary"><Volume2 size={12} /> {habit.streak} يوم متتالي</span>
               <button type="button" onClick={() => deleteHabit.mutate({ id: habit.id }, { onSuccess: () => refresh(getListHabitsQueryKey()) })} className="text-muted-foreground hover:text-destructive" aria-label="حذف العادة"><Trash2 size={14} /></button>
             </div>;

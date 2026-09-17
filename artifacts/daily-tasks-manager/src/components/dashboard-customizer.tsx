@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 export const DASHBOARD_SECTIONS = [
   { key: 'summary', label: 'ملخص الإنجاز' },
+  { key: 'dailyPlan', label: 'خطة اليوم والوقت' },
   { key: 'events', label: 'الأحداث والمواعيد' },
   { key: 'productivity', label: 'الأهداف والعادات والتركيز' },
   { key: 'links', label: 'روابط المساحات' },

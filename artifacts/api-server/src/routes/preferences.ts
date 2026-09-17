@@ -14,12 +14,15 @@ function normalizeSections(value: unknown) {
   return Array.from(new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && allowed.has(item)) : []));
 }
 
-function normalizePreferences(row?: { visibleSections: string[]; sectionOrder: string[] }) {
+function normalizePreferences(row?: { visibleSections: string[]; sectionOrder: string[] }, migrateLegacyVisible = false) {
   const order = normalizeSections(row?.sectionOrder);
   const visible = normalizeSections(row?.visibleSections);
   const mergedOrder = [...order, ...defaultDashboardSections.filter((section) => !order.includes(section))];
+  const isLegacyPreferences = migrateLegacyVisible && Boolean(row && !order.includes("dailyPlan"));
   return {
-    visibleSections: row && Array.isArray(row.visibleSections) ? visible : [...defaultDashboardSections],
+    visibleSections: row && Array.isArray(row.visibleSections)
+      ? (isLegacyPreferences ? [...visible, "dailyPlan"] : visible)
+      : [...defaultDashboardSections],
     sectionOrder: row && Array.isArray(row.sectionOrder) ? mergedOrder : [...defaultDashboardSections],
   };
 }
@@ -34,7 +37,7 @@ router.get("/preferences/dashboard", async (req, res, next) => {
       .from(dashboardPreferencesTable)
       .where(eq(dashboardPreferencesTable.ownerId, req.userId!))
       .limit(1);
-    res.json(GetDashboardPreferencesResponse.parse(normalizePreferences(row)));
+    res.json(GetDashboardPreferencesResponse.parse(normalizePreferences(row, true)));
   } catch (error) {
     next(error);
   }
@@ -51,7 +54,7 @@ router.patch("/preferences/dashboard", async (req, res, next) => {
       .from(dashboardPreferencesTable)
       .where(eq(dashboardPreferencesTable.ownerId, req.userId!))
       .limit(1);
-    const current = normalizePreferences(existing);
+    const current = normalizePreferences(existing, true);
     const visibleSections = input.visibleSections === undefined ? current.visibleSections : normalizeSections(input.visibleSections);
     const sectionOrder = input.sectionOrder === undefined ? current.sectionOrder : normalizeSections(input.sectionOrder);
     const [row] = await db

@@ -116,6 +116,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -173,12 +174,12 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
     const rect = button.getBoundingClientRect();
     const menuWidth = 224;
     const gutter = 8;
-    const availableHeight = Math.max(180, window.innerHeight - gutter * 2);
     const preferredTop = rect.bottom + gutter;
-    const menuHeight = Math.min(390, availableHeight);
-    const top = preferredTop + menuHeight <= window.innerHeight - gutter
-      ? preferredTop
-      : Math.max(gutter, rect.top - menuHeight - gutter);
+    const estimatedHeight = task.completed ? 190 : 230;
+    const top = Math.max(
+      gutter,
+      Math.min(preferredTop, window.innerHeight - estimatedHeight - gutter),
+    );
     const preferredLeft = rect.right - menuWidth;
     const rightSideLeft = rect.left;
     const left = preferredLeft >= gutter
@@ -188,7 +189,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
     setMenuPosition({
       top,
       left,
-      maxHeight: Math.max(180, Math.min(390, window.innerHeight - top - gutter)),
+      maxHeight: Math.max(150, window.innerHeight - top - gutter),
     });
     setMenuOpen(true);
   };
@@ -253,8 +254,17 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
   };
 
   const remove = () => {
-    if (!window.confirm('هل تريد حذف هذه المهمة نهائياً؟')) return;
-    deleteTask.mutate({ id: task.id }, { onSuccess: refresh });
+    setMenuOpen(false);
+    setDeleteOpen(true);
+  };
+
+  const confirmRemove = () => {
+    deleteTask.mutate({ id: task.id }, {
+      onSuccess: () => {
+        refresh();
+        setDeleteOpen(false);
+      },
+    });
   };
 
   return (
@@ -327,6 +337,22 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
         </div>
       </article>
       {editing && <TaskForm date={normalizedTaskDate} task={task} spaces={spaces} onClose={() => setEditing(false)} />}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent dir="rtl" className="max-w-sm rounded-3xl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center gap-2 text-xl text-destructive"><Trash2 size={19} /> حذف المهمة</DialogTitle>
+            <DialogDescription className="leading-6">
+              هل تريد حذف «{task.title}» نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-start">
+            <button type="button" onClick={() => setDeleteOpen(false)} disabled={deleteTask.isPending} className="h-11 rounded-xl border border-border px-5 text-sm font-bold text-muted-foreground transition hover:bg-muted">إلغاء</button>
+            <button type="button" onClick={confirmRemove} disabled={deleteTask.isPending} data-testid={`button-confirm-delete-task-${task.id}`} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-5 text-sm font-extrabold text-destructive-foreground transition hover:bg-destructive/90 disabled:cursor-wait disabled:opacity-60">
+              <Trash2 size={16} /> {deleteTask.isPending ? 'جارٍ الحذف...' : 'حذف المهمة'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={copyOpen} onOpenChange={setCopyOpen}>
         <DialogContent dir="rtl" className="max-w-sm rounded-3xl">
           <DialogHeader className="text-right">

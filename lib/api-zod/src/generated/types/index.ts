@@ -21,6 +21,7 @@ export * from './goal';
 export * from './goalInput';
 export * from './goalUpdate';
 export * from './habit';
+export * from './habitCheckInput';
 export * from './habitFrequency';
 export * from './habitInput';
 export * from './habitInputFrequency';

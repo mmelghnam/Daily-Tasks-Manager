@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS habits (
   frequency TEXT NOT NULL DEFAULT 'daily',
   streak INTEGER NOT NULL DEFAULT 0,
   last_completed TEXT,
+  completed_dates TEXT NOT NULL DEFAULT '[]',
   created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 );
 CREATE INDEX IF NOT EXISTS habits_owner_idx ON habits (owner_id);
@@ -125,5 +126,9 @@ export async function createLocalDatabase(
   }
   const client = createClient({ url });
   await client.executeMultiple(localSchema);
+  const habitColumns = await client.execute("PRAGMA table_info(habits)");
+  if (!habitColumns.rows.some((column) => column.name === "completed_dates")) {
+    await client.execute("ALTER TABLE habits ADD COLUMN completed_dates TEXT NOT NULL DEFAULT '[]'");
+  }
   return drizzle(client, { schema }) as unknown as AppDatabase;
 }

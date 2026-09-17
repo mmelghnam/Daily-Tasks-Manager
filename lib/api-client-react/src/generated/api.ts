@@ -34,6 +34,7 @@ import type {
   GoalInput,
   GoalUpdate,
   Habit,
+  HabitCheckInput,
   HabitInput,
   HabitUpdate,
   HealthStatus,
@@ -1841,6 +1842,78 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteHabitMutationOptions(options));
+    }
+
+export const getCheckHabitUrl = (id: number,) => {
+
+
+
+
+  return `/api/habits/${id}/check`
+}
+
+/**
+ * @summary Toggle a habit completion for a calendar day
+ */
+export const checkHabit = async (id: number,
+    habitCheckInput: HabitCheckInput, options?: Parameters<typeof customFetch>[1]): Promise<Habit> => {
+
+  return customFetch<Habit>(getCheckHabitUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(habitCheckInput)
+  }
+);}
+
+
+
+
+
+export const getCheckHabitMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkHabit>>, TError,{id: number;data: BodyType<HabitCheckInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkHabit>>, TError,{id: number;data: BodyType<HabitCheckInput>}, TContext> => {
+
+const mutationKey = ['checkHabit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkHabit>>, {id: number;data: BodyType<HabitCheckInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  checkHabit(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckHabitMutationResult = NonNullable<Awaited<ReturnType<typeof checkHabit>>>
+    export type CheckHabitMutationBody = BodyType<HabitCheckInput>
+    export type CheckHabitMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle a habit completion for a calendar day
+ */
+export const useCheckHabit = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkHabit>>, TError,{id: number;data: BodyType<HabitCheckInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkHabit>>,
+        TError,
+        {id: number;data: BodyType<HabitCheckInput>},
+        TContext
+      > => {
+      return useMutation(getCheckHabitMutationOptions(options));
     }
 
 export const getListStudyItemsUrl = () => {

@@ -4,6 +4,7 @@ import { sqliteJson } from "../sqlite-types";
 
 export const defaultDashboardSections = [
   "summary",
+  "dailyPlan",
   "events",
   "productivity",
   "links",

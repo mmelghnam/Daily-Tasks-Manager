@@ -322,6 +322,32 @@ describe("production API hardening", () => {
       method: "PATCH",
       body: json({ streak: 2, lastCompleted: "2026-09-17" }),
     })).body).toMatchObject({ streak: 2, frequency: "weekly" });
+
+    const dailyHabit = await request(routeBaseUrl, users.freelancer, "/habits", {
+      method: "POST",
+      body: json({ name: "عادة يومية" }),
+    });
+    const dailyHabitId = (dailyHabit.body as { id: number }).id;
+    const day15 = await request(routeBaseUrl, users.freelancer, `/habits/${dailyHabitId}/check`, {
+      method: "POST",
+      body: json({ date: "2026-09-15" }),
+    });
+    expect(day15.body).toMatchObject({ streak: 1, completedDates: ["2026-09-15T00:00:00.000Z"] });
+    await request(routeBaseUrl, users.freelancer, `/habits/${dailyHabitId}/check`, {
+      method: "POST",
+      body: json({ date: "2026-09-16" }),
+    });
+    const day17 = await request(routeBaseUrl, users.freelancer, `/habits/${dailyHabitId}/check`, {
+      method: "POST",
+      body: json({ date: "2026-09-17" }),
+    });
+    expect(day17.body).toMatchObject({ streak: 3 });
+    const unchecked = await request(routeBaseUrl, users.freelancer, `/habits/${dailyHabitId}/check`, {
+      method: "POST",
+      body: json({ date: "2026-09-17" }),
+    });
+    expect(unchecked.body).toMatchObject({ streak: 2 });
+    await request(routeBaseUrl, users.freelancer, `/habits/${dailyHabitId}`, { method: "DELETE" });
     expect((await request(routeBaseUrl, users.freelancer, `/habits/${habitId}`, { method: "DELETE" })).status).toBe(204);
 
     const study = await request(routeBaseUrl, users.freelancer, "/study-items", {
@@ -357,7 +383,7 @@ describe("production API hardening", () => {
   it("persists preferences and restricts administration", async () => {
     const defaults = await request(routeBaseUrl, users.personal, "/preferences/dashboard");
     expect(defaults.status).toBe(200);
-    expect((defaults.body as { sectionOrder: string[] }).sectionOrder).toHaveLength(6);
+    expect((defaults.body as { sectionOrder: string[] }).sectionOrder).toHaveLength(7);
 
     const saved = await request(routeBaseUrl, users.personal, "/preferences/dashboard", {
       method: "PATCH",
@@ -366,7 +392,7 @@ describe("production API hardening", () => {
     expect(saved.status).toBe(200);
     expect(saved.body).toEqual({
       visibleSections: ["summary"],
-      sectionOrder: ["taskMap", "summary", "events", "productivity", "links", "notifications"],
+      sectionOrder: ["taskMap", "summary", "dailyPlan", "events", "productivity", "links", "notifications"],
     });
 
     expect((await request(routeBaseUrl, users.student, "/admin/access")).body).toEqual({ isAdmin: true });

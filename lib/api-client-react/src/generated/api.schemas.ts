@@ -237,6 +237,7 @@ export interface Habit {
   streak: number;
   /** @nullable */
   lastCompleted: string | null;
+  completedDates: string[];
   createdAt: string;
 }
 
@@ -270,6 +271,10 @@ export interface HabitUpdate {
   streak?: number;
   /** @nullable */
   lastCompleted?: string | null;
+}
+
+export interface HabitCheckInput {
+  date: string;
 }
 
 export type StudyItemKind = typeof StudyItemKind[keyof typeof StudyItemKind];
