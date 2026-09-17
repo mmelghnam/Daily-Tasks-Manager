@@ -49,6 +49,15 @@ CREATE TABLE IF NOT EXISTS daily_tasks (
 );
 CREATE INDEX IF NOT EXISTS daily_tasks_owner_task_date_idx
   ON daily_tasks (owner_id, task_date);
+CREATE TABLE IF NOT EXISTS inbox_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  owner_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  notes TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+);
+CREATE INDEX IF NOT EXISTS inbox_items_owner_created_idx
+  ON inbox_items (owner_id, created_at);
 CREATE TABLE IF NOT EXISTS countdown_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   owner_id TEXT,

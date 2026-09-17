@@ -12,6 +12,7 @@ import Landing from '@/pages/landing';
 import Admin from '@/pages/admin';
 import { OnboardingGuard } from '@/components/onboarding-guard';
 import { DashboardHydrationGuard } from '@/components/dashboard-hydration-guard';
+import { ProductivityCommandCenter } from '@/components/productivity-command-center';
 import { createAccountQueryClient } from '@/account-query-client';
 import {
   Redirect,
@@ -92,9 +93,6 @@ function stripBase(path: string): string {
 function HomeRedirect() {
   const { isLoaded } = useUser();
 
-  // The public landing page does not need an authenticated Clerk session.
-  // Render it while Clerk initializes so a slow/blocked auth request does not
-  // look like a broken blank page.
   if (!isLoaded) {
     return <Landing />;
   }
@@ -119,7 +117,10 @@ function AppRoute() {
       <Show when="signed-in">
         <OnboardingGuard>
           <DashboardHydrationGuard>
-            <Home />
+            <>
+              <Home />
+              <ProductivityCommandCenter />
+            </>
           </DashboardHydrationGuard>
         </OnboardingGuard>
       </Show>
@@ -186,8 +187,6 @@ function AccountQueryClientProvider({ children }: { children: ReactNode }) {
 
 function Router() {
   return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={HomeRedirect} />
@@ -206,11 +205,6 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const { isLoaded, user } = useUser();
   const isFetching = useIsFetching();
   const accountId = isLoaded ? user?.id ?? 'signed-out' : 'loading';
-
-  // A hard refresh can briefly render while account-scoped queries are moving
-  // from an empty cache to settled data. If a transient render error still
-  // slips through, reset the route boundary when auth/query hydration changes
-  // instead of leaving the user stuck on the fallback forever.
   const resetKey = `${location}:${accountId}:${isFetching}`;
   return <ErrorBoundary resetKey={resetKey}>{children}</ErrorBoundary>;
 }
