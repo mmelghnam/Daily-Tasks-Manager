@@ -15,7 +15,7 @@ import {
   tasksTable,
 } from "@workspace/db";
 import { getRuntimeEnv } from "@workspace/db";
-import { and, asc, count, eq, gte, isNotNull } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -23,14 +23,8 @@ async function isPrimaryAdmin(userId: string) {
   const configuredAdminId = (
     getRuntimeEnv()?.ADMIN_USER_ID ?? process.env.ADMIN_USER_ID
   )?.trim();
-  if (configuredAdminId) return configuredAdminId === userId;
 
-  const [firstUser] = await db
-    .select({ userId: appUsersTable.userId })
-    .from(appUsersTable)
-    .orderBy(asc(appUsersTable.createdAt), asc(appUsersTable.userId))
-    .limit(1);
-  return firstUser?.userId === userId;
+  return Boolean(configuredAdminId && configuredAdminId === userId);
 }
 
 async function requireAdmin(req: Request, res: Response) {
