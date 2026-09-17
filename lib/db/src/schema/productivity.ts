@@ -1,6 +1,6 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
-import { sqliteDateOnly, sqliteJson } from "../sqlite-types";
+import { sqliteDateOnly, sqliteJsonArray } from "../sqlite-types";
 
 export const goalsTable = sqliteTable("goals", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -27,7 +27,7 @@ export const habitsTable = sqliteTable("habits", {
   frequency: text("frequency").notNull().default("daily"),
   streak: integer("streak").notNull().default(0),
   lastCompleted: sqliteDateOnly("last_completed"),
-  completedDates: sqliteJson<string[]>()("completed_dates").notNull().default([]),
+  completedDates: sqliteJsonArray<string>()("completed_dates").notNull().default([]),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),

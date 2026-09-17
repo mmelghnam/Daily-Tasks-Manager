@@ -2,7 +2,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
-import { sqliteDateOnly, sqliteJson } from "../sqlite-types";
+import { sqliteDateOnly, sqliteJsonArray } from "../sqlite-types";
 
 export const taskLinkSchema = z.object({
   label: z.string().min(1),
@@ -43,10 +43,10 @@ export const tasksTable = sqliteTable(
     durationMinutes: integer("duration_minutes"),
     recurrence: text("recurrence"),
     dueDate: sqliteDateOnly("due_date"),
-    subtasks: sqliteJson<TaskSubtask[]>()("subtasks").notNull().default([]),
+    subtasks: sqliteJsonArray<TaskSubtask>()("subtasks").notNull().default([]),
     completed: integer("completed", { mode: "boolean" }).notNull().default(false),
-    links: sqliteJson<TaskLink[]>()("links").notNull().default([]),
-    followUps: sqliteJson<TaskFollowUp[]>()("follow_ups").notNull().default([]),
+    links: sqliteJsonArray<TaskLink>()("links").notNull().default([]),
+    followUps: sqliteJsonArray<TaskFollowUp>()("follow_ups").notNull().default([]),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),

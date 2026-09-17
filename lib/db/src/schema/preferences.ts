@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
-import { sqliteJson } from "../sqlite-types";
+import { sqliteJsonArray } from "../sqlite-types";
 
 export const defaultDashboardSections = [
   "summary",
@@ -16,8 +16,8 @@ export type DashboardSection = (typeof defaultDashboardSections)[number];
 
 export const dashboardPreferencesTable = sqliteTable("dashboard_preferences", {
   ownerId: text("owner_id").primaryKey(),
-  visibleSections: sqliteJson<string[]>()("visible_sections").notNull().default([...defaultDashboardSections]),
-  sectionOrder: sqliteJson<string[]>()("section_order").notNull().default([...defaultDashboardSections]),
+  visibleSections: sqliteJsonArray<string>()("visible_sections").notNull().default([...defaultDashboardSections]),
+  sectionOrder: sqliteJsonArray<string>()("section_order").notNull().default([...defaultDashboardSections]),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),
