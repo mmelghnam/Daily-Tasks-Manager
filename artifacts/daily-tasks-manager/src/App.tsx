@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, useIsFetching } from '@tanstack/react-query';
 import { ClerkProvider, Show, SignIn, SignUp, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { arSA } from '@clerk/localizations';
@@ -11,6 +11,7 @@ import Home from '@/pages/home';
 import Landing from '@/pages/landing';
 import Admin from '@/pages/admin';
 import { OnboardingGuard } from '@/components/onboarding-guard';
+import { DashboardHydrationGuard } from '@/components/dashboard-hydration-guard';
 import { createAccountQueryClient } from '@/account-query-client';
 import {
   Redirect,
@@ -117,7 +118,9 @@ function AppRoute() {
     <>
       <Show when="signed-in">
         <OnboardingGuard>
-          <Home />
+          <DashboardHydrationGuard>
+            <Home />
+          </DashboardHydrationGuard>
         </OnboardingGuard>
       </Show>
       <Show when="signed-out"><Redirect to="/" /></Show>
@@ -200,7 +203,16 @@ function Router() {
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+  const { isLoaded, user } = useUser();
+  const isFetching = useIsFetching();
+  const accountId = isLoaded ? user?.id ?? 'signed-out' : 'loading';
+
+  // A hard refresh can briefly render while account-scoped queries are moving
+  // from an empty cache to settled data. If a transient render error still
+  // slips through, reset the route boundary when auth/query hydration changes
+  // instead of leaving the user stuck on the fallback forever.
+  const resetKey = `${location}:${accountId}:${isFetching}`;
+  return <ErrorBoundary resetKey={resetKey}>{children}</ErrorBoundary>;
 }
 
 function ClerkProviderWithRoutes() {
