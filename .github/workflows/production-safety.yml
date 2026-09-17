@@ -44,7 +44,8 @@ jobs:
         run: pnpm --filter @workspace/api-server test
 
       - name: Run account-switch regression test
-        run: pnpm --filter @workspace/daily-tasks-manager test:account-switch
+        working-directory: artifacts/daily-tasks-manager
+        run: pnpm dlx tsx@4.20.6 --test src/account-query-client.test.ts
 
       - name: Build Cloudflare production bundle
         run: pnpm --filter @workspace/daily-tasks-manager run build:cloudflare
