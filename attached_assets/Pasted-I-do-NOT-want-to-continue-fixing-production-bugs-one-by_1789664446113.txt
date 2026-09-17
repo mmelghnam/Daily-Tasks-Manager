@@ -1,0 +1,440 @@
+I do NOT want to continue fixing production bugs one-by-one.
+
+I want you to perform a COMPLETE production-hardening pass for this entire application and keep working autonomously until the application is production-ready.
+
+Current production architecture:
+- Frontend: React + Vite
+- Backend: Express/TypeScript running on Cloudflare Workers
+- Database: Cloudflare D1 / SQLite
+- Authentication: Clerk
+- Static assets: Cloudflare Workers Static Assets / Cloudflare Vite Plugin
+- Production URL:
+  https://daily-tasks-manager.mm-elghnam.workers.dev
+
+IMPORTANT:
+The old PostgreSQL data is intentionally NOT being migrated.
+The app MUST work perfectly starting from a completely empty D1 database.
+
+I do NOT want you to fix only the currently visible onboarding error.
+Audit and test the ENTIRE current application.
+
+====================================
+PHASE 1 — DISCOVER THE ENTIRE APP
+====================================
+
+Before changing code:
+
+1. Inspect PROJECT_REQUIREMENTS.md.
+2. Inspect all frontend pages/components.
+3. Inspect all Express routes.
+4. Inspect the OpenAPI contract.
+5. Inspect all Drizzle schemas.
+6. Inspect all D1 migrations.
+7. Inspect every frontend API call.
+8. Create an inventory of EVERY feature and API endpoint currently used by the application.
+
+Do not assume the current known errors are the only problems.
+
+====================================
+PHASE 2 — CLOUDFLARE / D1 AUDIT
+====================================
+
+Search the entire codebase for anything incompatible with Cloudflare Workers or D1.
+
+Specifically find and fix:
+
+- PostgreSQL-only SQL or APIs.
+- interactive database.transaction(...) usage that is incompatible with D1.
+- PostgreSQL column/type assumptions.
+- RETURNING/query behavior that is incompatible with SQLite/D1.
+- JSON serialization differences.
+- boolean handling differences.
+- timestamp/date differences.
+- nullable field issues.
+- unsupported Node APIs.
+- Replit-specific runtime dependencies.
+- DATABASE_URL dependencies.
+- filesystem persistence assumptions.
+- process/env assumptions that do not exist in Workers.
+- incorrect Cloudflare Static Assets routing.
+- Worker/API routing problems.
+- SPA refresh problems.
+
+All database operations must be safe for D1.
+
+Where multiple writes belong together, use a D1-compatible strategy such as batch operations or idempotent writes.
+
+====================================
+PHASE 3 — FRESH DATABASE TEST
+====================================
+
+Create/use a clean LOCAL D1 test database with ZERO application data.
+
+Apply migrations from scratch.
+
+Verify that a fresh database contains every required table, column, index and constraint.
+
+Then simulate a BRAND NEW Clerk user.
+
+The user must be able to:
+
+- authenticate
+- GET onboarding status
+- complete onboarding
+- retry onboarding without duplicate records
+- load dashboard preferences
+- enter the application successfully
+
+No manual database setup should be required.
+
+Any required account/settings rows must be provisioned automatically.
+
+====================================
+PHASE 4 — TEST ALL USAGE TYPES
+====================================
+
+Test onboarding separately for:
+
+- student
+- employee
+- freelancer
+- personal
+
+For each type verify:
+
+- correct default spaces are created
+- correct starter tasks are created
+- no duplicates are created on retry
+- onboardedAt is stored correctly
+- usageType is stored correctly
+
+====================================
+PHASE 5 — FULL API TEST SUITE
+====================================
+
+Do NOT only test onboarding.
+
+Automatically discover all API endpoints and create integration tests for them.
+
+At minimum test all functionality described in PROJECT_REQUIREMENTS.md, including:
+
+AUTH / ACCOUNT
+- authenticated access
+- unauthenticated access returns 401
+- account initialization
+- changing account/usage settings
+- account isolation
+
+TASKS
+- create task
+- read tasks
+- update task
+- complete/uncomplete
+- delete task
+- task date
+- priority
+- start time
+- duration
+- recurrence
+- due date
+- subtasks
+- follow-ups
+- links
+- task ordering
+- duplicate/copy behavior
+- recurring task completion behavior
+
+SPACES
+- list
+- create
+- update
+- rename
+- delete
+- duplicate-name protection
+- correct ownership isolation
+
+DASHBOARD
+- load preferences
+- save preferences
+- section visibility
+- section ordering
+- default preferences when no DB record exists
+
+GOALS
+- create
+- read
+- update
+- delete
+- progress
+
+HABITS
+- create
+- read
+- update
+- complete
+- streak behavior
+- delete
+
+STUDY PLAN
+- create
+- read
+- update
+- complete
+- delete
+- filtering
+
+EVENTS
+- create
+- read
+- update
+- delete
+- date validation
+
+SPACE LINKS
+- create
+- list
+- delete
+- ownership validation
+
+NOTIFICATIONS
+- test all currently implemented notification endpoints
+
+ADMIN
+- ADMIN_USER_ID behavior
+- admin access
+- non-admin access rejection
+- stats
+- admin-only functionality currently implemented
+
+Test every other route you discover even if it is not explicitly listed above.
+
+====================================
+PHASE 6 — ACCOUNT ISOLATION
+====================================
+
+Create at least TWO fake/test authenticated users.
+
+Verify strictly that User A can NEVER:
+
+- read User B's tasks
+- edit User B's tasks
+- delete User B's tasks
+- access User B's spaces
+- access User B's goals/habits/events/preferences
+- access records by guessing numeric IDs
+
+This is a critical requirement.
+
+====================================
+PHASE 7 — FRONTEND / API CONTRACT
+====================================
+
+Audit every frontend fetch/query against the backend.
+
+Verify:
+
+- request URLs
+- HTTP methods
+- request payloads
+- response JSON shape
+- loading states
+- empty states
+- errors
+- mutations
+- cache invalidation
+
+No frontend request should reference an endpoint or field that the backend does not support.
+
+Preserve the existing mobile/API contract.
+
+Do not rename API routes unnecessarily.
+
+====================================
+PHASE 8 — AUTOMATED BROWSER TESTS
+====================================
+
+Add a proper E2E browser test suite, preferably Playwright.
+
+Test the main user journey:
+
+1. application loads
+2. sign-in/onboarding state resolves
+3. choose a usage type
+4. complete onboarding
+5. dashboard loads
+6. create a task
+7. edit task
+8. mark task completed
+9. create another task
+10. delete task
+11. create/edit a space
+12. save dashboard preferences
+13. use other main navigation features
+14. refresh protected routes directly
+15. reload the browser
+16. no broken SPA route / 404
+17. no uncaught frontend errors
+
+For authentication in AUTOMATED TESTS only:
+Use a secure test fixture/mock/test-user strategy.
+
+DO NOT weaken production authentication.
+DO NOT add a production authentication bypass.
+
+====================================
+PHASE 9 — ERROR HANDLING / LOGGING
+====================================
+
+Make server errors diagnosable.
+
+For every important API route:
+
+- Do not silently catch errors and only return 500.
+- Log safe server-side details with console.error.
+- Include operation/route information and error message/stack.
+
+NEVER log:
+
+- Clerk tokens
+- cookies
+- Authorization headers
+- secret keys
+- passwords
+- sensitive personal data
+
+Return clean API errors to the frontend.
+
+====================================
+PHASE 10 — IDEMPOTENCY
+====================================
+
+All initialization flows must be safe to retry.
+
+Especially:
+
+- user provisioning
+- onboarding
+- default settings
+- dashboard preferences
+- default spaces
+- starter tasks
+
+Calling the same initialization endpoint twice must NOT create duplicate data.
+
+====================================
+PHASE 11 — PRODUCTION BUILD VERIFICATION
+====================================
+
+After fixing everything run ALL of the following successfully:
+
+- pnpm install --frozen-lockfile
+- full TypeScript typecheck
+- all unit tests
+- all integration/API tests
+- all D1 tests
+- all E2E tests
+- Cloudflare production build
+- Wrangler deploy --dry-run using the Cloudflare Vite generated deploy config
+
+Also verify:
+
+- the generated frontend index.html exists
+- the generated Wrangler deploy config exists
+- D1 bindings are correct
+- Worker entrypoint is correct
+- static assets are correct
+- SPA fallback is correct
+
+====================================
+PHASE 12 — MIGRATION SAFETY
+====================================
+
+Review the entire D1 schema again after all fixes.
+
+If the current remote database requires new columns/tables/indexes:
+
+- create a NEW migration
+- never edit an already-applied migration in a way that breaks existing production databases
+- make migrations safe to apply to the remote database
+
+Tell me clearly if a new remote migration must be applied.
+
+====================================
+PHASE 13 — CLEANUP
+====================================
+
+Remove:
+
+- temporary debugging hacks
+- unused PostgreSQL migration code from the active Cloudflare runtime where appropriate
+- obsolete Replit production dependencies
+- stale environment assumptions
+- debug code that should not remain
+
+Keep useful safe error logging.
+
+Do NOT change the UI/design unless necessary to fix broken behavior.
+
+====================================
+DEFINITION OF DONE
+====================================
+
+Do NOT stop when one bug is fixed.
+
+You are finished ONLY when:
+
+- fresh D1 initialization succeeds
+- onboarding succeeds
+- repeated onboarding succeeds safely
+- main dashboard loads
+- every tested CRUD feature works
+- every API integration test passes
+- account isolation tests pass
+- E2E tests pass
+- typechecks pass
+- Cloudflare build passes
+- Wrangler dry-run passes
+- there are no known production-blocking errors remaining
+
+If one test reveals another issue, FIX IT and rerun the complete relevant test suite.
+
+Continue iterating autonomously until everything is green.
+
+====================================
+GIT
+====================================
+
+When all work is complete:
+
+Commit ALL production fixes and automated tests into ONE final stabilization commit.
+
+Do NOT deploy to Cloudflare yourself.
+
+Do NOT commit secrets.
+
+====================================
+FINAL REPORT
+====================================
+
+When finished, give me ONE final report containing:
+
+1. All problems found
+2. Root cause of each important problem
+3. All fixes made
+4. All files changed
+5. All automated tests added
+6. Exact number of tests passing
+7. Whether a new D1 migration was created
+8. Exact migration command I need to run, if any
+9. Cloudflare variables required
+10. Cloudflare secrets required
+11. Exact Cloudflare Build command
+12. Exact Cloudflare Deploy command
+13. Anything you could not test and why
+14. Final Git commit hash
+15. A clear final statement:
+   READY FOR PRODUCTION DEPLOY
+   or
+   NOT READY FOR PRODUCTION DEPLOY
+
+Do not tell me something is ready unless the automated tests above actually pass.
