@@ -36,10 +36,13 @@ function toError(value: unknown): Error {
 }
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
-  const safeMessage = error.message
-    .split('\n', 1)[0]
-    .replace(/https?:\/\/\S+/gi, '[رابط]')
-    .slice(0, 180);
+  const showDiagnostics = import.meta.env.DEV;
+  const safeMessage = showDiagnostics
+    ? error.message
+        .split('\n', 1)[0]
+        .replace(/https?:\/\/\S+/gi, '[رابط]')
+        .slice(0, 180)
+    : '';
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-6" dir="rtl">
@@ -48,9 +51,9 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
           حدث خطأ غير متوقع
         </h1>
         <p className="mt-2 text-sm text-gray-600">
-          تعذر عرض هذا الجزء من التطبيق. يمكنك المحاولة مرة أخرى.
+          تعذر عرض هذا الجزء من التطبيق. حاول مرة أخرى، وإذا استمرت المشكلة أعد تحميل الصفحة.
         </p>
-        {safeMessage ? (
+        {showDiagnostics && safeMessage ? (
           <pre className="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-left text-xs text-gray-800" dir="ltr">
             {error.name}: {safeMessage}
           </pre>

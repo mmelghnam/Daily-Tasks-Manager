@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, Show, SignIn, SignUp, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -166,6 +166,13 @@ function AccountQueryClientProvider({ children }: { children: ReactNode }) {
   const { isLoaded, user } = useUser();
   const accountId = isLoaded ? user?.id ?? 'signed-out' : 'loading';
   const accountQueryClient = useMemo(createAccountQueryClient, [accountId]);
+
+  useEffect(() => {
+    return () => {
+      void accountQueryClient.cancelQueries();
+      accountQueryClient.clear();
+    };
+  }, [accountQueryClient]);
 
   return (
     <QueryClientProvider key={accountId} client={accountQueryClient}>
