@@ -38,10 +38,7 @@ function formatTimer(totalSeconds: number) {
 
 export function OverdueFocusTools({ tasks }: { tasks: Task[] }) {
   const queryClient = useQueryClient();
-  const overdueQuery = useListTasks(
-    { dateTo: previousDayKey() },
-    { query: { staleTime: 60_000, refetchOnWindowFocus: false } },
-  );
+  const overdueQuery = useListTasks({ dateTo: previousDayKey() });
   const updateTask = useUpdateTask();
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusTaskId, setFocusTaskId] = useState<number | null>(null);
