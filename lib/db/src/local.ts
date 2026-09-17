@@ -1,4 +1,5 @@
 import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
@@ -118,7 +119,10 @@ CREATE TABLE IF NOT EXISTS broadcast_notifications (
 export async function createLocalDatabase(
   url = "file:.data/daily-tasks.sqlite",
 ): Promise<AppDatabase> {
-  mkdirSync(".data", { recursive: true });
+  if (url.startsWith("file:")) {
+    const filePath = url.slice("file:".length).split("?")[0];
+    mkdirSync(dirname(filePath), { recursive: true });
+  }
   const client = createClient({ url });
   await client.executeMultiple(localSchema);
   return drizzle(client, { schema }) as unknown as AppDatabase;

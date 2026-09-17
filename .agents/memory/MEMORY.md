@@ -11,3 +11,4 @@
 - [Laravel migration runtime](laravel-migration-runtime.md) — the new Laravel app must not rely on scaffold database sessions/cache while SQLite is intentionally absent; use MySQL env settings or file drivers.
 - [D1 concurrency testing](d1-concurrency-testing.md) — LibSQL local writes can reject concurrent transactions; use a D1-compatible concurrency harness for ownership race tests.
 - [D1 onboarding transactions](d1-onboarding-transactions.md) — first-auth provisioning should avoid interactive transactions and use idempotent D1 writes with operation-level logging.
+- [Runtime build quirks](runtime-build-quirks.md) — externalize the local libSQL client and isolate Expo Metro from the mockup service during builds.

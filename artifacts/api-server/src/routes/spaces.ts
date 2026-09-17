@@ -96,8 +96,8 @@ router.patch("/spaces/:id", async (req, res, next) => {
       return;
     }
 
-    const updated = await db.transaction(async (tx) => {
-      const [space] = await tx
+    const [spaceResult] = await db.batch([
+      db
         .update(spacesTable)
         .set({
           name,
@@ -105,17 +105,13 @@ router.patch("/spaces/:id", async (req, res, next) => {
           description: input.description?.trim() || null,
         })
         .where(and(eq(spacesTable.id, params.id), eq(spacesTable.ownerId, req.userId!)))
-        .returning();
-
-      if (current.name !== name) {
-        await tx
-          .update(tasksTable)
-          .set({ category: name })
-          .where(and(eq(tasksTable.category, current.name), eq(tasksTable.ownerId, req.userId!)));
-      }
-
-      return space;
-    });
+        .returning(),
+      db
+        .update(tasksTable)
+        .set({ category: name })
+        .where(and(eq(tasksTable.category, current.name), eq(tasksTable.ownerId, req.userId!))),
+    ]);
+    const [updated] = spaceResult;
 
     res.json(UpdateSpaceResponse.parse(updated));
   } catch (error) {

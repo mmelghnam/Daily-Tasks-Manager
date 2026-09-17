@@ -11,8 +11,11 @@ export interface StudyItemUpdate {
   kind?: StudyItemUpdateKind;
   /** @minLength 1 */
   title?: string;
-  subject?: string;
-  itemDate?: Date;
+  /** @nullable */
+  subject?: string | null;
+  /** @nullable */
+  itemDate?: Date | null;
   completed?: boolean;
-  notes?: string;
+  /** @nullable */
+  notes?: string | null;
 }

@@ -13,6 +13,7 @@ export interface GoalUpdate {
   target?: number;
   /** @minimum 0 */
   current?: number;
-  deadline?: Date;
+  /** @nullable */
+  deadline?: Date | null;
   completed?: boolean;
 }

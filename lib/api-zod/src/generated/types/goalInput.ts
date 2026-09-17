@@ -11,5 +11,6 @@ export interface GoalInput {
   title: string;
   /** @minimum 1 */
   target?: number;
-  deadline?: Date;
+  /** @nullable */
+  deadline?: Date | null;
 }

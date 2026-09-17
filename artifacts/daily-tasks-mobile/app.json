@@ -7,9 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "daily-tasks-mobile",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "backgroundColor": "#f5f2e9"
-    },
     "ios": {
       "supportsTablet": false
     },
@@ -17,7 +14,10 @@
     "web": {
       "favicon": "./assets/images/icon.png"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      ["expo-splash-screen", { "backgroundColor": "#f5f2e9" }]
+    ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

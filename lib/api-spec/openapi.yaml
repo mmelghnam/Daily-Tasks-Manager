@@ -909,7 +909,7 @@ components:
           type: string
           minLength: 1
         notes:
-          type: string
+          type: [string, "null"]
         completed:
           type: boolean
         links:
@@ -931,9 +931,9 @@ components:
           type: string
           enum: [low, medium, high]
         recurrence:
-          type: string
+          type: [string, "null"]
         dueDate:
-          type: string
+          type: [string, "null"]
           format: date
         subtasks:
           type: array
@@ -990,7 +990,7 @@ components:
       properties:
         title: { type: string, minLength: 1 }
         target: { type: integer, minimum: 1 }
-        deadline: { type: string, format: date }
+        deadline: { type: ["string", "null"], format: date }
       required: [title]
     GoalUpdate:
       type: object
@@ -998,7 +998,7 @@ components:
         title: { type: string, minLength: 1 }
         target: { type: integer, minimum: 1 }
         current: { type: integer, minimum: 0 }
-        deadline: { type: string, format: date }
+        deadline: { type: ["string", "null"], format: date }
         completed: { type: boolean }
     Habit:
       type: object
@@ -1041,7 +1041,7 @@ components:
         kind: { type: string, enum: [subject, assignment, exam, review] }
         title: { type: string, minLength: 1 }
         subject: { type: string }
-        itemDate: { type: string, format: date }
+        itemDate: { type: ["string", "null"], format: date }
         notes: { type: string }
       required: [kind, title]
     StudyItemUpdate:
@@ -1049,10 +1049,10 @@ components:
       properties:
         kind: { type: string, enum: [subject, assignment, exam, review] }
         title: { type: string, minLength: 1 }
-        subject: { type: string }
-        itemDate: { type: string, format: date }
+        subject: { type: ["string", "null"] }
+        itemDate: { type: ["string", "null"], format: date }
         completed: { type: boolean }
-        notes: { type: string }
+        notes: { type: ["string", "null"] }
     TaskSummary:
       type: object
       properties:
@@ -1219,4 +1219,4 @@ components:
         color:
           type: string
         imageUrl:
-          type: string
+          type: ["string", "null"]

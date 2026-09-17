@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { db, goalsTable, habitsTable, studyItemsTable } from "@workspace/db";
 import { and, asc, eq } from "drizzle-orm";
+import { assertDateOnlyInput } from "../utils/request-validation";
 
 const router: IRouter = Router();
 const dateOnly = (value: string | Date | null | undefined): Date | null => {
@@ -32,6 +33,7 @@ router.get("/goals", async (req, res, next) => {
 
 router.post("/goals", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.deadline, "deadline", { optional: true, nullable: true });
     const input = CreateGoalBody.parse(req.body);
     const [row] = await db.insert(goalsTable).values({ ownerId: req.userId!, title: input.title.trim(), target: input.target ?? 1, deadline: dateOnly(input.deadline) }).returning();
     res.status(201).json(CreateGoalResponse.parse(row));
@@ -40,6 +42,7 @@ router.post("/goals", async (req, res, next) => {
 
 router.patch("/goals/:id", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.deadline, "deadline", { optional: true, nullable: true });
     const params = UpdateGoalParams.parse({ id: Number(req.params.id) });
     const input = UpdateGoalBody.parse(req.body);
     const updates: Partial<typeof goalsTable.$inferInsert> = { updatedAt: new Date() };
@@ -86,6 +89,7 @@ router.post("/habits", async (req, res, next) => {
 
 router.patch("/habits/:id", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.lastCompleted, "lastCompleted", { optional: true, nullable: true });
     const params = UpdateHabitParams.parse({ id: Number(req.params.id) });
     const input = UpdateHabitBody.parse(req.body);
     const updates: Partial<typeof habitsTable.$inferInsert> = {};
@@ -123,6 +127,7 @@ router.get("/study-items", async (req, res, next) => {
 
 router.post("/study-items", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.itemDate, "itemDate", { optional: true, nullable: true });
     const input = CreateStudyItemBody.parse(req.body);
     const [row] = await db.insert(studyItemsTable).values({ ownerId: req.userId!, kind: input.kind, title: input.title.trim(), subject: input.subject?.trim() || null, itemDate: dateOnly(input.itemDate), notes: input.notes?.trim() || null }).returning();
     res.status(201).json(CreateStudyItemResponse.parse(row));
@@ -131,15 +136,16 @@ router.post("/study-items", async (req, res, next) => {
 
 router.patch("/study-items/:id", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.itemDate, "itemDate", { optional: true, nullable: true });
     const params = UpdateStudyItemParams.parse({ id: Number(req.params.id) });
     const input = UpdateStudyItemBody.parse(req.body);
     const updates: Partial<typeof studyItemsTable.$inferInsert> = {};
     if (input.kind !== undefined) updates.kind = input.kind;
     if (input.title !== undefined) updates.title = input.title.trim();
-    if (input.subject !== undefined) updates.subject = input.subject.trim() || null;
+    if (input.subject !== undefined) updates.subject = input.subject?.trim() || null;
     if (input.itemDate !== undefined) updates.itemDate = dateOnly(input.itemDate);
     if (input.completed !== undefined) updates.completed = input.completed;
-    if (input.notes !== undefined) updates.notes = input.notes.trim() || null;
+    if (input.notes !== undefined) updates.notes = input.notes?.trim() || null;
     const [row] = await db.update(studyItemsTable).set(updates).where(and(eq(studyItemsTable.id, params.id), eq(studyItemsTable.ownerId, req.userId!))).returning();
     if (!row) {
       res.status(404).json({ error: "Study item not found" });

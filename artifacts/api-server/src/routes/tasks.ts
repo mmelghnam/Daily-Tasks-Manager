@@ -17,14 +17,12 @@ import {
 import { db, tasksTable } from "@workspace/db";
 import { spacesTable } from "@workspace/db";
 import { and, asc, desc, eq, gte, lte, max } from "drizzle-orm";
+import { assertDateOnlyInput, BadRequestError, parseDateOnlyQuery } from "../utils/request-validation";
 
 const router: IRouter = Router();
 
 function parseDateQuery(value: unknown): Date | undefined {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return undefined;
-  }
-  return new Date(`${value}T00:00:00.000Z`);
+  return parseDateOnlyQuery(value, "date");
 }
 
 function toDateOnly(value: Date) {
@@ -62,7 +60,7 @@ function nextRecurringDate(date: Date, recurrence: string | null) {
 }
 
 function parseDateRangeQuery(value: unknown) {
-  return parseDateQuery(value);
+  return parseDateOnlyQuery(value, "date range");
 }
 
 router.get("/tasks", async (req, res, next) => {
@@ -91,6 +89,8 @@ router.get("/tasks", async (req, res, next) => {
 
 router.post("/tasks", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.taskDate, "taskDate");
+    assertDateOnlyInput(req.body?.dueDate, "dueDate", { optional: true, nullable: true });
     const input = CreateTaskBody.parse(req.body);
     const [lastTask] = await db
       .select({ sortOrder: max(tasksTable.sortOrder) })
@@ -125,6 +125,8 @@ router.post("/tasks", async (req, res, next) => {
 
 router.patch("/tasks/:id", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.taskDate, "taskDate", { optional: true });
+    assertDateOnlyInput(req.body?.dueDate, "dueDate", { optional: true, nullable: true });
     const params = UpdateTaskParams.parse({ id: Number(req.params.id) });
     const input = UpdateTaskBody.parse(req.body);
     const updates: Partial<typeof tasksTable.$inferInsert> = {
@@ -134,12 +136,12 @@ router.patch("/tasks/:id", async (req, res, next) => {
     if (input.taskDate !== undefined) updates.taskDate = input.taskDate;
     if (input.category !== undefined) updates.category = input.category;
     if (input.title !== undefined) updates.title = input.title.trim();
-    if (input.notes !== undefined) updates.notes = input.notes.trim() || null;
+    if (input.notes !== undefined) updates.notes = input.notes?.trim() || null;
     if (input.priority !== undefined) updates.priority = input.priority;
     if (input.startTime !== undefined) updates.startTime = input.startTime || null;
     if (input.durationMinutes !== undefined) updates.durationMinutes = input.durationMinutes || null;
-    if (input.recurrence !== undefined) updates.recurrence = input.recurrence.trim() || null;
-    if (input.dueDate !== undefined) updates.dueDate = input.dueDate;
+    if (input.recurrence !== undefined) updates.recurrence = input.recurrence?.trim() || null;
+    if (input.dueDate !== undefined) updates.dueDate = input.dueDate || null;
     if (input.subtasks !== undefined) updates.subtasks = input.subtasks;
     if (input.completed !== undefined) updates.completed = input.completed;
     if (input.links !== undefined) updates.links = input.links;
@@ -189,7 +191,7 @@ router.patch("/tasks/:id", async (req, res, next) => {
             dueDate: task.dueDate ? nextRecurringDate(task.dueDate, task.recurrence) : null,
             subtasks: task.subtasks.map((subtask) => ({ ...subtask, completed: false })),
             links: task.links,
-            followUps: task.followUps,
+            followUps: task.followUps.map((followUp) => ({ ...followUp, completed: false })),
             sortOrder: Number(lastTask?.sortOrder ?? -1) + 1,
           });
         }
@@ -204,6 +206,12 @@ router.patch("/tasks/:id", async (req, res, next) => {
 
 router.post("/tasks/:id/copy", async (req, res, next) => {
   try {
+    if (!Array.isArray(req.body?.dates)) {
+      throw new BadRequestError("dates must be an array");
+    }
+    for (const date of req.body.dates) {
+      assertDateOnlyInput(date, "dates");
+    }
     const params = CopyTaskParams.parse({ id: Number(req.params.id) });
     const input = CopyTaskBody.parse(req.body);
     const [source] = await db

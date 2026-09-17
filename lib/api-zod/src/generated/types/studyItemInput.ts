@@ -12,6 +12,7 @@ export interface StudyItemInput {
   /** @minLength 1 */
   title: string;
   subject?: string;
-  itemDate?: Date;
+  /** @nullable */
+  itemDate?: Date | null;
   notes?: string;
 }

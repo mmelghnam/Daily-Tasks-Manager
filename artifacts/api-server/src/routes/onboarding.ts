@@ -9,6 +9,7 @@ import {
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { appUsersTable, db, spacesTable, tasksTable } from "@workspace/db";
 import { logOperationError, withD1OperationLogging } from "../utils/d1-operation";
+import { assertDateOnlyInput } from "../utils/request-validation";
 
 const router: IRouter = Router();
 
@@ -174,6 +175,7 @@ router.get("/onboarding", async (req, res, next) => {
 
 router.post("/onboarding", async (req, res, next) => {
   try {
+    assertDateOnlyInput(req.body?.taskDate, "taskDate");
     const input = CompleteOnboardingBody.parse(req.body);
     const usageType = input.usageType;
     const taskDate = input.taskDate;

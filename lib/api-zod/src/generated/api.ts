@@ -202,7 +202,7 @@ export const UpdateTaskBody = zod.object({
   "taskDate": zod.coerce.date().optional(),
   "category": zod.string().min(1).optional(),
   "title": zod.string().min(1).optional(),
-  "notes": zod.string().optional(),
+  "notes": zod.string().nullish(),
   "completed": zod.boolean().optional(),
   "links": zod.array(zod.object({
   "label": zod.string(),
@@ -217,8 +217,8 @@ export const UpdateTaskBody = zod.object({
   "startTime": zod.string().regex(updateTaskBodyStartTimeRegExp).nullish(),
   "durationMinutes": zod.number().int().min(updateTaskBodyDurationMinutesMin).max(updateTaskBodyDurationMinutesMax).nullish(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
-  "recurrence": zod.string().optional(),
-  "dueDate": zod.coerce.date().optional(),
+  "recurrence": zod.string().nullish(),
+  "dueDate": zod.coerce.date().nullish(),
   "subtasks": zod.array(zod.object({
   "id": zod.number().int(),
   "title": zod.string(),
@@ -463,7 +463,7 @@ export const ListGoalsResponse = zod.array(ListGoalsResponseItem)
 export const CreateGoalBody = zod.object({
   "title": zod.string().min(1),
   "target": zod.number().int().min(1).optional(),
-  "deadline": zod.coerce.date().optional()
+  "deadline": zod.coerce.date().nullish()
 })
 
 export const CreateGoalResponse = zod.object({
@@ -492,7 +492,7 @@ export const UpdateGoalBody = zod.object({
   "title": zod.string().min(1).optional(),
   "target": zod.number().int().min(1).optional(),
   "current": zod.number().int().min(updateGoalBodyCurrentMin).optional(),
-  "deadline": zod.coerce.date().optional(),
+  "deadline": zod.coerce.date().nullish(),
   "completed": zod.boolean().optional()
 })
 
@@ -609,7 +609,7 @@ export const CreateStudyItemBody = zod.object({
   "kind": zod.enum(['subject', 'assignment', 'exam', 'review']),
   "title": zod.string().min(1),
   "subject": zod.string().optional(),
-  "itemDate": zod.coerce.date().optional(),
+  "itemDate": zod.coerce.date().nullish(),
   "notes": zod.string().optional()
 })
 
@@ -635,10 +635,10 @@ export const UpdateStudyItemParams = zod.object({
 export const UpdateStudyItemBody = zod.object({
   "kind": zod.enum(['subject', 'assignment', 'exam', 'review']).optional(),
   "title": zod.string().min(1).optional(),
-  "subject": zod.string().optional(),
-  "itemDate": zod.coerce.date().optional(),
+  "subject": zod.string().nullish(),
+  "itemDate": zod.coerce.date().nullish(),
   "completed": zod.boolean().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().nullish()
 })
 
 export const UpdateStudyItemResponse = zod.object({
@@ -832,7 +832,7 @@ export const UpdateEventBody = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "color": zod.string().optional(),
-  "imageUrl": zod.string().optional()
+  "imageUrl": zod.string().nullish()
 })
 
 export const UpdateEventResponse = zod.object({

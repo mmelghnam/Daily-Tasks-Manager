@@ -144,7 +144,8 @@ export interface TaskUpdate {
   category?: TaskCategory;
   /** @minLength 1 */
   title?: string;
-  notes?: string;
+  /** @nullable */
+  notes?: string | null;
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
@@ -160,8 +161,10 @@ export interface TaskUpdate {
      */
   durationMinutes?: number | null;
   priority?: TaskUpdatePriority;
-  recurrence?: string;
-  dueDate?: string;
+  /** @nullable */
+  recurrence?: string | null;
+  /** @nullable */
+  dueDate?: string | null;
   subtasks?: TaskSubtask[];
   sortOrder?: number;
 }
@@ -203,7 +206,8 @@ export interface GoalInput {
   title: string;
   /** @minimum 1 */
   target?: number;
-  deadline?: string;
+  /** @nullable */
+  deadline?: string | null;
 }
 
 export interface GoalUpdate {
@@ -213,7 +217,8 @@ export interface GoalUpdate {
   target?: number;
   /** @minimum 0 */
   current?: number;
-  deadline?: string;
+  /** @nullable */
+  deadline?: string | null;
   completed?: boolean;
 }
 
@@ -306,7 +311,8 @@ export interface StudyItemInput {
   /** @minLength 1 */
   title: string;
   subject?: string;
-  itemDate?: string;
+  /** @nullable */
+  itemDate?: string | null;
   notes?: string;
 }
 
@@ -324,10 +330,13 @@ export interface StudyItemUpdate {
   kind?: StudyItemUpdateKind;
   /** @minLength 1 */
   title?: string;
-  subject?: string;
-  itemDate?: string;
+  /** @nullable */
+  subject?: string | null;
+  /** @nullable */
+  itemDate?: string | null;
   completed?: boolean;
-  notes?: string;
+  /** @nullable */
+  notes?: string | null;
 }
 
 export type TaskSummaryByCategory = {[key: string]: number};
@@ -442,7 +451,8 @@ export interface EventUpdate {
   startDate?: string;
   endDate?: string;
   color?: string;
-  imageUrl?: string;
+  /** @nullable */
+  imageUrl?: string | null;
 }
 
 export type ListTasksParams = {

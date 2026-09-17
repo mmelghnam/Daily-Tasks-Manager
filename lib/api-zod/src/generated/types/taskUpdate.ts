@@ -16,7 +16,8 @@ export interface TaskUpdate {
   category?: TaskCategory;
   /** @minLength 1 */
   title?: string;
-  notes?: string;
+  /** @nullable */
+  notes?: string | null;
   completed?: boolean;
   links?: TaskLink[];
   followUps?: TaskFollowUp[];
@@ -32,8 +33,10 @@ export interface TaskUpdate {
      */
   durationMinutes?: number | null;
   priority?: TaskUpdatePriority;
-  recurrence?: string;
-  dueDate?: Date;
+  /** @nullable */
+  recurrence?: string | null;
+  /** @nullable */
+  dueDate?: Date | null;
   subtasks?: TaskSubtask[];
   sortOrder?: number;
 }
