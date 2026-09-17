@@ -6,3 +6,4 @@ export * from "./space-links";
 export * from "./users";
 export * from "./broadcast-notifications";
 export * from "./productivity";
+export * from "./inbox";
