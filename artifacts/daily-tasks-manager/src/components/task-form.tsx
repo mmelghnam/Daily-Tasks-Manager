@@ -28,6 +28,8 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
   const queryClient = useQueryClient();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+  const taskSubtasks = Array.isArray(task?.subtasks) ? task.subtasks : [];
+  const taskLinks = Array.isArray(task?.links) ? task.links : [];
   const [title, setTitle] = useState(task?.title ?? '');
   const [category, setCategory] = useState<Category>(task?.category ?? initialCategory ?? spaces[0] ?? 'INV');
   const [notes, setNotes] = useState(task?.notes ?? '');
@@ -36,9 +38,9 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
   const [durationMinutes, setDurationMinutes] = useState(task?.durationMinutes?.toString() ?? '');
   const [recurrence, setRecurrence] = useState(task?.recurrence ?? '');
   const [dueDate, setDueDate] = useState(dateOnly(task?.dueDate));
-  const [subtaskText, setSubtaskText] = useState(task?.subtasks.map((item) => item.title).join('\n') ?? '');
-  const [linkLabel, setLinkLabel] = useState(task?.links[0]?.label ?? '');
-  const [linkUrl, setLinkUrl] = useState(task?.links[0]?.url ?? '');
+  const [subtaskText, setSubtaskText] = useState(taskSubtasks.map((item) => item.title).join('\n'));
+  const [linkLabel, setLinkLabel] = useState(taskLinks[0]?.label ?? '');
+  const [linkUrl, setLinkUrl] = useState(taskLinks[0]?.url ?? '');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export function TaskForm({ date, task, initialCategory, categoryLocked = false, 
       priority,
       recurrence: recurrence || undefined,
       dueDate: dueDate || undefined,
-      subtasks: subtaskText.split('\n').map((title, index) => ({ id: task?.subtasks[index]?.id ?? Date.now() + index, title: title.trim(), completed: task?.subtasks[index]?.completed ?? false })).filter((item) => item.title),
+       subtasks: subtaskText.split('\n').map((title, index) => ({ id: taskSubtasks[index]?.id ?? Date.now() + index, title: title.trim(), completed: taskSubtasks[index]?.completed ?? false })).filter((item) => item.title),
       links,
     };
 

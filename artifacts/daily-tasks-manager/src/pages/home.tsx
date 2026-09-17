@@ -244,16 +244,20 @@ export default function Home() {
   const dashboardPreferences = useGetDashboardPreferences();
   const reorderMutation = useUpdateTask();
   const onboarding = useGetOnboardingStatus();
-  const tasks = taskQuery.data ?? [];
-  const spaces = spacesQuery.data ?? fallbackSpaces;
+  const tasks = Array.isArray(taskQuery.data) ? taskQuery.data : [];
+  const spaces = Array.isArray(spacesQuery.data) ? spacesQuery.data : fallbackSpaces;
   const categories = useMemo(() => Array.from(new Set([...spaces.map((space) => space.name), ...tasks.map((task) => task.category)])), [spaces, tasks]);
   const spaceNames = spaces.map((space) => space.name);
   const visibleTasks = useMemo(() => activeCategory === 'all' ? tasks : tasks.filter((task) => task.category === activeCategory), [activeCategory, tasks]);
   const summary = summaryQuery.data;
   const completion = summary && summary.total > 0 ? Math.round((summary.completed / summary.total) * 100) : 0;
   const isToday = selectedDate === dateKey(new Date());
-  const visibleSections = dashboardPreferences.data?.visibleSections ?? defaultDashboardSections;
-  const sectionOrder = dashboardPreferences.data?.sectionOrder ?? defaultDashboardSections;
+  const visibleSections = Array.isArray(dashboardPreferences.data?.visibleSections)
+    ? dashboardPreferences.data.visibleSections
+    : defaultDashboardSections;
+  const sectionOrder = Array.isArray(dashboardPreferences.data?.sectionOrder)
+    ? dashboardPreferences.data.sectionOrder
+    : defaultDashboardSections;
   const showSection = (key: string) => visibleSections.includes(key);
   const sectionRank = (key: string) => ({ order: sectionOrder.indexOf(key) < 0 ? 99 : sectionOrder.indexOf(key) });
 
@@ -393,7 +397,7 @@ export default function Home() {
 
           {showSection('events') && <div style={sectionRank('events')}><EventsSection /></div>}
           {showSection('productivity') && <div style={sectionRank('productivity')}><ProductivityHub usageType={onboarding.data?.usageType} tasks={tasks} date={selectedDate} /></div>}
-          {showSection('links') && <div style={sectionRank('links')}><SpaceLinksSection spaces={spacesQuery.data ?? []} /></div>}
+          {showSection('links') && <div style={sectionRank('links')}><SpaceLinksSection spaces={Array.isArray(spacesQuery.data) ? spacesQuery.data : []} /></div>}
           {showSection('notifications') && <div style={sectionRank('notifications')}><NotificationCenter tasks={tasks} /></div>}
 
         {showSection('taskMap') && <section className="animate-rise mt-10 rounded-3xl border border-card-border bg-card/70 p-4 shadow-sm sm:p-5" style={{ ...sectionRank('taskMap'), animationDelay: '90ms' }}>

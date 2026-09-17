@@ -60,6 +60,9 @@ export function ProductivityHub({ usageType, tasks, date }: { usageType: UsageTy
   const deleteGoal = useDeleteGoal();
   const deleteHabit = useDeleteHabit();
   const focusTasks = tasks.filter((task) => !task.completed).slice(0, 3);
+  const goalItems = Array.isArray(goals.data) ? goals.data : [];
+  const habitItems = Array.isArray(habits.data) ? habits.data : [];
+  const studyPlanItems = Array.isArray(studyItems.data) ? studyItems.data : [];
 
   const refresh = (key: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey: key });
   const addGoal = () => {
@@ -84,7 +87,7 @@ export function ProductivityHub({ usageType, tasks, date }: { usageType: UsageTy
           <button type="submit" disabled={createGoal.isPending} className="rounded-xl bg-primary px-3 text-primary-foreground disabled:cursor-wait disabled:opacity-60" aria-label="إضافة هدف"><Plus size={17} /></button>
         </form>
         <div className="space-y-2">
-          {(goals.data ?? []).map((goal: Goal) => (
+          {goalItems.map((goal: Goal) => (
             <div key={goal.id} className="rounded-xl bg-background/70 p-3">
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => updateGoal.mutate({ id: goal.id, data: { completed: !goal.completed, current: goal.completed ? Math.min(goal.current, goal.target - 1) : goal.target } }, { onSuccess: () => refresh(getListGoalsQueryKey()) })} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${goal.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></button>
@@ -99,7 +102,7 @@ export function ProductivityHub({ usageType, tasks, date }: { usageType: UsageTy
               </div>
             </div>
           ))}
-          {!goals.data?.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">أضف هدفًا صغيرًا يتحرك معك.</p>}
+          {!goalItems.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">أضف هدفًا صغيرًا يتحرك معك.</p>}
         </div>
       </ProductivityCard>
 
@@ -109,15 +112,16 @@ export function ProductivityHub({ usageType, tasks, date }: { usageType: UsageTy
           <button type="submit" disabled={createHabit.isPending} className="rounded-xl bg-secondary px-3 text-secondary-foreground disabled:cursor-wait disabled:opacity-60" aria-label="إضافة عادة"><Plus size={17} /></button>
         </form>
         <div className="space-y-2">
-          {(habits.data ?? []).map((habit: Habit) => {
-            const doneToday = habit.completedDates.includes(date);
+          {habitItems.map((habit: Habit) => {
+            const completedDates = Array.isArray(habit.completedDates) ? habit.completedDates : [];
+            const doneToday = completedDates.some((completedDate) => String(completedDate).slice(0, 10) === date);
             return <div key={habit.id} className="flex items-center gap-2 rounded-xl bg-background/70 p-3">
               <button type="button" disabled={checkHabit.isPending} onClick={() => { if (!doneToday) playHabitSound(); checkHabit.mutate({ id: habit.id, data: { date } }, { onSuccess: () => refresh(getListHabitsQueryKey()) }); }} className={`flex h-6 w-6 items-center justify-center rounded-lg border disabled:opacity-60 ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`} aria-label={doneToday ? 'إلغاء تسجيل العادة لهذا اليوم' : 'تسجيل العادة لهذا اليوم'}><Check size={14} /></button>
               <span className="min-w-0 flex-1 text-sm font-bold">{habit.name}</span><span className="inline-flex items-center gap-1 text-xs font-extrabold text-primary"><Volume2 size={12} /> {habit.streak} يوم متتالي</span>
               <button type="button" onClick={() => deleteHabit.mutate({ id: habit.id }, { onSuccess: () => refresh(getListHabitsQueryKey()) })} className="text-muted-foreground hover:text-destructive" aria-label="حذف العادة"><Trash2 size={14} /></button>
             </div>;
           })}
-          {!habits.data?.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">ثبّت عادة تعطي يومك إيقاعًا.</p>}
+          {!habitItems.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">ثبّت عادة تعطي يومك إيقاعًا.</p>}
         </div>
       </ProductivityCard>
 
@@ -143,8 +147,8 @@ export function ProductivityHub({ usageType, tasks, date }: { usageType: UsageTy
           <button type="button" onClick={addStudy} className="rounded-xl bg-accent px-3 text-accent-foreground" aria-label="إضافة عنصر دراسة"><Plus size={17} /></button>
         </div>
         <div className="space-y-2">
-          {(studyItems.data ?? []).map((item: StudyItem) => <button type="button" key={item.id} onClick={() => updateStudy.mutate({ id: item.id, data: { completed: !item.completed } }, { onSuccess: () => refresh(getListStudyItemsQueryKey()) })} className={`flex w-full items-center gap-2 rounded-xl bg-background/70 p-3 text-right ${item.completed ? 'text-muted-foreground line-through' : ''}`}><span className={`flex h-6 w-6 items-center justify-center rounded-lg border ${item.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></span><span className="text-sm font-bold">{item.title}</span></button>)}
-          {!studyItems.data?.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">أضف أول واجب أو جلسة مراجعة.</p>}
+          {studyPlanItems.map((item: StudyItem) => <button type="button" key={item.id} onClick={() => updateStudy.mutate({ id: item.id, data: { completed: !item.completed } }, { onSuccess: () => refresh(getListStudyItemsQueryKey()) })} className={`flex w-full items-center gap-2 rounded-xl bg-background/70 p-3 text-right ${item.completed ? 'text-muted-foreground line-through' : ''}`}><span className={`flex h-6 w-6 items-center justify-center rounded-lg border ${item.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border'}`}><Check size={14} /></span><span className="text-sm font-bold">{item.title}</span></button>)}
+          {!studyPlanItems.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground">أضف أول واجب أو جلسة مراجعة.</p>}
         </div>
       </ProductivityCard>}
     </section>

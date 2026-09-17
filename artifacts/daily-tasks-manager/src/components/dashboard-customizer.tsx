@@ -30,8 +30,16 @@ export function DashboardCustomizer() {
 
   useEffect(() => {
     if (!preferences.data) return;
-    setVisibleSections(preferences.data.visibleSections);
-    setSectionOrder(preferences.data.sectionOrder);
+    setVisibleSections(
+      Array.isArray(preferences.data.visibleSections)
+        ? preferences.data.visibleSections
+        : defaultDashboardSections,
+    );
+    setSectionOrder(
+      Array.isArray(preferences.data.sectionOrder)
+        ? preferences.data.sectionOrder
+        : defaultDashboardSections,
+    );
   }, [preferences.data]);
 
   const toggleSection = (key: string) => {

@@ -5,6 +5,7 @@ import type { Task } from '@workspace/api-client-react';
 export function NotificationCenter({ tasks }: { tasks: Task[] }) {
   const announcementsQuery = useListNotifications();
   const today = new Date().toISOString().slice(0, 10);
+  const announcements = Array.isArray(announcementsQuery.data) ? announcementsQuery.data : [];
   const notifications = tasks
     .filter((task) => !task.completed && ((task.dueDate && task.dueDate <= today) || task.recurrence))
     .slice(0, 5);
@@ -21,11 +22,11 @@ export function NotificationCenter({ tasks }: { tasks: Task[] }) {
           <div className="min-w-0"><p className="truncate text-sm font-extrabold">{task.title}</p><p className="text-xs font-semibold text-muted-foreground">{task.dueDate && task.dueDate <= today ? 'موعدها اليوم أو متأخر' : 'مهمة متكررة تحتاج متابعة'}</p></div>
         </div>)}
       </div> : <p className="text-sm font-semibold text-muted-foreground">ستظهر هنا المهام المستحقة والمتكررة قبل أن تفوتك.</p>}
-      {announcementsQuery.data && announcementsQuery.data.length > 0 && (
+      {announcements.length > 0 && (
         <div className="mt-5 border-t border-border/70 pt-4">
           <div className="mb-3 flex items-center gap-2"><Megaphone size={16} className="text-accent" /><h3 className="text-sm font-extrabold">تحديثات التطبيق</h3></div>
           <div className="grid gap-2 md:grid-cols-2">
-            {announcementsQuery.data.slice(0, 3).map((announcement) => (
+            {announcements.slice(0, 3).map((announcement) => (
               <div key={announcement.id} className="rounded-2xl border border-accent/20 bg-accent/5 p-3">
                 <p className="text-sm font-extrabold">{announcement.title}</p>
                 <p className="mt-1 text-xs font-semibold leading-6 text-muted-foreground">{announcement.body}</p>

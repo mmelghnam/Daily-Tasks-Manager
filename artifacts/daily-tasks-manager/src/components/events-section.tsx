@@ -144,7 +144,7 @@ export function EventsSection() {
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const today = dateKey(new Date());
-  const events = eventsQuery.data ?? [];
+  const events = Array.isArray(eventsQuery.data) ? eventsQuery.data : [];
 
   const sortedEvents = useMemo(
     () => [...events].sort((a, b) => dateOnly(a.endDate).localeCompare(dateOnly(b.endDate))),

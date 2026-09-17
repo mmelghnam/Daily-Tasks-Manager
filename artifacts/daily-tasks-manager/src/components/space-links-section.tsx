@@ -73,7 +73,7 @@ export function SpaceLinksSection({ spaces }: SpaceLinksSectionProps) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [activeSpaceId, setActiveSpaceId] = useState<number | null>(spaces[0]?.id ?? null);
-  const links = linksQuery.data ?? [];
+  const links = Array.isArray(linksQuery.data) ? linksQuery.data : [];
   const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? spaces[0];
   const activeSpaceLinks = activeSpace ? links.filter((link) => link.spaceId === activeSpace.id) : [];
 
