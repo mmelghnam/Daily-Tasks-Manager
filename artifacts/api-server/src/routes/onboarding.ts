@@ -6,7 +6,7 @@ import {
   UpdateUsageTypeBody,
   UpdateUsageTypeResponse,
 } from "@workspace/api-zod";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { appUsersTable, db, spacesTable, tasksTable } from "@workspace/db";
 import { logOperationError, withD1OperationLogging } from "../utils/d1-operation";
 
@@ -69,33 +69,81 @@ export async function completeOnboarding(
   taskDate: Date,
   database: typeof db = db,
 ) {
-  return database.transaction(async (tx) => {
-    const [claimed] = await tx
-      .update(appUsersTable)
-      .set({ usageType, onboardedAt: new Date() })
-      .where(and(
-        eq(appUsersTable.userId, userId),
-        isNull(appUsersTable.onboardedAt),
-      ))
-      .returning({ userId: appUsersTable.userId });
+  const [claimed] = await withD1OperationLogging(
+    "POST /api/onboarding",
+    "claim app_users onboarding row",
+    () =>
+      database
+        .update(appUsersTable)
+        .set({ usageType })
+        .where(and(
+          eq(appUsersTable.userId, userId),
+          isNull(appUsersTable.onboardedAt),
+        ))
+        .returning({ userId: appUsersTable.userId }),
+  );
 
-    if (!claimed) return false;
+  if (!claimed) return false;
 
-    const template = templates[usageType];
-    await tx.insert(spacesTable).values(template.spaces.map(([name, color, description]) => ({
-      ownerId: userId,
-      name,
-      color,
-      description,
-    }))).onConflictDoNothing();
-    await tx.insert(tasksTable).values(template.tasks.map(([category, title]) => ({
+  const template = templates[usageType];
+  await withD1OperationLogging(
+    "POST /api/onboarding",
+    "insert starter spaces",
+    () =>
+      database.insert(spacesTable).values(template.spaces.map(([name, color, description]) => ({
+        ownerId: userId,
+        name,
+        color,
+        description,
+      }))).onConflictDoNothing(),
+  );
+
+  const starterTaskTitles = template.tasks.map(([, title]) => title);
+  const existingTasks = await withD1OperationLogging(
+    "POST /api/onboarding",
+    "select existing starter tasks",
+    () =>
+      database
+        .select({ title: tasksTable.title })
+        .from(tasksTable)
+        .where(and(
+          eq(tasksTable.ownerId, userId),
+          eq(tasksTable.taskDate, taskDate),
+          inArray(tasksTable.title, starterTaskTitles),
+        )),
+  );
+  const existingTaskTitles = new Set(existingTasks.map((task) => task.title));
+  const missingTasks = template.tasks
+    .filter(([, title]) => !existingTaskTitles.has(title))
+    .map(([category, title]) => ({
       ownerId: userId,
       taskDate,
       category,
       title,
-    })));
-    return true;
-  });
+    }));
+
+  if (missingTasks.length > 0) {
+    await withD1OperationLogging(
+      "POST /api/onboarding",
+      "insert missing starter tasks",
+      () => database.insert(tasksTable).values(missingTasks),
+    );
+  }
+
+  await withD1OperationLogging(
+    "POST /api/onboarding",
+    "mark app_users onboarding complete",
+    () =>
+      database
+        .update(appUsersTable)
+        .set({ onboardedAt: new Date() })
+        .where(and(
+          eq(appUsersTable.userId, userId),
+          isNull(appUsersTable.onboardedAt),
+        )),
+  );
+
+  return true;
 }
 
 router.get("/onboarding", async (req, res, next) => {

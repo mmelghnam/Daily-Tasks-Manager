@@ -58,6 +58,7 @@ describe("fresh account settings", () => {
       Object.assign(req, { userId });
       next();
     });
+    api.use(express.json());
     api.use("/api", preferencesRouter);
     api.use("/api", onboardingRouter);
 
@@ -75,6 +76,20 @@ describe("fresh account settings", () => {
       expect(await onboardingResponse.json()).toEqual({
         completed: false,
         usageType: null,
+      });
+
+      const completeResponse = await fetch(`http://127.0.0.1:${port}/api/onboarding`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          usageType: "freelancer",
+          taskDate: "2026-09-17",
+        }),
+      });
+      expect(completeResponse.status).toBe(200);
+      expect(await completeResponse.json()).toEqual({
+        completed: true,
+        usageType: "freelancer",
       });
 
       const response = await fetch(`http://127.0.0.1:${port}/api/preferences/dashboard`);
