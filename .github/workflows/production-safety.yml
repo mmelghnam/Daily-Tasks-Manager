@@ -51,6 +51,9 @@ jobs:
       - name: Run account-switch regression test
         run: pnpm --filter @workspace/daily-tasks-manager test:account-switch
 
+      - name: Run hard-refresh hydration regression test
+        run: pnpm --filter @workspace/daily-tasks-manager test:hard-refresh
+
       - name: Validate D1 migrations locally
         run: pnpm exec wrangler d1 migrations apply daily-tasks-manager --local --config artifacts/daily-tasks-manager/wrangler.jsonc
 
