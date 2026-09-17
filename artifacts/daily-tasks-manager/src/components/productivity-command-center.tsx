@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
+  getListSpacesQueryKey,
   getListTasksQueryKey,
   useCreateTask,
   useListSpaces,
@@ -69,12 +70,14 @@ export function ProductivityCommandCenter() {
 
   const tasksQuery = useListTasks(undefined, {
     query: {
+      queryKey: getListTasksQueryKey(),
       enabled: open,
       staleTime: 30_000,
     },
   });
-  const spacesQuery = useListSpaces(undefined, {
+  const spacesQuery = useListSpaces({
     query: {
+      queryKey: getListSpacesQueryKey(),
       enabled: open || Boolean(editingTask) || creatingTask,
       staleTime: 60_000,
     },
@@ -169,13 +172,18 @@ export function ProductivityCommandCenter() {
   };
 
   const deleteInboxItem = async (id: number) => {
+    const response = await fetch(`/api/inbox/${id}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    if (!response.ok && response.status !== 404) throw new Error(`Inbox delete failed with ${response.status}`);
+    setInboxItems((items) => items.filter((item) => item.id !== id));
+  };
+
+  const removeInboxItem = async (id: number) => {
+    setInboxError('');
     try {
-      const response = await fetch(`/api/inbox/${id}`, {
-        method: 'DELETE',
-        credentials: 'same-origin',
-      });
-      if (!response.ok && response.status !== 404) throw new Error(`Inbox delete failed with ${response.status}`);
-      setInboxItems((items) => items.filter((item) => item.id !== id));
+      await deleteInboxItem(id);
     } catch {
       setInboxError('تعذر حذف الفكرة. حاول مرة أخرى.');
     }
@@ -327,7 +335,7 @@ export function ProductivityCommandCenter() {
                         <div className="mt-3 flex items-center justify-between gap-2">
                           <span className="text-[10px] font-semibold text-muted-foreground">{new Date(item.createdAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                           <div className="flex gap-2">
-                            <button type="button" onClick={() => void deleteInboxItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="حذف من Inbox"><Trash2 size={15} /></button>
+                            <button type="button" onClick={() => void removeInboxItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="حذف من Inbox"><Trash2 size={15} /></button>
                             <button type="button" onClick={() => void convertInboxItem(item)} disabled={convertingId === item.id} className="flex items-center gap-1.5 rounded-lg bg-secondary/25 px-3 py-2 text-xs font-extrabold text-primary hover:bg-secondary/35 disabled:opacity-50">{convertingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} تحويل لمهمة</button>
                           </div>
                         </div>
