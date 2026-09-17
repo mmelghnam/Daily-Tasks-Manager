@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { and, eq, isNull } from "drizzle-orm";
 import { appUsersTable, db, spacesTable, tasksTable } from "@workspace/db";
+import { logOperationError, withD1OperationLogging } from "../utils/d1-operation";
 
 const router: IRouter = Router();
 
@@ -99,20 +100,26 @@ export async function completeOnboarding(
 
 router.get("/onboarding", async (req, res, next) => {
   try {
-    const [user] = await db
-      .select({
-        usageType: appUsersTable.usageType,
-        onboardedAt: appUsersTable.onboardedAt,
-      })
-      .from(appUsersTable)
-      .where(eq(appUsersTable.userId, req.userId!))
-      .limit(1);
+    const [user] = await withD1OperationLogging(
+      "GET /api/onboarding",
+      "select app_users onboarding status",
+      () =>
+        db
+          .select({
+            usageType: appUsersTable.usageType,
+            onboardedAt: appUsersTable.onboardedAt,
+          })
+          .from(appUsersTable)
+          .where(eq(appUsersTable.userId, req.userId!))
+          .limit(1),
+    );
 
     res.json(GetOnboardingStatusResponse.parse({
       completed: Boolean(user?.onboardedAt),
       usageType: user?.usageType ?? null,
     }));
   } catch (error) {
+    logOperationError("GET /api/onboarding", "request handler", error);
     next(error);
   }
 });

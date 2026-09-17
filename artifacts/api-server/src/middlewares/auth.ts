@@ -14,6 +14,7 @@ import {
 } from "@workspace/db";
 import { getRuntimeEnv } from "@workspace/db";
 import { isNull } from "drizzle-orm";
+import { withD1OperationLogging } from "../utils/d1-operation";
 
 declare global {
   namespace Express {
@@ -27,35 +28,55 @@ export async function provisionUserAndClaimLegacyData(
   userId: string,
   database: typeof db = db,
 ) {
-  await database.transaction(async (tx) => {
-    await tx
+  const scope = "auth provisioning";
+
+  // Keep these idempotent writes outside an interactive transaction. D1 supports
+  // atomic single statements and batch(), but interactive BEGIN/COMMIT handling
+  // can fail in a Worker request before the onboarding query is reached.
+  await withD1OperationLogging(scope, "insert app_users", () =>
+    database
       .insert(appUsersTable)
       .values({ userId })
-      .onConflictDoNothing();
-    await tx
+      .onConflictDoNothing(),
+  );
+  await withD1OperationLogging(scope, "insert dashboard_preferences", () =>
+    database
       .insert(dashboardPreferencesTable)
       .values({
         ownerId: userId,
         visibleSections: [...defaultDashboardSections],
         sectionOrder: [...defaultDashboardSections],
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing(),
+  );
 
-    // The primary-key insert acts as the one-time, cross-request claim lock.
-    // Only its successful writer can assign previously unowned legacy rows.
-    const claimed = await tx
-      .insert(appSettingsTable)
-      .values({ key: legacyOwnershipSettingKey, value: userId })
-      .onConflictDoNothing()
-      .returning({ key: appSettingsTable.key });
+  // The primary-key insert acts as the one-time, cross-request claim lock.
+  // Only its successful writer can assign previously unowned legacy rows.
+  const claimed = await withD1OperationLogging(
+    scope,
+    "claim legacy ownership in app_settings",
+    () =>
+      database
+        .insert(appSettingsTable)
+        .values({ key: legacyOwnershipSettingKey, value: userId })
+        .onConflictDoNothing()
+        .returning({ key: appSettingsTable.key }),
+  );
 
-    if (claimed.length === 0) return;
+  if (claimed.length === 0) return;
 
-    await tx.update(tasksTable).set({ ownerId: userId }).where(isNull(tasksTable.ownerId));
-    await tx.update(spacesTable).set({ ownerId: userId }).where(isNull(spacesTable.ownerId));
-    await tx.update(eventsTable).set({ ownerId: userId }).where(isNull(eventsTable.ownerId));
-    await tx.update(spaceLinksTable).set({ ownerId: userId }).where(isNull(spaceLinksTable.ownerId));
-  });
+  await withD1OperationLogging(scope, "claim unowned daily_tasks", () =>
+    database.update(tasksTable).set({ ownerId: userId }).where(isNull(tasksTable.ownerId)),
+  );
+  await withD1OperationLogging(scope, "claim unowned task_spaces", () =>
+    database.update(spacesTable).set({ ownerId: userId }).where(isNull(spacesTable.ownerId)),
+  );
+  await withD1OperationLogging(scope, "claim unowned countdown_events", () =>
+    database.update(eventsTable).set({ ownerId: userId }).where(isNull(eventsTable.ownerId)),
+  );
+  await withD1OperationLogging(scope, "claim unowned space_links", () =>
+    database.update(spaceLinksTable).set({ ownerId: userId }).where(isNull(spaceLinksTable.ownerId)),
+  );
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -83,7 +104,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    await provisionUserAndClaimLegacyData(userId);
+    await withD1OperationLogging(
+      "auth provisioning",
+      "complete first-auth account initialization",
+      () => provisionUserAndClaimLegacyData(userId),
+    );
     req.userId = userId;
     next();
   } catch (error) {
