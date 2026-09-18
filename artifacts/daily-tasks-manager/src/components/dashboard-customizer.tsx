@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 export const DASHBOARD_SECTIONS = [
   { key: 'summary', label: 'ملخص الإنجاز' },
   { key: 'productivity', label: 'العادات اليومية' },
+  { key: 'monthlyRhythm', label: 'إيقاع الشهر' },
+  { key: 'monthlyGoals', label: 'أهداف الشهر' },
   { key: 'taskMap', label: 'المساحات والفلاتر' },
   { key: 'tasks', label: 'قائمة المهام' },
 ] as const;
@@ -26,8 +28,14 @@ export function normalizeDashboardSections(visibleSections: unknown, sectionOrde
   const savedVisible = Array.isArray(visibleSections)
     ? visibleSections.filter((key): key is string => typeof key === 'string' && validKeys.has(key))
     : [...defaultDashboardSections];
+  const isLegacyPreference = Array.isArray(sectionOrder)
+    && !sectionOrder.includes('monthlyRhythm')
+    && !sectionOrder.includes('monthlyGoals');
+  const migratedVisible = isLegacyPreference
+    ? [...savedVisible, 'monthlyRhythm', 'monthlyGoals']
+    : savedVisible;
   return {
-    visibleSections: savedVisible.length || Array.isArray(visibleSections) ? Array.from(new Set(savedVisible)) : [...defaultDashboardSections],
+    visibleSections: migratedVisible.length || Array.isArray(visibleSections) ? Array.from(new Set(migratedVisible)) : [...defaultDashboardSections],
     sectionOrder: order,
   };
 }
@@ -75,7 +83,7 @@ export function DashboardCustomizer() {
     <button type="button" onClick={() => { setSaveError(''); setOpen(true); }} aria-label="تخصيص الواجهة" data-testid="button-customize-dashboard" className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card/70 px-3 text-xs font-bold text-muted-foreground transition hover:border-primary/40 hover:text-primary"><LayoutDashboard size={16}/><span className="hidden sm:inline">تخصيص</span></button>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent dir="rtl" className="max-w-md rounded-3xl">
-        <DialogHeader className="text-right"><DialogTitle className="flex items-center gap-2 text-xl"><LayoutDashboard className="text-primary"/> خصص يومك</DialogTitle><DialogDescription>أربع مناطق فقط: أخف، أسرع، وأسهل في الترتيب.</DialogDescription></DialogHeader>
+        <DialogHeader className="text-right"><DialogTitle className="flex items-center gap-2 text-xl"><LayoutDashboard className="text-primary"/> خصص يومك</DialogTitle><DialogDescription>اختر ما يظهر في واجهتك ورتّب الأقسام بالطريقة المناسبة لك.</DialogDescription></DialogHeader>
         <div className="space-y-2">
           {sectionOrder.map((key, index) => {
             const section = DASHBOARD_SECTIONS.find((item) => item.key === key);
