@@ -13,7 +13,7 @@ import {
   tasksTable,
 } from "@workspace/db";
 import { getRuntimeEnv } from "@workspace/db";
-import { isNull } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { withD1OperationLogging } from "../utils/d1-operation";
 
 declare global {
@@ -29,6 +29,22 @@ export async function provisionUserAndClaimLegacyData(
   database: typeof db = db,
 ) {
   const scope = "auth provisioning";
+
+  // Fast path for returning users. Authentication touches this middleware on
+  // every API request, so avoid repeating three idempotent D1 writes after the
+  // account has already been provisioned.
+  const [existingUser] = await withD1OperationLogging(
+    scope,
+    "check existing app_user",
+    () =>
+      database
+        .select({ userId: appUsersTable.userId })
+        .from(appUsersTable)
+        .where(eq(appUsersTable.userId, userId))
+        .limit(1),
+  );
+
+  if (existingUser) return;
 
   // Keep these idempotent writes outside an interactive transaction. D1 supports
   // atomic single statements and batch(), but interactive BEGIN/COMMIT handling
