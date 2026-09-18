@@ -71,7 +71,7 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
   const [habitError, setHabitError] = useState('');
   const [checkingHabitId, setCheckingHabitId] = useState<number | null>(null);
   const [goalTitle, setGoalTitle] = useState('');
-  const [goalTarget, setGoalTarget] = useState('1');
+  const [goalTarget, setGoalTarget] = useState('100');
 
   const { monthKey, daysInMonth, firstDayOffset, monthLabel, deadline } = useMemo(() => monthInfo(habitDate), [habitDate]);
   const items = Array.isArray(habits.data) ? habits.data : [];
@@ -119,43 +119,64 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
     if (!title || createGoal.isPending) return;
     createGoal.mutate(
       { data: { title, target, deadline } },
-      { onSuccess: () => { setGoalTitle(''); setGoalTarget('1'); refreshGoals(); } },
+      { onSuccess: () => { setGoalTitle(''); setGoalTarget('100'); refreshGoals(); } },
     );
   };
 
   const setGoalProgress = (goal: Goal, nextCurrent: number) => {
-    const current = Math.max(0, Math.min(goal.target, nextCurrent));
+    const current = Math.max(0, Math.min(goal.target, Math.round(nextCurrent)));
     updateGoal.mutate(
       { id: goal.id, data: { current, completed: current >= goal.target } },
       { onSuccess: refreshGoals },
     );
   };
 
+  const convertGoalToPercentage = (goal: Goal) => {
+    const current = goal.completed ? 100 : 0;
+    updateGoal.mutate(
+      { id: goal.id, data: { target: 100, current, completed: current >= 100 } },
+      { onSuccess: refreshGoals },
+    );
+  };
+
   const calendarDays = Array.from({ length: daysInMonth }, (_, index) => index + 1);
   const monthCompare = monthKey.localeCompare(todayKey.slice(0, 7));
-  const consideredThrough = monthCompare < 0 ? daysInMonth : monthCompare > 0 ? 0 : Number(todayKey.slice(8, 10));
+  const latestMarkedDay = items.reduce((latest, habit) => {
+    const marked = Array.from(normalizedDatesByHabit.get(habit.id) ?? [])
+      .filter((day) => day.startsWith(`${monthKey}-`))
+      .map((day) => Number(day.slice(8, 10)))
+      .filter(Number.isFinite);
+    return Math.max(latest, ...marked, 0);
+  }, 0);
+  const naturalThrough = monthCompare < 0 ? daysInMonth : monthCompare > 0 ? 0 : Number(todayKey.slice(8, 10));
+  const consideredThrough = Math.max(naturalThrough, latestMarkedDay);
 
   const dayStats = calendarDays.map((day) => {
     const dayKey = `${monthKey}-${String(day).padStart(2, '0')}`;
-    const completed = items.reduce((sum, habit) => sum + (normalizedDatesByHabit.get(habit.id)?.has(dayKey) ? 1 : 0), 0);
-    const ratio = items.length ? completed / items.length : 0;
+    const activeHabits = items.filter((habit) => {
+      const createdKey = normalizeHabitDate(habit.createdAt);
+      return !createdKey || createdKey <= dayKey;
+    });
+    const completed = activeHabits.reduce((sum, habit) => sum + (normalizedDatesByHabit.get(habit.id)?.has(dayKey) ? 1 : 0), 0);
+    const total = activeHabits.length;
+    const ratio = total ? completed / total : 0;
     const isConsidered = day <= consideredThrough;
-    return { day, dayKey, completed, ratio, isConsidered };
+    return { day, dayKey, completed, total, ratio, isConsidered };
   });
 
-  const considered = dayStats.filter((item) => item.isConsidered);
-  const excellentDays = considered.filter((item) => item.ratio >= 0.8).length;
-  const weakDays = considered.filter((item) => item.ratio > 0 && item.ratio < 0.4).length;
-  const totalPossible = considered.length * items.length;
+  const considered = dayStats.filter((item) => item.isConsidered && item.total > 0);
+  const excellentDays = considered.filter((item) => item.ratio >= 0.75).length;
+  const weakDays = considered.filter((item) => item.ratio < 0.4).length;
+  const totalPossible = considered.reduce((sum, item) => sum + item.total, 0);
   const totalCompleted = considered.reduce((sum, item) => sum + item.completed, 0);
   const monthlyCommitment = totalPossible ? Math.round((totalCompleted / totalPossible) * 100) : 0;
 
-  const dayTone = (ratio: number, consideredDay: boolean) => {
-    if (!consideredDay) return 'border-border/60 bg-background/50';
-    if (ratio >= 0.8) return 'border-secondary/60 bg-secondary/25';
-    if (ratio >= 0.4) return 'border-primary/15 bg-primary/[0.08]';
-    if (ratio > 0) return 'border-destructive/20 bg-destructive/[0.09]';
-    return 'border-border/50 bg-muted/45';
+  const dayTone = (ratio: number, consideredDay: boolean, total: number) => {
+    if (!consideredDay || total === 0) return 'border-border/60 bg-background/60 text-foreground';
+    if (ratio >= 0.75) return 'border-amber-500 bg-amber-400 text-slate-950 shadow-sm';
+    if (ratio >= 0.4) return 'border-violet-700 bg-violet-600 text-white shadow-sm';
+    if (ratio > 0) return 'border-rose-700 bg-rose-600 text-white shadow-sm';
+    return 'border-rose-300 bg-rose-200 text-rose-950';
   };
 
   return <div className="mb-5 space-y-5" dir="rtl">
@@ -211,10 +232,10 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
       <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
         {['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'].map((day) => <div key={day} className="pb-1 text-[10px] font-black text-muted-foreground sm:text-xs">{day}</div>)}
         {Array.from({ length: firstDayOffset }, (_, index) => <div key={`empty-start-${index}`} className="min-h-[62px] rounded-xl bg-transparent sm:min-h-[76px]"/>)}
-        {dayStats.map(({ day, dayKey, completed, ratio, isConsidered }) => {
+        {dayStats.map(({ day, dayKey, completed, total, ratio, isConsidered }) => {
           const isSelected = dayKey === habitDate;
-          return <button key={dayKey} type="button" className={`min-h-[62px] rounded-xl border p-1.5 text-right transition sm:min-h-[76px] sm:p-2 ${dayTone(ratio, isConsidered)} ${isSelected ? 'ring-2 ring-primary/45' : ''}`}>
-            <div className="flex items-center justify-between"><span className="text-xs font-black sm:text-sm">{day}</span>{items.length > 0 && <span className="text-[9px] font-bold text-muted-foreground">{completed}/{items.length}</span>}</div>
+          return <button key={dayKey} type="button" className={`min-h-[62px] rounded-xl border p-1.5 text-right transition sm:min-h-[76px] sm:p-2 ${dayTone(ratio, isConsidered, total)} ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
+            <div className="flex items-center justify-between"><span className="text-xs font-black sm:text-sm">{day}</span>{total > 0 && <span className="text-[9px] font-black opacity-90">{completed}/{total}</span>}</div>
             <div className="mt-2 flex flex-wrap gap-1">
               {items.slice(0, 8).map((habit) => <span key={habit.id} title={habit.name} className={`h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2 ${normalizedDatesByHabit.get(habit.id)?.has(dayKey) ? 'bg-primary' : 'border border-primary/35 bg-background/70'}`}/>)}
               {items.length > 8 && <span className="text-[8px] font-black text-muted-foreground">+{items.length - 8}</span>}
@@ -224,10 +245,10 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-secondary"/><span>ممتاز 80%+</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-primary/20"/><span>متوسط</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-destructive/20"/><span>ضعيف</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-muted"/><span>بدون تنفيذ</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-amber-400"/><span>ممتاز 75%+</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-violet-600"/><span>متوسط 40–74%</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-rose-600"/><span>ضعيف 1–39%</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-rose-200 ring-1 ring-rose-300"/><span>بدون تنفيذ</span></span>
       </div>
     </section>
     </>}
@@ -237,8 +258,8 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2"><Target size={19} className="text-primary"/><div><h2 className="text-lg font-extrabold">أهداف الشهر</h2><p className="text-xs text-muted-foreground">{monthLabel} · {monthlyGoals.filter((goal) => goal.completed).length}/{monthlyGoals.length} مكتملة</p></div></div>
         <form onSubmit={(event) => { event.preventDefault(); addGoal(); }} className="flex w-full flex-wrap gap-2 lg:w-auto">
-          <input value={goalTitle} onChange={(event) => setGoalTitle(event.target.value)} placeholder="هدف جديد لهذا الشهر..." className="h-10 min-w-[220px] flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary"/>
-          <input type="number" min={1} max={999} value={goalTarget} onChange={(event) => setGoalTarget(event.target.value)} className="h-10 w-20 rounded-xl border border-input bg-background px-2 text-center text-sm font-bold outline-none focus:border-primary" aria-label="الهدف العددي"/>
+          <input value={goalTitle} onChange={(event) => setGoalTitle(event.target.value)} placeholder="هدف جديد لهذا الشهر... مثال: قراءة كتاب" className="h-10 min-w-[220px] flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary"/>
+          <input type="number" min={1} max={999} value={goalTarget} onChange={(event) => setGoalTarget(event.target.value)} className="h-10 w-20 rounded-xl border border-input bg-background px-2 text-center text-sm font-bold outline-none focus:border-primary" aria-label="المستهدف العددي" title="المستهدف: استخدم 100 لو عايز تتابع الهدف كنسبة مئوية"/>
           <button type="submit" disabled={createGoal.isPending || !goalTitle.trim()} className="inline-flex h-10 items-center gap-1 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground disabled:opacity-60"><Plus size={15}/>إضافة</button>
         </form>
       </div>
@@ -251,7 +272,19 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
               <div className="min-w-0"><h3 className={`truncate text-sm font-black ${goal.completed ? 'line-through opacity-70' : ''}`}>{goal.title}</h3><p className="mt-1 text-[10px] font-bold text-muted-foreground">{goal.current} من {goal.target} · {progress}%</p></div>
               <button onClick={() => deleteGoal.mutate({ id: goal.id }, { onSuccess: refreshGoals })} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted" aria-label="حذف الهدف"><Trash2 size={13}/></button>
             </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }}/></div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }}/></div>
+            {goal.target === 1 ? <div className="mt-3 rounded-xl border border-primary/15 bg-primary/[0.04] p-2.5">
+              <p className="mb-2 text-[10px] font-bold text-muted-foreground">عايز تقيس تقدم جزئي؟ حوّل الهدف إلى نسبة 0–100%.</p>
+              <button type="button" onClick={() => convertGoalToPercentage(goal)} disabled={updateGoal.isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-primary-foreground disabled:opacity-50">تتبّع كنسبة مئوية</button>
+            </div> : <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <input type="range" min={0} max={goal.target} step={1} value={goal.current} onChange={(event) => setGoalProgress(goal, Number(event.target.value))} className="min-w-0 flex-1 accent-[var(--primary)]" aria-label={`تقدم ${goal.title}`}/>
+                <input type="number" min={0} max={goal.target} value={goal.current} onChange={(event) => setGoalProgress(goal, Number(event.target.value))} className="h-8 w-20 rounded-lg border border-input bg-background px-2 text-center text-xs font-black" aria-label={`القيمة الحالية لـ ${goal.title}`}/>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[25,50,75,100].map((percent) => <button key={percent} type="button" onClick={() => setGoalProgress(goal, Math.round((goal.target * percent) / 100))} className="rounded-md bg-muted px-2 py-1 text-[10px] font-black hover:bg-primary/10">{percent}%</button>)}
+              </div>
+            </div>}
             <div className="mt-3 flex items-center justify-between">
               <div className="flex gap-1">
                 <button type="button" disabled={goal.current <= 0 || updateGoal.isPending} onClick={() => setGoalProgress(goal, goal.current - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card disabled:opacity-40"><Minus size={13}/></button>
