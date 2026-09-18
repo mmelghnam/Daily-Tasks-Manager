@@ -71,7 +71,8 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
   const [habitError, setHabitError] = useState('');
   const [checkingHabitId, setCheckingHabitId] = useState<number | null>(null);
   const [goalTitle, setGoalTitle] = useState('');
-  const [goalTarget, setGoalTarget] = useState('100');
+  const [goalParts, setGoalParts] = useState('4');
+  const [updatingGoalId, setUpdatingGoalId] = useState<number | null>(null);
 
   const { monthKey, daysInMonth, firstDayOffset, monthLabel, deadline } = useMemo(() => monthInfo(habitDate), [habitDate]);
   const items = Array.isArray(habits.data) ? habits.data : [];
@@ -115,27 +116,34 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
 
   const addGoal = () => {
     const title = goalTitle.trim();
-    const target = Math.max(1, Number(goalTarget) || 1);
+    const target = Math.max(1, Math.min(20, Number(goalParts) || 4));
     if (!title || createGoal.isPending) return;
     createGoal.mutate(
       { data: { title, target, deadline } },
-      { onSuccess: () => { setGoalTitle(''); setGoalTarget('100'); refreshGoals(); } },
+      { onSuccess: () => { setGoalTitle(''); setGoalParts('4'); refreshGoals(); } },
     );
   };
 
   const setGoalProgress = (goal: Goal, nextCurrent: number) => {
+    if (updatingGoalId === goal.id) return;
     const current = Math.max(0, Math.min(goal.target, Math.round(nextCurrent)));
-    updateGoal.mutate(
-      { id: goal.id, data: { current, completed: current >= goal.target } },
-      { onSuccess: refreshGoals },
-    );
-  };
+    const completed = current >= goal.target;
+    const queryKey = getListGoalsQueryKey();
+    const previous = queryClient.getQueryData<Goal[]>(queryKey);
 
-  const convertGoalToPercentage = (goal: Goal) => {
-    const current = goal.completed ? 100 : 0;
+    queryClient.setQueryData<Goal[]>(queryKey, (existing) =>
+      existing?.map((item) => item.id === goal.id ? { ...item, current, completed } : item),
+    );
+    setUpdatingGoalId(goal.id);
     updateGoal.mutate(
-      { id: goal.id, data: { target: 100, current, completed: current >= 100 } },
-      { onSuccess: refreshGoals },
+      { id: goal.id, data: { current, completed } },
+      {
+        onSuccess: (saved) => queryClient.setQueryData<Goal[]>(queryKey, (existing) =>
+          existing?.map((item) => item.id === saved.id ? saved : item),
+        ),
+        onError: () => queryClient.setQueryData(queryKey, previous),
+        onSettled: () => setUpdatingGoalId((id) => id === goal.id ? null : id),
+      },
     );
   };
 
@@ -174,7 +182,7 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
   const dayTone = (ratio: number, consideredDay: boolean, total: number) => {
     if (!consideredDay || total === 0) return 'border-border/60 bg-background/60 text-foreground';
     if (ratio >= 0.75) return 'border-amber-500 bg-amber-400 text-slate-950 shadow-sm';
-    if (ratio >= 0.4) return 'border-violet-700 bg-violet-600 text-white shadow-sm';
+    if (ratio >= 0.4) return 'border-emerald-700 bg-emerald-600 text-white shadow-sm';
     if (ratio > 0) return 'border-rose-700 bg-rose-600 text-white shadow-sm';
     return 'border-rose-300 bg-rose-200 text-rose-950';
   };
@@ -246,7 +254,7 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-amber-400"/><span>ممتاز 75%+</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-violet-600"/><span>متوسط 40–74%</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-emerald-600"/><span>متوسط 40–74%</span></span>
         <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-rose-600"/><span>ضعيف 1–39%</span></span>
         <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-rose-200 ring-1 ring-rose-300"/><span>بدون تنفيذ</span></span>
       </div>
@@ -259,7 +267,10 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
         <div className="flex items-center gap-2"><Target size={19} className="text-primary"/><div><h2 className="text-lg font-extrabold">أهداف الشهر</h2><p className="text-xs text-muted-foreground">{monthLabel} · {monthlyGoals.filter((goal) => goal.completed).length}/{monthlyGoals.length} مكتملة</p></div></div>
         <form onSubmit={(event) => { event.preventDefault(); addGoal(); }} className="flex w-full flex-wrap gap-2 lg:w-auto">
           <input value={goalTitle} onChange={(event) => setGoalTitle(event.target.value)} placeholder="هدف جديد لهذا الشهر... مثال: قراءة كتاب" className="h-10 min-w-[220px] flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary"/>
-          <input type="number" min={1} max={999} value={goalTarget} onChange={(event) => setGoalTarget(event.target.value)} className="h-10 w-20 rounded-xl border border-input bg-background px-2 text-center text-sm font-bold outline-none focus:border-primary" aria-label="المستهدف العددي" title="المستهدف: استخدم 100 لو عايز تتابع الهدف كنسبة مئوية"/>
+          <label className="flex h-10 items-center gap-2 rounded-xl border border-input bg-background px-3 text-xs font-bold text-muted-foreground">
+            <span>عدد الأجزاء</span>
+            <input type="number" min={1} max={20} value={goalParts} onChange={(event) => setGoalParts(event.target.value)} className="w-12 bg-transparent text-center text-sm font-black text-foreground outline-none" aria-label="عدد أجزاء الهدف"/>
+          </label>
           <button type="submit" disabled={createGoal.isPending || !goalTitle.trim()} className="inline-flex h-10 items-center gap-1 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground disabled:opacity-60"><Plus size={15}/>إضافة</button>
         </form>
       </div>
@@ -269,28 +280,23 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
           const progress = goal.target ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
           return <article key={goal.id} className={`rounded-2xl border p-3.5 ${goal.completed ? 'border-secondary/45 bg-secondary/[0.07]' : 'border-border bg-background/65'}`}>
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0"><h3 className={`truncate text-sm font-black ${goal.completed ? 'line-through opacity-70' : ''}`}>{goal.title}</h3><p className="mt-1 text-[10px] font-bold text-muted-foreground">{goal.current} من {goal.target} · {progress}%</p></div>
+              <div className="min-w-0"><h3 className={`truncate text-sm font-black ${goal.completed ? 'line-through opacity-70' : ''}`}>{goal.title}</h3><p className="mt-1 text-[10px] font-bold text-muted-foreground">{goal.current} من {goal.target} أجزاء · {progress}%</p></div>
               <button onClick={() => deleteGoal.mutate({ id: goal.id }, { onSuccess: refreshGoals })} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted" aria-label="حذف الهدف"><Trash2 size={13}/></button>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }}/></div>
-            {goal.target === 1 ? <div className="mt-3 rounded-xl border border-primary/15 bg-primary/[0.04] p-2.5">
-              <p className="mb-2 text-[10px] font-bold text-muted-foreground">عايز تقيس تقدم جزئي؟ حوّل الهدف إلى نسبة 0–100%.</p>
-              <button type="button" onClick={() => convertGoalToPercentage(goal)} disabled={updateGoal.isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-primary-foreground disabled:opacity-50">تتبّع كنسبة مئوية</button>
-            </div> : <div className="mt-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <input type="range" min={0} max={goal.target} step={1} value={goal.current} onChange={(event) => setGoalProgress(goal, Number(event.target.value))} className="min-w-0 flex-1 accent-[var(--primary)]" aria-label={`تقدم ${goal.title}`}/>
-                <input type="number" min={0} max={goal.target} value={goal.current} onChange={(event) => setGoalProgress(goal, Number(event.target.value))} className="h-8 w-20 rounded-lg border border-input bg-background px-2 text-center text-xs font-black" aria-label={`القيمة الحالية لـ ${goal.title}`}/>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {[25,50,75,100].map((percent) => <button key={percent} type="button" onClick={() => setGoalProgress(goal, Math.round((goal.target * percent) / 100))} className="rounded-md bg-muted px-2 py-1 text-[10px] font-black hover:bg-primary/10">{percent}%</button>)}
-              </div>
-            </div>}
+            <div className="mt-3 flex gap-1.5" aria-label={`تقدم ${goal.title}: ${goal.current} من ${goal.target}`}>
+              {Array.from({ length: Math.min(goal.target, 20) }, (_, index) => {
+                const done = index < goal.current;
+                return <span key={index} className={`h-2 flex-1 rounded-full transition-colors ${done ? 'bg-primary' : 'bg-muted'}`}/>;
+              })}
+            </div>
+            <div className="mt-2 text-[10px] font-bold text-muted-foreground">كل جزء = {Math.round(100 / goal.target)}% تقريبًا</div>
             <div className="mt-3 flex items-center justify-between">
               <div className="flex gap-1">
-                <button type="button" disabled={goal.current <= 0 || updateGoal.isPending} onClick={() => setGoalProgress(goal, goal.current - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card disabled:opacity-40"><Minus size={13}/></button>
-                <button type="button" disabled={goal.current >= goal.target || updateGoal.isPending} onClick={() => setGoalProgress(goal, goal.current + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground disabled:opacity-40"><Plus size={13}/></button>
+                <button type="button" disabled={goal.current <= 0 || updatingGoalId === goal.id} onClick={() => setGoalProgress(goal, goal.current - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card disabled:opacity-40"><Minus size={13}/></button>
+                <button type="button" disabled={goal.current >= goal.target || updatingGoalId === goal.id} onClick={() => setGoalProgress(goal, goal.current + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground disabled:opacity-40"><Plus size={13}/></button>
               </div>
-              <button type="button" onClick={() => setGoalProgress(goal, goal.completed ? Math.max(0, goal.target - 1) : goal.target)} className={`rounded-lg px-3 py-1.5 text-xs font-black ${goal.completed ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'}`}>{goal.completed ? 'إعادة فتح' : 'تم الهدف'}</button>
+              <span className="min-w-[76px] text-center text-xs font-black">{progress}%</span>
+              <button type="button" disabled={updatingGoalId === goal.id} onClick={() => setGoalProgress(goal, goal.completed ? Math.max(0, goal.target - 1) : goal.target)} className={`rounded-lg px-3 py-1.5 text-xs font-black disabled:opacity-50 ${goal.completed ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'}`}>{goal.completed ? 'إعادة فتح' : 'تم الهدف'}</button>
             </div>
           </article>;
         })}
