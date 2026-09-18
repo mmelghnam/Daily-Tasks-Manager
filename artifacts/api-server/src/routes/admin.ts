@@ -6,6 +6,7 @@ import {
   GetAdminStatsResponse,
 } from "@workspace/api-zod";
 import {
+  appSettingsTable,
   appUsersTable,
   broadcastNotificationsTable,
   db,
@@ -13,6 +14,7 @@ import {
   habitsTable,
   spacesTable,
   tasksTable,
+  legacyOwnershipSettingKey,
 } from "@workspace/db";
 import { getRuntimeEnv } from "@workspace/db";
 import { and, count, eq, gte, isNotNull } from "drizzle-orm";
@@ -24,7 +26,15 @@ async function isPrimaryAdmin(userId: string) {
     getRuntimeEnv()?.ADMIN_USER_ID ?? process.env.ADMIN_USER_ID
   )?.trim();
 
-  return Boolean(configuredAdminId && configuredAdminId === userId);
+  if (configuredAdminId) return configuredAdminId === userId;
+
+  const [legacyOwner] = await db
+    .select({ userId: appSettingsTable.value })
+    .from(appSettingsTable)
+    .where(eq(appSettingsTable.key, legacyOwnershipSettingKey))
+    .limit(1);
+
+  return legacyOwner?.userId === userId;
 }
 
 async function requireAdmin(req: Request, res: Response) {

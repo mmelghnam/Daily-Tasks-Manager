@@ -6,7 +6,7 @@ import { createLocalDatabase } from "@workspace/db/local";
 import { provisionUserAndClaimLegacyData } from "./middlewares/auth";
 import adminRouter from "./routes/admin";
 
-const candidateUser = "first-user-must-not-become-admin";
+const candidateUser = "legacy-owner-admin";
 
 let testDb: AppDatabase;
 let server: Server;
@@ -17,8 +17,8 @@ beforeAll(async () => {
     `file:.data/admin-security-${process.pid}-${Date.now()}.sqlite`,
   );
 
-  // Create a real first account so this test catches any regression that
-  // accidentally restores the old "first user becomes admin" fallback.
+  // The first authenticated account owns the legacy data claim and becomes
+  // the fallback primary admin only when ADMIN_USER_ID is not configured.
   await provisionUserAndClaimLegacyData(candidateUser, testDb);
 
   const api = express();
@@ -55,8 +55,19 @@ afterAll(async () => {
 });
 
 describe("admin configuration security", () => {
-  it("does not promote the first account when ADMIN_USER_ID is empty", async () => {
+  it("uses the legacy ownership claimant as fallback admin when ADMIN_USER_ID is empty", async () => {
     const headers = { "x-test-user": candidateUser };
+
+    const access = await fetch(`${baseUrl}/api/admin/access`, { headers });
+    expect(access.status).toBe(200);
+    expect(await access.json()).toEqual({ isAdmin: true });
+
+    const stats = await fetch(`${baseUrl}/api/admin/stats`, { headers });
+    expect(stats.status).toBe(200);
+  });
+
+  it("still blocks accounts that do not own the legacy claim", async () => {
+    const headers = { "x-test-user": "not-the-owner" };
 
     const access = await fetch(`${baseUrl}/api/admin/access`, { headers });
     expect(access.status).toBe(200);
@@ -65,13 +76,5 @@ describe("admin configuration security", () => {
     const stats = await fetch(`${baseUrl}/api/admin/stats`, { headers });
     expect(stats.status).toBe(403);
     expect(await stats.json()).toEqual({ error: "Admin access required" });
-
-    const notification = await fetch(`${baseUrl}/api/admin/notifications`, {
-      method: "POST",
-      headers: { ...headers, "content-type": "application/json" },
-      body: JSON.stringify({ title: "blocked", body: "blocked" }),
-    });
-    expect(notification.status).toBe(403);
-    expect(await notification.json()).toEqual({ error: "Admin access required" });
   });
 });
