@@ -181,10 +181,10 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
 
   const dayTone = (ratio: number, consideredDay: boolean, total: number) => {
     if (!consideredDay || total === 0) return 'border-border/60 bg-background/60 text-foreground';
-    if (ratio >= 0.75) return 'border-amber-500 bg-amber-400 text-slate-950 shadow-sm';
-    if (ratio >= 0.4) return 'border-emerald-700 bg-emerald-600 text-white shadow-sm';
-    if (ratio > 0) return 'border-rose-700 bg-rose-600 text-white shadow-sm';
-    return 'border-rose-300 bg-rose-200 text-rose-950';
+    if (ratio >= 0.75) return 'border-[#0B5A4B] bg-[#0F6B5A] text-white shadow-sm';
+    if (ratio >= 0.4) return 'border-[#BF921D] bg-[#D4A62A] text-[#203D3A] shadow-sm';
+    if (ratio > 0) return 'border-[#B86875] bg-[#C97A86] text-white shadow-sm';
+    return 'border-[#DED8CF] bg-[#F3F1EC] text-[#7F786E]';
   };
 
   return <div className="mb-5 space-y-5" dir="rtl">
@@ -253,10 +253,10 @@ export function ProductivityHub({ date, section = 'habits' }: { date: string; se
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-amber-400"/><span>ممتاز 75%+</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-emerald-600"/><span>متوسط 40–74%</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-rose-600"/><span>ضعيف 1–39%</span></span>
-        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-rose-200 ring-1 ring-rose-300"/><span>بدون تنفيذ</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-[#0F6B5A]"/><span>ممتاز 75%+</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-[#D4A62A]"/><span>متوسط 40–74%</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-[#C97A86]"/><span>ضعيف 1–39%</span></span>
+        <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-[#F3F1EC] ring-1 ring-[#DED8CF]"/><span>بدون تنفيذ</span></span>
       </div>
     </section>
     </>}
