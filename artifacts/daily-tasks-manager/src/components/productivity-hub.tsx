@@ -52,7 +52,9 @@ function goalMonthKey(goal: Goal) {
   return normalizeHabitDate(goal.deadline).slice(0, 7);
 }
 
-export function ProductivityHub({ date }: { date: string }) {
+export type ProductivitySection = 'habits' | 'rhythm' | 'goals';
+
+export function ProductivityHub({ date, section = 'habits' }: { date: string; section?: ProductivitySection }) {
   const queryClient = useQueryClient();
   const habitDate = date;
   const todayKey = localDateKey();
@@ -157,6 +159,7 @@ export function ProductivityHub({ date }: { date: string }) {
   };
 
   return <div className="mb-5 space-y-5" dir="rtl">
+    {section === 'habits' && <>
     <section className="rounded-3xl border border-card-border bg-card/70 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2"><HeartPulse size={19} className="text-secondary"/><div><h2 className="text-lg font-extrabold">العادات اليومية</h2><p className="text-xs text-muted-foreground">{doneCount}/{items.length} مكتملة في هذا اليوم</p></div></div>
@@ -189,7 +192,9 @@ export function ProductivityHub({ date }: { date: string }) {
         {!items.length && <p className="py-3 text-center text-xs font-semibold text-muted-foreground md:col-span-2 xl:col-span-3">أضف عادة واحدة أو اثنتين وركز على الاستمرار.</p>}
       </div>
     </section>
+    </>}
 
+    {section === 'rhythm' && <>
     <section className="rounded-3xl border border-card-border bg-card/75 p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex flex-col gap-4 border-b border-border/70 pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -225,7 +230,9 @@ export function ProductivityHub({ date }: { date: string }) {
         <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-muted"/><span>بدون تنفيذ</span></span>
       </div>
     </section>
+    </>}
 
+    {section === 'goals' && <>
     <section className="rounded-3xl border border-card-border bg-card/75 p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2"><Target size={19} className="text-primary"/><div><h2 className="text-lg font-extrabold">أهداف الشهر</h2><p className="text-xs text-muted-foreground">{monthLabel} · {monthlyGoals.filter((goal) => goal.completed).length}/{monthlyGoals.length} مكتملة</p></div></div>
@@ -257,5 +264,6 @@ export function ProductivityHub({ date }: { date: string }) {
         {!monthlyGoals.length && <div className="rounded-2xl border border-dashed p-6 text-center text-xs font-bold text-muted-foreground md:col-span-2 xl:col-span-3">أضف هدفًا لهذا الشهر، وحدد رقمه المستهدف، وسيظهر تقدمك هنا.</div>}
       </div>
     </section>
+    </>}
   </div>;
 }

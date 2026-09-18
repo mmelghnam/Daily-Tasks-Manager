@@ -383,7 +383,7 @@ describe("production API hardening", () => {
   it("persists preferences and restricts administration", async () => {
     const defaults = await request(routeBaseUrl, users.personal, "/preferences/dashboard");
     expect(defaults.status).toBe(200);
-    expect((defaults.body as { sectionOrder: string[] }).sectionOrder).toHaveLength(7);
+    expect((defaults.body as { sectionOrder: string[] }).sectionOrder).toHaveLength(6);
 
     const saved = await request(routeBaseUrl, users.personal, "/preferences/dashboard", {
       method: "PATCH",
@@ -392,7 +392,7 @@ describe("production API hardening", () => {
     expect(saved.status).toBe(200);
     expect(saved.body).toEqual({
       visibleSections: ["summary"],
-      sectionOrder: ["taskMap", "summary", "dailyPlan", "events", "productivity", "links", "notifications"],
+      sectionOrder: ["taskMap", "summary", "productivity", "monthlyRhythm", "monthlyGoals", "tasks"],
     });
 
     expect((await request(routeBaseUrl, users.student, "/admin/access")).body).toEqual({ isAdmin: true });

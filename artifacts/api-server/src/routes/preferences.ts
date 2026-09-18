@@ -9,28 +9,7 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const currentDashboardSections = [
-  "dateHeader",
-  "viewMode",
-  "summary",
-  "dailyPlan",
-  "productivity",
-  "focusTools",
-  "links",
-  "taskMap",
-  "tasks",
-] as const;
-
-const currentOnlySections = new Set<string>([
-  "dateHeader",
-  "viewMode",
-  "focusTools",
-  "tasks",
-]);
-const allowedSections = new Set<string>([
-  ...defaultDashboardSections,
-  ...currentDashboardSections,
-]);
+const allowedSections = new Set<string>(defaultDashboardSections);
 
 function normalizeSections(value: unknown) {
   return Array.from(new Set(
@@ -40,23 +19,29 @@ function normalizeSections(value: unknown) {
   ));
 }
 
-function usesCurrentLayout(order: string[]) {
-  return order.some((section) => currentOnlySections.has(section));
-}
-
-function normalizePreferences(row?: { visibleSections: string[]; sectionOrder: string[] }, migrateLegacyVisible = false) {
+function normalizePreferences(
+  row?: { visibleSections: string[]; sectionOrder: string[] },
+  migrateLegacyVisible = false,
+) {
   const order = normalizeSections(row?.sectionOrder);
   const visible = normalizeSections(row?.visibleSections);
-  const defaults = usesCurrentLayout(order)
-    ? [...currentDashboardSections]
-    : [...defaultDashboardSections];
-  const mergedOrder = [...order, ...defaults.filter((section) => !order.includes(section))];
-  const isLegacyPreferences = migrateLegacyVisible && Boolean(row && !order.includes("dailyPlan"));
+  const mergedOrder = [...order, ...defaultDashboardSections.filter((section) => !order.includes(section))];
+  const isLegacyPreferences = migrateLegacyVisible
+    && Boolean(row)
+    && !order.includes("monthlyRhythm")
+    && !order.includes("monthlyGoals");
+
+  const migratedVisible = isLegacyPreferences
+    ? Array.from(new Set([...visible, "monthlyRhythm", "monthlyGoals"]))
+    : visible;
+
   return {
     visibleSections: row && Array.isArray(row.visibleSections)
-      ? (isLegacyPreferences ? Array.from(new Set([...visible, "dailyPlan"])) : visible)
+      ? migratedVisible
       : [...defaultDashboardSections],
-    sectionOrder: row && Array.isArray(row.sectionOrder) ? mergedOrder : [...defaultDashboardSections],
+    sectionOrder: row && Array.isArray(row.sectionOrder)
+      ? mergedOrder
+      : [...defaultDashboardSections],
   };
 }
 
@@ -89,7 +74,9 @@ router.patch("/preferences/dashboard", async (req, res, next) => {
       .limit(1);
     const current = normalizePreferences(existing, true);
     const visibleSections = input.visibleSections === undefined ? current.visibleSections : normalizeSections(input.visibleSections);
-    const sectionOrder = input.sectionOrder === undefined ? current.sectionOrder : normalizeSections(input.sectionOrder);
+    const requestedOrder = input.sectionOrder === undefined ? current.sectionOrder : normalizeSections(input.sectionOrder);
+    const sectionOrder = [...requestedOrder, ...defaultDashboardSections.filter((section) => !requestedOrder.includes(section))];
+
     const [row] = await db
       .insert(dashboardPreferencesTable)
       .values({
