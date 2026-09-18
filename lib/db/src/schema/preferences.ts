@@ -4,12 +4,11 @@ import { sqliteJsonArray } from "../sqlite-types";
 
 export const defaultDashboardSections = [
   "summary",
-  "dailyPlan",
-  "events",
   "productivity",
-  "links",
-  "notifications",
+  "monthlyRhythm",
+  "monthlyGoals",
   "taskMap",
+  "tasks",
 ] as const;
 
 export type DashboardSection = (typeof defaultDashboardSections)[number];
