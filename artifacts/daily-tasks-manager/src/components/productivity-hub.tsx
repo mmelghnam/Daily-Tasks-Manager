@@ -116,7 +116,7 @@ export function ProductivityHub({ date }: { date: string }) {
     const target = Math.max(1, Number(goalTarget) || 1);
     if (!title || createGoal.isPending) return;
     createGoal.mutate(
-      { data: { title, target, deadline: deadline as unknown as Date } },
+      { data: { title, target, deadline } },
       { onSuccess: () => { setGoalTitle(''); setGoalTarget('1'); refreshGoals(); } },
     );
   };
