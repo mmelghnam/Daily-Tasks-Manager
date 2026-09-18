@@ -1,1 +1,2 @@
 Trigger Cloudflare production deployment after updating build watch paths.
+Trigger after reconnecting Cloudflare Git integration.
