@@ -9,7 +9,7 @@ import {
   useListHabits,
 } from '@workspace/api-client-react';
 import type { Habit } from '@workspace/api-client-react';
-import { calculateCurrentHabitStreak, localDateKey, normalizeHabitDate } from '@/habit-utils';
+import { normalizeHabitDate } from '@/habit-utils';
 
 function playHabitSound() {
   type WindowWithWebkitAudio = Window & { webkitAudioContext?: typeof AudioContext };
@@ -30,13 +30,12 @@ function playHabitSound() {
   oscillator.addEventListener('ended', () => void context.close());
 }
 
-function recentDays(today: string, count = 7) {
-  const end = new Date(`${today}T12:00:00`);
-  return Array.from({ length: count }, (_, index) => {
-    const date = new Date(end);
-    date.setDate(end.getDate() - (count - 1 - index));
-    return localDateKey(date);
-  });
+function monthInfo(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  const monthKey = date.slice(0, 7);
+  const daysInMonth = new Date(parsed.getFullYear(), parsed.getMonth() + 1, 0).getDate();
+  const monthLabel = new Intl.DateTimeFormat('ar', { month: 'long' }).format(parsed);
+  return { monthKey, daysInMonth, monthLabel };
 }
 
 export function ProductivityHub({ date }: { date: string }) {
@@ -49,7 +48,7 @@ export function ProductivityHub({ date }: { date: string }) {
   const [habitName, setHabitName] = useState('');
   const [habitError, setHabitError] = useState('');
   const [checkingHabitId, setCheckingHabitId] = useState<number | null>(null);
-  const week = useMemo(() => recentDays(habitDate), [habitDate]);
+  const { monthKey, daysInMonth, monthLabel } = useMemo(() => monthInfo(habitDate), [habitDate]);
   const items = Array.isArray(habits.data) ? habits.data : [];
   const refresh = () => void queryClient.invalidateQueries({ queryKey: getListHabitsQueryKey() });
 
@@ -97,16 +96,16 @@ export function ProductivityHub({ date }: { date: string }) {
         const normalized = (Array.isArray(habit.completedDates) ? habit.completedDates : []).map(normalizeHabitDate).filter(Boolean);
         const completedSet = new Set(normalized);
         const doneToday = completedSet.has(habitDate);
-        const streak = calculateCurrentHabitStreak(normalized, habitDate);
-        const weekDone = week.filter((day) => completedSet.has(day)).length;
+        const monthDone = normalized.filter((day) => day.startsWith(`${monthKey}-`)).length;
+        const monthProgress = daysInMonth > 0 ? Math.round((monthDone / daysInMonth) * 100) : 0;
         const isChecking = checkingHabitId === habit.id;
         return <div key={habit.id} className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 transition ${doneToday ? 'border-secondary/50 bg-secondary/[0.08]' : 'border-border bg-background/70'}`}>
           <button type="button" disabled={isChecking} onClick={() => toggleToday(habit, doneToday)} className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 transition disabled:opacity-60 ${doneToday ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-card hover:border-secondary/60'}`} aria-label={doneToday ? 'إلغاء إنجاز اليوم' : 'إنجاز عادة اليوم'} data-testid={`button-check-habit-${habit.id}`}><Check size={15}/></button>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-extrabold">{habit.name}</span><span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-black text-foreground"><Flame size={12} className="text-secondary"/>{streak}</span></div>
-            <div className="mt-1 flex items-center gap-2">
-              <div className="flex gap-1" aria-label="آخر سبعة أيام">{week.map((day) => <span key={day} title={day} className={`h-2 w-2 rounded-full ${completedSet.has(day) ? 'bg-secondary' : day === habitDate ? 'bg-primary/35 ring-1 ring-primary/30' : 'bg-muted'}`}/>)}</div>
-              <span className="text-[10px] font-bold text-muted-foreground">{weekDone}/7</span>
+            <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-extrabold">{habit.name}</span><span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-black text-foreground"><Flame size={12} className="text-secondary"/>{monthDone}</span></div>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-secondary transition-all" style={{ width: `${monthProgress}%` }}/></div>
+              <span className="shrink-0 text-[10px] font-bold text-muted-foreground">{monthDone}/{daysInMonth} في {monthLabel}</span>
             </div>
           </div>
           <button type="button" onClick={() => deleteHabit.mutate({ id: habit.id }, { onSuccess: refresh })} className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive" aria-label="حذف العادة"><Trash2 size={13}/></button>
