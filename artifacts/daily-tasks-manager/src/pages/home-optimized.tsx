@@ -150,7 +150,9 @@ export default function HomeOptimized() {
           <article className="min-h-[132px] rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"><div className="flex items-start justify-between"><div className="text-right"><p className="text-sm font-black text-muted-foreground">كل المهام</p><p className="mt-2 text-3xl font-black">{summary?.total ?? 0}</p><p className="mt-2 text-xs font-bold text-muted-foreground">عبر {categories.length} مساحات</p></div><LayoutGrid size={20} className="text-primary"/></div></article>
         </section>}
 
-        {visibleSet.has('productivity') && <div style={sectionStyle('productivity')}><Suspense fallback={<SectionFallback/>}><ProductivityHub date={selectedDate}/></Suspense></div>}
+        {visibleSet.has('productivity') && <div style={sectionStyle('productivity')}><Suspense fallback={<SectionFallback/>}><ProductivityHub date={selectedDate} section="habits"/></Suspense></div>}
+        {visibleSet.has('monthlyRhythm') && <div style={sectionStyle('monthlyRhythm')}><Suspense fallback={<SectionFallback/>}><ProductivityHub date={selectedDate} section="rhythm"/></Suspense></div>}
+        {visibleSet.has('monthlyGoals') && <div style={sectionStyle('monthlyGoals')}><Suspense fallback={<SectionFallback/>}><ProductivityHub date={selectedDate} section="goals"/></Suspense></div>}
 
         {visibleSet.has('taskMap') && <section className="mb-7 rounded-[24px] border border-border/70 bg-card px-4 py-4 shadow-sm sm:px-5" style={sectionStyle('taskMap')}>
           <div className="mb-4 flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
