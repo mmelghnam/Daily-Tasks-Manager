@@ -52,7 +52,7 @@ function SectionFallback() { return <div className="mb-6 h-24 animate-pulse roun
 function AccountControl() {
   const { signOut } = useClerk();
   const { user } = useUser();
-  const adminAccess = useGetAdminAccess({ query: { queryKey: [...getGetAdminAccessQueryKey(), user?.id ?? 'pending-account'], enabled: Boolean(user?.id), staleTime: 5 * 60_000, refetchOnWindowFocus: false } });
+  const adminAccess = useGetAdminAccess({ query: { queryKey: [...getGetAdminAccessQueryKey(), user?.id ?? 'pending-account'], enabled: Boolean(user?.id), staleTime: 0, refetchOnMount: 'always', refetchOnWindowFocus: true } });
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const name = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'حسابي';
   return <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-background/80 p-1 shadow-sm"><span className="hidden items-center gap-2 px-2 text-xs font-extrabold md:flex"><UserRound size={14}/>{name}</span>{adminAccess.data?.isAdmin && <a href={`${basePath}/admin`} className="rounded-lg bg-accent/10 px-3 py-2 text-xs font-extrabold" data-testid="link-admin"><ShieldCheck size={14} className="ml-1 inline"/>الإدارة</a>}<button type="button" onClick={() => void signOut({ redirectUrl: basePath || '/' })} className="rounded-lg bg-muted px-3 py-2 text-xs font-extrabold text-primary">خروج</button></div>;
