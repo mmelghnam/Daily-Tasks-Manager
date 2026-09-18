@@ -1,5 +1,5 @@
 import { Check, Flame, HeartPulse, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListHabitsQueryKey,
@@ -30,22 +30,6 @@ function playHabitSound() {
   oscillator.addEventListener('ended', () => void context.close());
 }
 
-function useLiveToday() {
-  const [today, setToday] = useState(() => localDateKey());
-  useEffect(() => {
-    const refresh = () => setToday(localDateKey());
-    const interval = window.setInterval(refresh, 30_000);
-    document.addEventListener('visibilitychange', refresh);
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', refresh);
-      window.removeEventListener('focus', refresh);
-    };
-  }, []);
-  return today;
-}
-
 function recentDays(today: string, count = 7) {
   const end = new Date(`${today}T12:00:00`);
   return Array.from({ length: count }, (_, index) => {
@@ -55,28 +39,24 @@ function recentDays(today: string, count = 7) {
   });
 }
 
-export function ProductivityHub() {
+export function ProductivityHub({ date }: { date: string }) {
   const queryClient = useQueryClient();
-  const today = useLiveToday();
-  const habits = useListHabits({ query: { queryKey: [...getListHabitsQueryKey(), today], staleTime: 0, refetchOnWindowFocus: true } });
+  const habitDate = date;
+  const habits = useListHabits({ query: { queryKey: [...getListHabitsQueryKey(), habitDate], staleTime: 0, refetchOnWindowFocus: true } });
   const createHabit = useCreateHabit();
   const checkHabit = useCheckHabit();
   const deleteHabit = useDeleteHabit();
   const [habitName, setHabitName] = useState('');
   const [habitError, setHabitError] = useState('');
   const [checkingHabitId, setCheckingHabitId] = useState<number | null>(null);
-  const week = useMemo(() => recentDays(today), [today]);
+  const week = useMemo(() => recentDays(habitDate), [habitDate]);
   const items = Array.isArray(habits.data) ? habits.data : [];
   const refresh = () => void queryClient.invalidateQueries({ queryKey: getListHabitsQueryKey() });
 
-  useEffect(() => {
-    setCheckingHabitId(null);
-    void habits.refetch();
-  }, [today]);
 
   const doneCount = items.filter((habit) => {
     const dates = Array.isArray(habit.completedDates) ? habit.completedDates : [];
-    return dates.some((value) => normalizeHabitDate(value) === today);
+    return dates.some((value) => normalizeHabitDate(value) === habitDate);
   }).length;
 
   const addHabit = () => {
@@ -94,7 +74,7 @@ export function ProductivityHub() {
     if (!doneToday) playHabitSound();
     setCheckingHabitId(habit.id);
     checkHabit.mutate(
-      { id: habit.id, data: { date: today } },
+      { id: habit.id, data: { date: habitDate } },
       {
         onSuccess: refresh,
         onSettled: () => setCheckingHabitId((current) => current === habit.id ? null : current),
@@ -104,7 +84,7 @@ export function ProductivityHub() {
 
   return <section className="mb-5 rounded-3xl border border-card-border bg-card/70 p-4" dir="rtl">
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-2"><HeartPulse size={19} className="text-secondary"/><div><h2 className="text-lg font-extrabold">العادات اليومية</h2><p className="text-xs text-muted-foreground">{doneCount}/{items.length} مكتملة اليوم</p></div></div>
+      <div className="flex items-center gap-2"><HeartPulse size={19} className="text-secondary"/><div><h2 className="text-lg font-extrabold">العادات اليومية</h2><p className="text-xs text-muted-foreground">{doneCount}/{items.length} مكتملة في هذا اليوم</p></div></div>
       <form onSubmit={(event) => { event.preventDefault(); addHabit(); }} className="flex min-w-[260px] flex-1 gap-2 sm:max-w-md">
         <input value={habitName} onChange={(event) => { setHabitName(event.target.value); if (habitError) setHabitError(''); }} placeholder="عادة جديدة..." className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" data-testid="input-new-habit"/>
         <button type="submit" disabled={createHabit.isPending || !habitName.trim()} className="rounded-xl bg-secondary px-3 text-secondary-foreground disabled:opacity-60" data-testid="button-add-habit"><Plus size={17}/></button>
@@ -116,8 +96,8 @@ export function ProductivityHub() {
       {items.map((habit: Habit) => {
         const normalized = (Array.isArray(habit.completedDates) ? habit.completedDates : []).map(normalizeHabitDate).filter(Boolean);
         const completedSet = new Set(normalized);
-        const doneToday = completedSet.has(today);
-        const streak = calculateCurrentHabitStreak(normalized, today);
+        const doneToday = completedSet.has(habitDate);
+        const streak = calculateCurrentHabitStreak(normalized, habitDate);
         const weekDone = week.filter((day) => completedSet.has(day)).length;
         const isChecking = checkingHabitId === habit.id;
         return <div key={habit.id} className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 transition ${doneToday ? 'border-secondary/50 bg-secondary/[0.08]' : 'border-border bg-background/70'}`}>
@@ -125,7 +105,7 @@ export function ProductivityHub() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-extrabold">{habit.name}</span><span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-black text-foreground"><Flame size={12} className="text-secondary"/>{streak}</span></div>
             <div className="mt-1 flex items-center gap-2">
-              <div className="flex gap-1" aria-label="آخر سبعة أيام">{week.map((day) => <span key={day} title={day} className={`h-2 w-2 rounded-full ${completedSet.has(day) ? 'bg-secondary' : day === today ? 'bg-primary/35 ring-1 ring-primary/30' : 'bg-muted'}`}/>)}</div>
+              <div className="flex gap-1" aria-label="آخر سبعة أيام">{week.map((day) => <span key={day} title={day} className={`h-2 w-2 rounded-full ${completedSet.has(day) ? 'bg-secondary' : day === habitDate ? 'bg-primary/35 ring-1 ring-primary/30' : 'bg-muted'}`}/>)}</div>
               <span className="text-[10px] font-bold text-muted-foreground">{weekDone}/7</span>
             </div>
           </div>
