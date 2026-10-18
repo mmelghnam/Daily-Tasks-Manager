@@ -321,7 +321,19 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
         className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${selected ? 'border-primary ring-2 ring-primary/20' : ''} ${isDragging ? 'border-primary bg-primary/5 opacity-50 shadow-xl ring-2 ring-primary/20' : task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}
       >
         <div className="flex items-start gap-3">
-          {onToggleSelect && <button type="button" onClick={() => onToggleSelect(task.id)} aria-label={selected ? 'إلغاء تحديد المهمة' : 'تحديد المهمة'} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-transparent hover:border-primary'}`}><Check size={15} strokeWidth={3} /></button>}
+          {onToggleSelect && <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleSelect(task.id);
+            }}
+            aria-label={selected ? 'إلغاء تحديد المهمة للترحيل' : 'تحديد المهمة للترحيل'}
+            title={selected ? 'محددة للترحيل الجماعي' : 'تحديد للترحيل الجماعي'}
+            data-testid={`button-select-task-${task.id}`}
+            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition ${selected ? 'border-primary bg-primary/10 ring-2 ring-primary/15' : 'border-primary/35 bg-background hover:border-primary hover:bg-primary/5'}`}
+          >
+            <span className={`h-2.5 w-2.5 rounded-full transition ${selected ? 'bg-primary scale-100' : 'bg-transparent scale-75'}`} />
+          </button>}
           {onDragStart && <span title="اسحب لترتيب المهمة" aria-label="اسحب لترتيب المهمة" className="mt-1 flex h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-muted hover:text-primary active:cursor-grabbing"><GripVertical size={18} /></span>}
           <button type="button" onClick={toggle} disabled={updateTask.isPending} aria-label={task.completed ? 'إلغاء إكمال المهمة' : 'إكمال المهمة'} data-testid={`button-toggle-task-${task.id}`} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${task.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-background text-transparent hover:border-secondary hover:bg-secondary/15'}`}>
             <Check size={16} strokeWidth={3} />
