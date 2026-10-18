@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { CalendarPlus, Check, CheckSquare2, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -28,6 +28,7 @@ interface TaskCardProps {
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   selected?: boolean;
+  selectionMode?: boolean;
   onToggleSelect?: (taskId: number) => void;
 }
 
@@ -95,7 +96,7 @@ function shiftDate(date: string, amount: number) {
   return next.toISOString().slice(0, 10);
 }
 
-export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTask, isDragging, canMoveUp, canMoveDown, selected = false, onToggleSelect }: TaskCardProps) {
+export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTask, isDragging, canMoveUp, canMoveDown, selected = false, selectionMode = false, onToggleSelect }: TaskCardProps) {
   const normalizedTaskDate = dateOnly(date) || new Date().toISOString().slice(0, 10);
   const updatedTime = formatUpdatedTime(task.updatedAt);
   const queryClient = useQueryClient();
@@ -301,7 +302,7 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
     <>
       <article
         data-testid={`card-task-${task.id}`}
-        draggable={Boolean(onDragStart)}
+        draggable={Boolean(onDragStart) && !selectionMode}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = 'move';
           event.dataTransfer.setData('text/task-id', String(task.id));
@@ -321,23 +322,24 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
         className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${selected ? 'border-primary ring-2 ring-primary/20' : ''} ${isDragging ? 'border-primary bg-primary/5 opacity-50 shadow-xl ring-2 ring-primary/20' : task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}
       >
         <div className="flex items-start gap-3">
-          {onToggleSelect && <button
+          {selectionMode && onToggleSelect ? <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
               onToggleSelect(task.id);
             }}
-            aria-label={selected ? 'إلغاء تحديد المهمة للترحيل' : 'تحديد المهمة للترحيل'}
-            title={selected ? 'محددة للترحيل الجماعي' : 'تحديد للترحيل الجماعي'}
+            aria-label={selected ? 'إلغاء تحديد المهمة' : 'تحديد المهمة'}
             data-testid={`button-select-task-${task.id}`}
-            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition ${selected ? 'border-primary bg-primary/10 ring-2 ring-primary/15' : 'border-primary/35 bg-background hover:border-primary hover:bg-primary/5'}`}
+            className={`mt-0.5 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-extrabold transition ${selected ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-primary'}`}
           >
-            <span className={`h-2.5 w-2.5 rounded-full transition ${selected ? 'bg-primary scale-100' : 'bg-transparent scale-75'}`} />
-          </button>}
-          {onDragStart && <span title="اسحب لترتيب المهمة" aria-label="اسحب لترتيب المهمة" className="mt-1 flex h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-muted hover:text-primary active:cursor-grabbing"><GripVertical size={18} /></span>}
-          <button type="button" onClick={toggle} disabled={updateTask.isPending} aria-label={task.completed ? 'إلغاء إكمال المهمة' : 'إكمال المهمة'} data-testid={`button-toggle-task-${task.id}`} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${task.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-background text-transparent hover:border-secondary hover:bg-secondary/15'}`}>
-            <Check size={16} strokeWidth={3} />
-          </button>
+            <CheckSquare2 size={15} />
+            {selected ? 'محدد' : 'اختيار'}
+          </button> : <>
+            {onDragStart && <span title="اسحب لترتيب المهمة" aria-label="اسحب لترتيب المهمة" className="mt-1 flex h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-muted hover:text-primary active:cursor-grabbing"><GripVertical size={18} /></span>}
+            <button type="button" onClick={toggle} disabled={updateTask.isPending} aria-label={task.completed ? 'إلغاء إكمال المهمة' : 'إكمال المهمة'} data-testid={`button-toggle-task-${task.id}`} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${task.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-background text-transparent hover:border-secondary hover:bg-secondary/15'}`}>
+              <Check size={16} strokeWidth={3} />
+            </button>
+          </>}
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <h3 data-testid={`text-task-title-${task.id}`} className={`text-[0.98rem] font-bold leading-7 ${task.completed ? 'text-muted-foreground line-through decoration-secondary decoration-2' : 'text-foreground'}`}>{task.title}</h3>
