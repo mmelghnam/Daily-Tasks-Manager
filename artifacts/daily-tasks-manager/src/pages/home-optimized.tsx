@@ -1,4 +1,4 @@
-import { lazy, Suspense, type FormEvent, useMemo, useState } from 'react';
+import { lazy, Suspense, type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
 import { CalendarDays, CalendarPlus, CheckSquare2, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, ShieldCheck, Sparkles, Target, Trash2, UserRound, X } from 'lucide-react';
@@ -83,6 +83,11 @@ export default function HomeOptimized() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
   const [bulkMoveDate, setBulkMoveDate] = useState(shiftDate(dateKey(new Date()), 1));
   const [bulkMoving, setBulkMoving] = useState(false);
+
+  useEffect(() => {
+    setSelectedTaskIds(new Set());
+    setBulkMoveDate(shiftDate(selectedDate, 1));
+  }, [selectedDate]);
 
   const preferences = useGetDashboardPreferences({ query: { queryKey: getGetDashboardPreferencesQueryKey(), staleTime: 5 * 60_000, refetchOnWindowFocus: false } });
   const layout = normalizeDashboardSections(preferences.data?.visibleSections, preferences.data?.sectionOrder);
