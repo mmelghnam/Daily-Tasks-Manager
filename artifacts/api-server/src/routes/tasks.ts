@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-zod";
 import { db, tasksTable } from "@workspace/db";
 import { spacesTable } from "@workspace/db";
-import { and, asc, desc, eq, gte, lte, max } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, max, min } from "drizzle-orm";
 import { assertDateOnlyInput, BadRequestError, parseDateOnlyQuery } from "../utils/request-validation";
 
 const router: IRouter = Router();
@@ -92,10 +92,16 @@ router.post("/tasks", async (req, res, next) => {
     assertDateOnlyInput(req.body?.taskDate, "taskDate");
     assertDateOnlyInput(req.body?.dueDate, "dueDate", { optional: true, nullable: true });
     const input = CreateTaskBody.parse(req.body);
-    const [lastTask] = await db
-      .select({ sortOrder: max(tasksTable.sortOrder) })
+    const [sortBounds] = await db
+      .select({
+        minSortOrder: min(tasksTable.sortOrder),
+        maxSortOrder: max(tasksTable.sortOrder),
+      })
       .from(tasksTable)
-        .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, input.taskDate), eq(tasksTable.category, input.category)));
+      .where(and(eq(tasksTable.ownerId, req.userId!), eq(tasksTable.taskDate, input.taskDate), eq(tasksTable.category, input.category)));
+    const sortOrder = input.priority === "high"
+      ? Number(sortBounds?.minSortOrder ?? 0) - 1
+      : Number(sortBounds?.maxSortOrder ?? -1) + 1;
     const [task] = await db
       .insert(tasksTable)
       .values({
@@ -113,7 +119,7 @@ router.post("/tasks", async (req, res, next) => {
         completed: input.completed ?? false,
         links: input.links ?? [],
         followUps: input.followUps ?? [],
-        sortOrder: Number(lastTask?.sortOrder ?? -1) + 1,
+        sortOrder,
       })
       .returning();
 
