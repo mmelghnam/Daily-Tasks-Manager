@@ -80,11 +80,13 @@ export default function HomeOptimized() {
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
   const [bulkMoveDate, setBulkMoveDate] = useState(shiftDate(dateKey(new Date()), 1));
   const [bulkMoving, setBulkMoving] = useState(false);
 
   useEffect(() => {
+    setSelectionMode(false);
     setSelectedTaskIds(new Set());
     setBulkMoveDate(shiftDate(selectedDate, 1));
   }, [selectedDate]);
@@ -117,7 +119,10 @@ export default function HomeOptimized() {
       return next;
     });
   };
-  const clearTaskSelection = () => setSelectedTaskIds(new Set());
+  const clearTaskSelection = () => {
+    setSelectedTaskIds(new Set());
+    setSelectionMode(false);
+  };
   const moveSelectedTasks = async (targetDate: string) => {
     if (!targetDate || selectedTaskIds.size === 0 || bulkMoving) return;
     const selectedTasks = tasks.filter((task) => selectedTaskIds.has(task.id));
@@ -203,6 +208,9 @@ export default function HomeOptimized() {
         </section>}
 
         {visibleSet.has('tasks') && <section className="mt-1" style={sectionStyle('tasks')}>
+          <div className="mb-3 flex items-center justify-end">
+            {!selectionMode ? <button type="button" onClick={() => setSelectionMode(true)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-black text-muted-foreground transition hover:border-primary/40 hover:text-primary"><CheckSquare2 size={16}/>تحديد مهام</button> : selectedTaskIds.size === 0 ? <button type="button" onClick={clearTaskSelection} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-black text-muted-foreground transition hover:bg-muted"><X size={15}/>إلغاء التحديد</button> : null}
+          </div>
           {selectedTaskIds.size > 0 && <div className="sticky top-[72px] z-20 mb-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-card/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center">
             <div className="flex items-center gap-2 text-sm font-black"><CheckSquare2 size={18} className="text-primary"/><span>تم تحديد {selectedTaskIds.size} مهمة</span></div>
             <div className="flex flex-1 flex-wrap items-center gap-2 sm:justify-end">
@@ -212,7 +220,7 @@ export default function HomeOptimized() {
               <button type="button" onClick={clearTaskSelection} disabled={bulkMoving} aria-label="إلغاء التحديد" className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted"><X size={16}/></button>
             </div>
           </div>}
-          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-xl bg-muted"/><div className="h-32 animate-pulse rounded-xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-2xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:3}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-lg border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} selected={selectedTaskIds.has(task.id)} onToggleSelect={toggleTaskSelection} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
+          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-xl bg-muted"/><div className="h-32 animate-pulse rounded-xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-2xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:3}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-lg border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} selected={selectedTaskIds.has(task.id)} selectionMode={selectionMode} onToggleSelect={toggleTaskSelection} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
         </section>}
       </div>
     </main>
