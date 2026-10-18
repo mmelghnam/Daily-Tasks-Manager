@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { CalendarPlus, Check, Clock3, Copy, ExternalLink, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
   getGetTaskSummaryQueryKey,
   getListTasksQueryKey,
@@ -27,6 +27,8 @@ interface TaskCardProps {
   isDragging?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (taskId: number) => void;
 }
 
 function playCompletionSound() {
@@ -87,30 +89,13 @@ function nextDate(date: string) {
   return tomorrow.toISOString().slice(0, 10);
 }
 
-function nextDates(date: string, count: number) {
-  return Array.from({ length: count }, (_, index) => shiftDate(date, index + 1));
-}
-
 function shiftDate(date: string, amount: number) {
   const next = safeDate(date);
   next.setDate(next.getDate() + amount);
   return next.toISOString().slice(0, 10);
 }
 
-function datesBetween(startDate: string, endDate: string) {
-  const start = safeDate(startDate);
-  const end = safeDate(endDate);
-  if (end < start) return [];
-  const dates: string[] = [];
-  const cursor = new Date(start);
-  while (cursor <= end && dates.length < 31) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
-}
-
-export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTask, isDragging, canMoveUp, canMoveDown }: TaskCardProps) {
+export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTask, isDragging, canMoveUp, canMoveDown, selected = false, onToggleSelect }: TaskCardProps) {
   const normalizedTaskDate = dateOnly(date) || new Date().toISOString().slice(0, 10);
   const updatedTime = formatUpdatedTime(task.updatedAt);
   const queryClient = useQueryClient();
@@ -119,14 +104,13 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
   const deleteTask = useDeleteTask();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [copyOpen, setCopyOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuCloseTimerRef = useRef<number | null>(null);
-  const [copyStartDate, setCopyStartDate] = useState(nextDate(normalizedTaskDate));
-  const [copyEndDate, setCopyEndDate] = useState(shiftDate(nextDate(normalizedTaskDate), 2));
+  const [moveDate, setMoveDate] = useState(nextDate(normalizedTaskDate));
   const [copyPending, setCopyPending] = useState(false);
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const links = Array.isArray(task.links) ? task.links : [];
@@ -212,13 +196,23 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
     updateTask.mutate(
       { id: task.id, data: { taskDate: tomorrow } },
       {
-        onSuccess: () => {
-          void queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() });
-          void queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() });
-        },
+        onSuccess: refresh,
       },
     );
     setMenuOpen(false);
+  };
+
+  const moveToDate = () => {
+    if (!moveDate) return;
+    updateTask.mutate(
+      { id: task.id, data: { taskDate: moveDate } },
+      {
+        onSuccess: () => {
+          setMoveOpen(false);
+          refresh();
+        },
+      },
+    );
   };
 
   const copyToDates = (dates: string[]) => {
@@ -226,7 +220,6 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
     void copyTask(task.id, { dates })
       .then(() => {
         setMenuOpen(false);
-        setCopyOpen(false);
         refresh();
       })
       .finally(() => setCopyPending(false));
@@ -325,9 +318,10 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
           if (draggedId && draggedId !== task.id) onDropTask?.(draggedId);
         }}
         onDragEnd={() => onDragStart?.(0)}
-        className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${isDragging ? 'border-primary bg-primary/5 opacity-50 shadow-xl ring-2 ring-primary/20' : task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}
+        className={`group relative rounded-2xl border bg-card px-4 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 sm:px-5 ${selected ? 'border-primary ring-2 ring-primary/20' : ''} ${isDragging ? 'border-primary bg-primary/5 opacity-50 shadow-xl ring-2 ring-primary/20' : task.completed ? 'border-border/70 opacity-75' : 'border-card-border'}`}
       >
         <div className="flex items-start gap-3">
+          {onToggleSelect && <button type="button" onClick={() => onToggleSelect(task.id)} aria-label={selected ? 'إلغاء تحديد المهمة' : 'تحديد المهمة'} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-transparent hover:border-primary'}`}><Check size={15} strokeWidth={3} /></button>}
           {onDragStart && <span title="اسحب لترتيب المهمة" aria-label="اسحب لترتيب المهمة" className="mt-1 flex h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-muted-foreground/60 transition hover:bg-muted hover:text-primary active:cursor-grabbing"><GripVertical size={18} /></span>}
           <button type="button" onClick={toggle} disabled={updateTask.isPending} aria-label={task.completed ? 'إلغاء إكمال المهمة' : 'إكمال المهمة'} data-testid={`button-toggle-task-${task.id}`} className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition ${task.completed ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border bg-background text-transparent hover:border-secondary hover:bg-secondary/15'}`}>
             <Check size={16} strokeWidth={3} />
@@ -341,8 +335,8 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
                     <div ref={menuRef} dir="rtl" onPointerEnter={cancelScheduledMenuClose} onPointerLeave={scheduleMenuClose} className="fixed z-[100] w-56 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border border-popover-border bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl" style={{ top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight }}>
                      <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }} data-testid={`button-edit-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted"><Pencil size={14} /> تعديل المهمة</button>
                      {!task.completed && <button type="button" onClick={moveToTomorrow} disabled={updateTask.isPending} data-testid={`button-move-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-50"><CalendarPlus size={14} /> ترحيل للغد</button>}
+                     {!task.completed && <button type="button" onClick={() => { setMoveDate(nextDate(normalizedTaskDate)); setMoveOpen(true); setMenuOpen(false); }} data-testid={`button-move-date-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted"><CalendarPlus size={14} /> ترحيل لتاريخ</button>}
                      <button type="button" onClick={() => copyToDates([nextDate(normalizedTaskDate)])} disabled={copyPending} data-testid={`button-copy-tomorrow-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted disabled:opacity-50"><Copy size={14} /> نسخ للغد</button>
-                     <button type="button" onClick={() => { setCopyOpen(true); setMenuOpen(false); }} data-testid={`button-copy-range-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold hover:bg-muted"><CalendarDays size={14} /> نسخ لمدة</button>
                      <button type="button" onClick={remove} disabled={deleteTask.isPending} data-testid={`button-delete-task-${task.id}`} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-right font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"><Trash2 size={14} /> حذف المهمة</button>
                    </div>
                   , document.body)}
@@ -390,19 +384,15 @@ export function TaskCard({ task, date, spaces, onReorder, onDragStart, onDropTas
           </div>
         </DialogContent>
       </Dialog>
-      <Dialog open={copyOpen} onOpenChange={setCopyOpen}>
+      <Dialog open={moveOpen} onOpenChange={setMoveOpen}>
         <DialogContent dir="rtl" className="max-w-sm rounded-3xl">
           <DialogHeader className="text-right">
-            <DialogTitle className="flex items-center gap-2"><Copy size={18} className="text-primary" /> نسخ المهمة</DialogTitle>
-            <DialogDescription>ستظل المهمة الأصلية في مكانها، وتُضاف نسخة جديدة في التاريخ المحدد.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><CalendarPlus size={18} className="text-primary" /> ترحيل المهمة لتاريخ</DialogTitle>
+            <DialogDescription>اختر التاريخ الذي تريد نقل المهمة إليه.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-1.5 text-sm font-bold"><span>من تاريخ</span><input id={`copy-start-${task.id}`} type="date" value={copyStartDate} min={normalizedTaskDate} onChange={(event) => setCopyStartDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" /></label>
-              <label className="space-y-1.5 text-sm font-bold"><span>إلى تاريخ</span><input id={`copy-end-${task.id}`} type="date" value={copyEndDate} min={copyStartDate} onChange={(event) => setCopyEndDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" /></label>
-            </div>
-            <p className="text-xs font-semibold text-muted-foreground">سيتم إنشاء نسخة لكل يوم في المدة، بحد أقصى 31 يومًا.</p>
-            <button type="button" onClick={() => copyToDates(datesBetween(copyStartDate, copyEndDate))} disabled={!datesBetween(copyStartDate, copyEndDate).length || copyPending} data-testid={`button-confirm-copy-range-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><Copy size={16} /> {copyPending ? 'جارٍ النسخ...' : `نسخ ${datesBetween(copyStartDate, copyEndDate).length} يوم`}</button>
+            <input type="date" value={moveDate} min={normalizedTaskDate} onChange={(event) => setMoveDate(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold outline-none focus:border-primary" />
+            <button type="button" onClick={moveToDate} disabled={!moveDate || updateTask.isPending} data-testid={`button-confirm-move-date-${task.id}`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-60"><CalendarPlus size={16} /> {updateTask.isPending ? 'جارٍ الترحيل...' : 'ترحيل المهمة'}</button>
           </div>
         </DialogContent>
       </Dialog>
