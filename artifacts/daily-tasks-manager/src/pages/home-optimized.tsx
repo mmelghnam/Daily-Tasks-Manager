@@ -1,7 +1,7 @@
 import { lazy, Suspense, type FormEvent, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, ShieldCheck, Sparkles, Target, Trash2, UserRound } from 'lucide-react';
+import { CalendarDays, CalendarPlus, CheckSquare2, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, LayoutGrid, Loader2, Pencil, Plus, RefreshCw, ShieldCheck, Sparkles, Target, Trash2, UserRound, X } from 'lucide-react';
 import { getGetAdminAccessQueryKey, getGetDashboardPreferencesQueryKey, getGetTaskSummaryQueryKey, getListSpacesQueryKey, getListTasksQueryKey, useCreateTask, useDeleteSpace, useGetAdminAccess, useGetDashboardPreferences, useGetTaskSummary, useListSpaces, useListTasks, useUpdateTask } from '@workspace/api-client-react';
 import type { Space, Task } from '@workspace/api-client-react';
 import { TaskCard } from '@/components/task-card';
@@ -80,6 +80,9 @@ export default function HomeOptimized() {
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [formCategory, setFormCategory] = useState<Category | undefined>();
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
+  const [bulkMoveDate, setBulkMoveDate] = useState(shiftDate(dateKey(new Date()), 1));
+  const [bulkMoving, setBulkMoving] = useState(false);
 
   const preferences = useGetDashboardPreferences({ query: { queryKey: getGetDashboardPreferencesQueryKey(), staleTime: 5 * 60_000, refetchOnWindowFocus: false } });
   const layout = normalizeDashboardSections(preferences.data?.visibleSections, preferences.data?.sectionOrder);
@@ -101,6 +104,34 @@ export default function HomeOptimized() {
   const completion = summary && summary.total > 0 ? Math.round((summary.completed / summary.total) * 100) : 0;
   const sectionStyle = (key: string) => ({ order: layout.sectionOrder.indexOf(key) < 0 ? 99 : layout.sectionOrder.indexOf(key) });
   const openNew = (category?: Category) => { setFormCategory(category); setShowForm(true); };
+  const toggleTaskSelection = (taskId: number) => {
+    setSelectedTaskIds((current) => {
+      const next = new Set(current);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+  const clearTaskSelection = () => setSelectedTaskIds(new Set());
+  const moveSelectedTasks = async (targetDate: string) => {
+    if (!targetDate || selectedTaskIds.size === 0 || bulkMoving) return;
+    const selectedTasks = tasks.filter((task) => selectedTaskIds.has(task.id));
+    if (selectedTasks.length === 0) {
+      clearTaskSelection();
+      return;
+    }
+    setBulkMoving(true);
+    try {
+      await Promise.all(selectedTasks.map((task) => updateTask.mutateAsync({ id: task.id, data: { taskDate: targetDate } })));
+      clearTaskSelection();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getListTasksQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetTaskSummaryQueryKey() }),
+      ]);
+    } finally {
+      setBulkMoving(false);
+    }
+  };
   const removeSpace = (space: Space) => deleteSpace.mutate({ id: space.id }, { onSuccess: () => { if (activeCategory === space.name) setActiveCategory('all'); void queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() }); } });
 
   const reorderTasks = async (category: Category, draggedId: number, targetId: number) => {
@@ -167,7 +198,16 @@ export default function HomeOptimized() {
         </section>}
 
         {visibleSet.has('tasks') && <section className="mt-1" style={sectionStyle('tasks')}>
-          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-xl bg-muted"/><div className="h-32 animate-pulse rounded-xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-2xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:3}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-lg border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
+          {selectedTaskIds.size > 0 && <div className="sticky top-[72px] z-20 mb-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-card/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-sm font-black"><CheckSquare2 size={18} className="text-primary"/><span>تم تحديد {selectedTaskIds.size} مهمة</span></div>
+            <div className="flex flex-1 flex-wrap items-center gap-2 sm:justify-end">
+              <button type="button" onClick={() => void moveSelectedTasks(shiftDate(selectedDate, 1))} disabled={bulkMoving} className="inline-flex h-10 items-center gap-2 rounded-xl bg-secondary px-3 text-xs font-black text-secondary-foreground disabled:opacity-50"><CalendarPlus size={15}/>ترحيل للغد</button>
+              <input type="date" value={bulkMoveDate} min={selectedDate} onChange={(event) => setBulkMoveDate(event.target.value)} className="h-10 rounded-xl border border-input bg-background px-3 text-xs font-bold outline-none focus:border-primary"/>
+              <button type="button" onClick={() => void moveSelectedTasks(bulkMoveDate)} disabled={!bulkMoveDate || bulkMoving} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-black text-primary-foreground disabled:opacity-50"><CalendarPlus size={15}/>{bulkMoving ? 'جارٍ الترحيل...' : 'ترحيل للتاريخ'}</button>
+              <button type="button" onClick={clearTaskSelection} disabled={bulkMoving} aria-label="إلغاء التحديد" className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted"><X size={16}/></button>
+            </div>
+          </div>}
+          {taskQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><div className="h-32 animate-pulse rounded-xl bg-muted"/><div className="h-32 animate-pulse rounded-xl bg-muted"/></div> : taskQuery.isError ? <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-10 text-center"><CircleAlert className="mx-auto mb-3 text-destructive"/><p className="font-extrabold">تعذر تحميل المهام</p><button onClick={()=>void taskQuery.refetch()} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><RefreshCw size={14} className="ml-1 inline"/>حاول مرة أخرى</button></div> : visibleTasks.length===0 ? <div className="rounded-xl border border-dashed p-12 text-center"><Sparkles className="mx-auto mb-3 text-primary"/><p className="font-extrabold">لا توجد مهام هنا</p><button onClick={()=>openNew(activeCategory==='all'?undefined:activeCategory)} className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-foreground">أضف مهمة</button></div> : <div className="space-y-5">{activeCategory!=='all'&&<QuickTaskInput date={selectedDate} category={activeCategory}/>} {categories.filter((category)=>activeCategory==='all'?visibleTasks.some((t)=>t.category===category):category===activeCategory).map((category)=>{const categoryTasks=visibleTasks.filter((t)=>t.category===category);const meta=getSpaceMeta(category,spaces);return <div key={category} className="rounded-2xl border bg-card/55 p-4" style={{borderInlineStartColor:meta.color,borderInlineStartWidth:3}}><div className="mb-3 flex items-center justify-between"><div><h3 className="font-extrabold">{category} <span className="mr-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{categoryTasks.length}</span></h3><p className="text-xs text-muted-foreground">{meta.description}</p></div><button onClick={()=>openNew(category)} className="rounded-lg border p-2"><Plus size={16}/></button></div><div className="space-y-3">{categoryTasks.map((task)=><TaskCard key={task.id} task={task} date={task.taskDate} spaces={spaceNames} selected={selectedTaskIds.has(task.id)} onToggleSelect={toggleTaskSelection} onDragStart={(id)=>setDraggedTaskId(id||null)} onDropTask={(draggedId)=>void reorderTasks(category,draggedId,task.id)} isDragging={draggedTaskId===task.id}/>)}</div></div>;})}</div>}
         </section>}
       </div>
     </main>
